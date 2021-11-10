@@ -28,5 +28,8 @@
     "less": "^3.0.4",
     "less-loader": "^5.0.0",
     "vue-template-compiler": "^2.6.11"
+  },
+  "publishConfig": {
+    "registry": "http://registry.npmjs.org/"
   }
 }
