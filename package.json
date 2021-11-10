@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build"
+    "build": "vue-cli-service build",
+    "lib": "vue-cli-service build --target lib --name ym-im-base --dest lib src/components/index.js"
   },
   "dependencies": {
     "@rongcloud/imlib-v4": "^4.4.8",

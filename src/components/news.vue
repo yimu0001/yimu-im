@@ -1,8 +1,5 @@
 <template>
   <div>
-    <div @click="changeContact({nickname: 'wanglu', id: 2})">
-      假装是一个按钮
-    </div>
     <div class="tipDom" v-if="!showList" @click="showList = !showList">
       <Avatar :size="38" fit='cover' src="https://i.loli.net/2017/08/21/599a521472424.jpg"></Avatar> &nbsp;&nbsp;
       <span>我的IM</span>
