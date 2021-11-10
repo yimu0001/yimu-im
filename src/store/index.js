@@ -1,0 +1,32 @@
+import Vue from 'vue'
+import Vuex from 'vuex'
+
+Vue.use(Vuex)
+
+export default new Vuex.Store({
+  state: {
+    axiosBaseUrl: 'https://im.shandian8.com',
+    contacti: {},
+    currentOrgUsers: []
+  },
+  mutations: {
+    setAxiosBaseUrl(state, url){
+      state.axiosBaseUrl = url
+    },
+    SET_CONTACT: (state, contacti) => {
+      state.contacti = contacti
+    },
+    setCurrentOrgUsers(state, users) {
+      state.currentOrgUsers = users 
+    }
+  },
+  actions: {
+    SetContact({ commit }, contacti) {
+      return new Promise(() => {
+          commit('SET_CONTACT', contacti)
+      })
+  },
+  },
+  modules: {
+  }
+})
