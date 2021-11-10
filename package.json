@@ -5,7 +5,7 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lib": "vue-cli-service build --target lib --name ym-im-base --dest lib src/components/index.js"
+    "lib": "vue-cli-service build --target lib --name yimu-im --dest lib src/components/index.js"
   },
   "dependencies": {
     "@rongcloud/imlib-v4": "^4.4.8",
