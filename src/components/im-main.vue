@@ -47,9 +47,8 @@
 </template>
 
 <script>
-import CreateGroup from "@/components/CreateGroup";
-import addGroup from '@/components/AddGroup'
-import groupInfo from '@/components/groupInfo'
+import CreateGroup from "./CreateGroup";
+import groupInfo from './groupInfo'
 import { Dialog, Image, Message } from 'element-ui';
 import testComponent from './testComponent.vue'
 const getTime = () => {
