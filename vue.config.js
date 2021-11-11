@@ -30,12 +30,15 @@ module.exports = {
                 $: "jquery",
                 jQuery: "jquery",
                 plupload: "plupload"
-            })
+            }),
         ],
         module: { //这个节点用于配置所有的第三方模块加载器
           rules: [
-              {test:/\.js$/, use:'babel-loader',exclude:/node_modules/},
-              {test: /\.vue$/, use: 'vue-loader'}
+            {
+                test: /\.vue$/,
+                loader: ["vue-loader"],
+            },
+            {test:/\.js$/, use:'babel-loader',exclude:/node_modules/},
           ]
       }
     },
