@@ -38,7 +38,7 @@
 
 <script>
 import { Button, Input, Row, Col, Message, CheckboxGroup, Checkbox, Tag} from 'element-ui';
-import { getOrgList, getUserByOrgid, createGroup } from '@/api/data'
+import { getOrgList, getUserByOrgid, createGroup } from '../api/data'
 import Bus from '../libs/bus';
   export default {
     components: {

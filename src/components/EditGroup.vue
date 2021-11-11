@@ -72,8 +72,8 @@
 <script>
 
 // import {VueCropper} from "vue-cropper";
-import {add} from "@/api/data";
-import {editGroup} from "@/api/data"
+import {add} from "../api/data";
+import {editGroup} from "../api/data"
 
 export default {
   name: "EditGroup",

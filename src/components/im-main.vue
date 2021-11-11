@@ -36,22 +36,23 @@
     
     
     <el-dialog title="查看图片(可再次点击放大)" :visible.sync="outerVisible" width="500px">
-      1221
-      <!-- <el-image
+      <el-image
           :src="imgUrl"
           :preview-src-list="srcList"
       >
-      </el-image> -->
+      </el-image>
     </el-dialog>
   </div>
 </template>
 
 <script>
+import AddGroup from './AddGroup.vue'
 import CreateGroup from "./CreateGroup";
 import groupInfo from './groupInfo'
 import { Dialog, Image, Message } from 'element-ui';
 import testComponent from './testComponent.vue'
 const getTime = () => {
+
   return new Date().getTime();
 };
 const generateRandId = () => {
@@ -59,34 +60,7 @@ const generateRandId = () => {
     .toString(36)
     .substr(-8);
 };
-const generateRandWord = () => {
-  return Math.random()
-    .toString(36)
-    .substr(2);
-};
-const generateMessage = (toContactId = "", fromUser) => {
-  if (!fromUser) {
-    fromUser = {
-      id: "system",
-      displayName: "系统测试",
-      avatar: "http://upload.qqbodys.com/allimg/1710/1035512943-0.jpg",
-    };
-  }
-  return {
-    id: generateRandId(),
-    status: "succeed",
-    type: "text",
-    sendTime: getTime(),
-    content: generateRandWord(),
-    //fileSize: 1231,
-    //fileName: "asdasd.doc",
-    toContactId,
-    fromUser,
-    
-  };
-};
-import { getUserByOrgid, uploadFile } from '@/api/data'
-import Vue from 'vue'
+import { getUserByOrgid, uploadFile } from '../api/data'
   export default {
     props: {
       messageList: {
@@ -112,6 +86,7 @@ import Vue from 'vue'
       firstConversationId: String || undefined,
     },
     components: {
+      AddGroup,
       CreateGroup,
       elDialog: Dialog,
       elImage: Image,

@@ -31,7 +31,7 @@ import 'element-ui/lib/theme-chalk/index.css';
 import imMain from './im-main'
 import { Avatar, Dialog, Message} from 'element-ui';
 import * as RongIMLib from '@rongcloud/imlib-v4'
-import { registerUser, getCurrentUser, getTargetInfoById, groupInfos, getUserByOrgid } from '@/api/data.js'
+import { registerUser, getCurrentUser, getTargetInfoById, groupInfos, getUserByOrgid } from '../api/data.js'
 import Bus from '../libs/bus';
   export default {
     props: {

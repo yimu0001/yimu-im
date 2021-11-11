@@ -154,8 +154,8 @@
 </template>
 
 <script>
-import {groupMembers, deleteGroupUser, getNoGroupUser,addGroupUserList, getUserByOrgid, getOrgList, addMemberToGroup} from "@/api/data"
-import EditGroup from "@/components/EditGroup";
+import {groupMembers, deleteGroupUser, getNoGroupUser,addGroupUserList, getUserByOrgid, getOrgList, addMemberToGroup} from "../api/data"
+import EditGroup from "./EditGroup";
 import {Dialog, Table, TableColumn, Row, Col, Button, Input, Message, Avatar, Checkbox, Tag} from 'element-ui'
 export default {
   name: "CustomDrawer",
