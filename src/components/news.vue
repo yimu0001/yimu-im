@@ -34,7 +34,7 @@ import * as RongIMLib from '@rongcloud/imlib-v4'
 import { registerUser, getCurrentUser, getTargetInfoById, groupInfos, getUserByOrgid } from '../api/data.js'
 import Bus from '../libs/bus';
   export default {
-    name: 'yimuNews',
+    name: 'yimuIm',
     props: {
       baseUrl: {
         type: String,
