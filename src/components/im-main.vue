@@ -62,7 +62,7 @@ const generateRandId = () => {
 };
 import { getUserByOrgid, uploadFile } from '../api/data'
   export default {
-    name: 'ImMain',
+    name: 'imMain',
     props: {
       messageList: {
         type: Array,
