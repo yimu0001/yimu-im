@@ -41,6 +41,7 @@ import { Button, Input, Row, Col, Message, CheckboxGroup, Checkbox, Tag} from 'e
 import { getOrgList, getUserByOrgid, createGroup } from '../api/data'
 import Bus from '../libs/bus';
   export default {
+    name: 'addGroup',
     components: {
       elButton: Button,
       elInput: Input,
