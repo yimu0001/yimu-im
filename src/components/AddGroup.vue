@@ -52,6 +52,17 @@ import Bus from '../libs/bus';
       elCheckbox: Checkbox,
       elTag: Tag
     },
+    props: {
+      baseUrl: {
+        type: String,
+        default: 'https://im.shandian8.com'
+      },
+    },
+    watch: {
+      baseUrl(newValue, oldValue) {
+        this.my_baseUrl = newValue
+      }
+    },
     data() {
       return {
         groupName: '',
@@ -59,7 +70,8 @@ import Bus from '../libs/bus';
         activeOrgId: '', //选中的机构
         currentOrgUsers: [],
         checkUser: [],
-        selecedUser: []
+        selecedUser: [],
+        my_baseUrl: this.baseUrl
       }
     },
     mounted () {
@@ -67,7 +79,7 @@ import Bus from '../libs/bus';
     },
     methods: {
       getOrgList() {
-        getOrgList(this.$store.state.axiosBaseUrl).then(res => {
+        getOrgList(this.my_baseUrl).then(res => {
           console.log(res)
           if(res.status === 200) {
             this.orgList = res.data.data
@@ -85,7 +97,7 @@ import Bus from '../libs/bus';
 
       //获取机构下人员
       getUserByOrgid() {
-        getUserByOrgid(this.$store.state.axiosBaseUrl, this.activeOrgId).then(res => {
+        getUserByOrgid(this.my_baseUrl, this.activeOrgId).then(res => {
           console.log(res)
           if(res.status === 200) {
             let selectUserIds = this.selecedUser.map(item => {
@@ -128,7 +140,7 @@ import Bus from '../libs/bus';
         let userIds = this.selecedUser.map(user => {
           return Number(user.id)
         })
-        createGroup(this.$store.state.axiosBaseUrl, this.groupName, userIds).then(res => {
+        createGroup(this.my_baseUrl, this.groupName, userIds).then(res => {
           if(res.status === 200) {
             Message.success('创建成功！')
             Bus.$emit('createGroupOk', res.data.data.id);

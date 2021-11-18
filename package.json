@@ -1,6 +1,6 @@
 {
   "name": "yimu-im",
-  "version": "0.1.18",
+  "version": "0.1.24",
   "private": false,
   "main": "lib/yimu-im.common.js",
   "scripts": {
@@ -14,6 +14,7 @@
     "@vue/babel-preset-jsx": "^1.2.4",
     "core-js": "^3.6.5",
     "element-ui": "^2.15.6",
+    "jsx-loader": "^0.13.2",
     "lemon-imui": "^1.7.4",
     "stylus": "^0.55.0",
     "stylus-loader": "^6.1.0",
@@ -31,7 +32,7 @@
     "babel-plugin-component": "^1.1.1",
     "less": "^3.0.4",
     "less-loader": "^5.0.0",
-    "vue-loader": "^14.2.4",
+    "vue-loader": "^15.9.8",
     "vue-template-compiler": "^2.6.14"
   }
 }

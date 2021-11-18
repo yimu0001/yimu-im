@@ -51,6 +51,9 @@ import CreateGroup from "./CreateGroup";
 import groupInfo from './groupInfo'
 import { Dialog, Image, Message } from 'element-ui';
 import testComponent from './testComponent.vue'
+
+import LemonIMUI from 'lemon-imui';
+import 'lemon-imui/dist/index.css';
 const getTime = () => {
 
   return new Date().getTime();
@@ -85,6 +88,10 @@ import { getUserByOrgid, uploadFile } from '../api/data'
           {name: 'files', isBottom: false, title: '文档', unread: 0, key: 'test', component: {test: testComponent}}]
       },
       firstConversationId: String || undefined,
+      currentOrgUsers: {
+        type: Array,
+        default: () => []
+      }
     },
     components: {
       AddGroup,
@@ -92,49 +99,13 @@ import { getUserByOrgid, uploadFile } from '../api/data'
       elDialog: Dialog,
       elImage: Image,
       Message,
-      groupInfo
+      groupInfo,
+      LemonIMUI
     },
     data() {
       return {
         contextmenu: [
-          {
-            click: (e, instance, hide) => {
-              const { IMUI, message } = instance;
-              const data = {
-                id: generateRandId(),
-                type: "event",
-                //使用 jsx 时 click必须使用箭头函数（使上下文停留在vue内）
-                content: (
-                  <div>
-                    <span>
-                      你撤回了一条消息{" "}
-                      <span
-                        v-show={message.type == "text"}
-                        style="color:#333;cursor:pointer"
-                        content={message.content}
-                        on-click={e => {
-                          IMUI.setEditorValue(e.target.getAttribute("content"));
-                        }}
-                      >
-                        重新编辑
-                      </span>
-                    </span>
-                  </div>
-                ),
-
-                toContactId: message.toContactId,
-                sendTime: getTime(),
-              };
-              IMUI.removeMessage(message.id);
-              IMUI.appendMessage(data, true);
-              // scrollToBottom=true
-              hide();
-            },
-            visible: instance => {
-              return instance.message.fromUser.id == this.user.id;
-            },
-            text: "撤回消息",
-          },
+          
           {
             visible: instance => {
               return instance.message.fromUser.id != this.user.id;
@@ -189,22 +160,7 @@ import { getUserByOrgid, uploadFile } from '../api/data'
           {
             text: "设置备注和标签",
           },
-          {
-            icon: "lemon-icon-message",
-            render: (h, instance, hide) => {
-              return (
-                <div style="display:flex;justify-content:space-between;align-items:center;width:130px">
-                  <span>加入黑名单</span>
-                  <span>
-                    <input type="checkbox" id="switch" />
-                    <label id="switch-label" for="switch">
-                      Toggle
-                    </label>
-                  </span>
-                </div>
-              );
-            },
-          },
+          
           {
             click(e, instance, hide) {
               const { IMUI, contact } = instance;
@@ -224,7 +180,8 @@ import { getUserByOrgid, uploadFile } from '../api/data'
         user: {
           id: this.currentUser.id || 1,
           displayName: this.currentUser.nickname || '',
-          orgid: this.currentUser.orgid || ''
+          orgid: this.currentUser.orgid || '',
+          avatar: this.currentUser.avatar
         },
         show_message_list: this.messageList,
         targetUser: {},
@@ -246,7 +203,8 @@ import { getUserByOrgid, uploadFile } from '../api/data'
         this.user = {
           id: newValue.id || 1,
           displayName: newValue.nickname || '',
-          orgid: newValue.orgid || ''
+          orgid: newValue.orgid || '',
+          avatar: this.currentUser.avatar
         }
       },
       baseUrl(newValue, oldValue) {
@@ -277,7 +235,7 @@ import { getUserByOrgid, uploadFile } from '../api/data'
             unread: 0,
             renderContainer: () => {
               return (
-                <addGroup></addGroup>
+                <addGroup baseUrl={this.my_baseUrl}></addGroup>
               )
             },
             render: menu => {
@@ -458,7 +416,6 @@ import { getUserByOrgid, uploadFile } from '../api/data'
           
           return messageItem
         })
-        console.log(hasMore)
         next(messages, !hasMore);
       },
       handleMessageClick(e, key, message, instance) {
@@ -558,7 +515,7 @@ import { getUserByOrgid, uploadFile } from '../api/data'
 
       //打开抽屉
       changeDrawer(contact, instance) {
-        this.$store.dispatch("SetContact", contact)
+        console.log(contact)
         instance.changeDrawer({
           //width: 240,
           //height: "90%",
@@ -570,16 +527,9 @@ import { getUserByOrgid, uploadFile } from '../api/data'
           // offsetY: -100,
           render: () => {
             return (
-              <groupInfo/>
-              // <div class="drawer-content">
-              //   <p>
-              //     <b>自定义抽屉</b>
-              //   </p>
-              //   <p>{contact.displayName}</p>
-              // </div>
+              <groupInfo baseUrl={this.my_baseUrl} contact={contact} />
             );
           },
-          
         });
       },
       
@@ -597,48 +547,59 @@ import { getUserByOrgid, uploadFile } from '../api/data'
       //获取当前机构用户
       getCurrentOrgUsers() {
         let IMUI = this.$refs.IMUI
-        let currentOrgUsers = this.$store.state.currentOrgUsers
-        let all_user = []
-        currentOrgUsers.forEach(userItem => {
-          let key = -1
-          this.show_message_list.forEach((messageUserItem, messageUserIndex) => {
-            if(messageUserItem.id == userItem.id){
-              if(messageUserItem.lastContent == ''){
-                messageUserItem.lastContent = '未知消息'
-              }
-              messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
-              key = messageUserIndex
-            }
-          })
-          if(key > -1) {
-            userItem.unread = this.show_message_list[key].unread
-            userItem.lastSendTime = this.show_message_list[key].lastSendTime
-            userItem.lastContent = this.show_message_list[key].lastContent
+        let currentOrgUsers = this.currentOrgUsers
+        // let all_user = []
+        // currentOrgUsers.forEach(userItem => {
+        //   let key = -1
+        //   this.show_message_list.forEach((messageUserItem, messageUserIndex) => {
+        //     if(messageUserItem.id == userItem.id){
+        //       if(messageUserItem.lastContent == ''){
+        //         messageUserItem.lastContent = '未知消息'
+        //       }
+        //       messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
+        //       key = messageUserIndex
+        //     }
+        //   })
+        //   if(key > -1) {
+        //     userItem.unread = this.show_message_list[key].unread
+        //     userItem.lastSendTime = this.show_message_list[key].lastSendTime
+        //     userItem.lastContent = this.show_message_list[key].lastContent
+        //   }
+        //   all_user.push(userItem)
+        // })
+        // this.show_message_list.forEach((messageUserItem, messageUserIndex) => {
+        //   if(messageUserItem.id < 0) {
+        //     let message = messageUserItem.lastContent
+        //     if(!messageUserItem.lastContent){
+        //       message = '未知消息'
+        //     }
+        //     messageUserItem.lastContent = IMUI.lastContentRender(message)
+        //     all_user.push(messageUserItem)
+        //   }
+        //   if(messageUserItem.isGroup) {
+        //     if(!messageUserItem.lastContent){
+        //       messageUserItem.lastContent = '未知消息'
+        //     }
+        //     messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
+        //     all_user.push(messageUserItem)
+        //   } 
+        // })
+        // this.all_users = all_user
+        // this.$refs.IMUI.initContacts(all_user);
+        // setTimeout(() => {
+        //   this.firstConversationId && IMUI.changeContact(this.firstConversationId);
+        // }, 500);
+
+        currentOrgUsers.forEach(item => {
+          if(item.lastContent) {
+            item.lastContent = IMUI.lastContentRender(item.lastContent)
           }
-          all_user.push(userItem)
         })
-        this.show_message_list.forEach((messageUserItem, messageUserIndex) => {
-          if(messageUserItem.id < 0) {
-            let message = messageUserItem.lastContent
-            if(!messageUserItem.lastContent){
-              message = '未知消息'
-            }
-            messageUserItem.lastContent = IMUI.lastContentRender(message)
-            all_user.push(messageUserItem)
-          }
-          if(messageUserItem.isGroup) {
-            if(!messageUserItem.lastContent){
-              messageUserItem.lastContent = '未知消息'
-            }
-            messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
-            all_user.push(messageUserItem)
-          } 
-        })
-        this.all_users = all_user
-        this.$refs.IMUI.initContacts(all_user);
+        this.$refs.IMUI.initContacts(currentOrgUsers);
         setTimeout(() => {
           this.firstConversationId && IMUI.changeContact(this.firstConversationId);
         }, 500);
+
         // getUserByOrgid(this.my_baseUrl, this.user.orgid).then(res => {
         //   if(res.status === 200){
         //     let userList = res.data.data
@@ -715,7 +676,6 @@ import { getUserByOrgid, uploadFile } from '../api/data'
 
       //切换联系人
       changeContact(contact) {
-        // this.$store.dispatch("SetContact", contact)
         this.$refs.IMUI.changeContact(contact.id)
       }
       

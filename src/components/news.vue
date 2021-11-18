@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="tipDom" v-if="!showList" @click="showList = !showList">
+    <div class="tipDom" v-if="!showList && showComponent" @click="showList = !showList">
       <Avatar :size="38" fit='cover' src="https://i.loli.net/2017/08/21/599a521472424.jpg"></Avatar> &nbsp;&nbsp;
       <span>我的IM</span>
     </div>
@@ -13,6 +13,7 @@
       <im-main ref="imMainDom" :messageList = "messageList" :baseUrl='my_baseUrl' :currentUser = 'currentUser' @handleSendMessage="handleSendMessage" 
       @handlePullMessages='handlePullMessages'
       :firstConversationId='firstConversationId'
+      :currentOrgUsers = currentOrgUsers
       @changeMenuMessage='getConnetList'></im-main>
       <span slot="footer" class="dialog-footer">
       </span>
@@ -103,7 +104,7 @@ import Bus from '../libs/bus';
     watch: {
       baseUrl(newValue, oldValue) {
         this.my_baseUrl = newValue
-        this.$store.commit('setAxiosBaseUrl', newValue)
+        // this.$store.commit('setAxiosBaseUrl', newValue)
       }
     },
     data() {
@@ -119,7 +120,9 @@ import Bus from '../libs/bus';
         //用来储存
         saveMessageList: [],
         // 会话第一个联系人id
-        firstConversationId: undefined
+        firstConversationId: undefined,
+        currentOrgUsers: [], //本机构联系人
+        showComponent: false, //展示组件与否 
       }
     },
     methods: {
@@ -399,7 +402,6 @@ import Bus from '../libs/bus';
           //   }, 1500)
           // } else {
           this.messageList = exit_message_list
-          console.log(this.messageList)
           // }
           this.getCurrentOrgUsers()
           
@@ -491,9 +493,41 @@ import Bus from '../libs/bus';
                 lastSendTime: '',
                 lastContent: ''
               } 
+              this.messageList.forEach((messageUserItem, messageUserIndex) => {
+                if(messageUserItem.id == userItem.id){
+                  if(messageUserItem.lastContent == ''){
+                    messageUserItem.lastContent = '未知消息'
+                  }
+                  userItem.unread = this.messageList[messageUserIndex].unread
+                  userItem.lastSendTime = this.messageList[messageUserIndex].lastSendTime
+                  userItem.lastContent = this.messageList[messageUserIndex].lastContent
+                  // messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
+                }
+              })
               return userItem
             })
-            this.$store.commit('setCurrentOrgUsers', currentorgUsers)
+            // this.currentOrgUsers = currentorgUsers
+            // this.$store.commit('setCurrentOrgUsers', currentorgUsers)
+
+            this.messageList.forEach((messageUserItem, messageUserIndex) => {
+              if(messageUserItem.id < 0) {
+                let message = messageUserItem.lastContent
+                if(!messageUserItem.lastContent){
+                  message = '未知消息'
+                }
+                // messageUserItem.lastContent = IMUI.lastContentRender(message)
+                currentorgUsers.push(messageUserItem)
+              }
+              if(messageUserItem.isGroup) {
+                if(!messageUserItem.lastContent){
+                  messageUserItem.lastContent = '未知消息'
+                }
+                // messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
+                currentorgUsers.push(messageUserItem)
+              } 
+            })
+            this.showComponent = true
+            this.currentOrgUsers = currentorgUsers
           } else {
             Message.error(res.data.msg)
           }

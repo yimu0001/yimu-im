@@ -1,11 +1,10 @@
 <template>
   <div style="height: 100%;overflow:auto;">
-    
     <div style="padding-top: 10px;padding-left: 2px;padding-right: 2px">
-      <el-row v-if="!contact.isGroup">
+      <el-row v-if="vContact && !vContact.isGroup">
         <el-col :span="24">
           <div style="text-align: center">
-            <el-avatar :src="contact.avatar"></el-avatar>
+            <el-avatar :src="vContact.avatar"></el-avatar>
           </div>
         </el-col>
         <el-col :span="24">
@@ -13,18 +12,18 @@
             <li class="list-group-item">
               <i class="el-icon-user-solid"></i>
               用户账号
-              <div class="pull-right">{{ contact.id }}</div>
+              <div class="pull-right">{{ vContact.id }}</div>
             </li>
             <li class="list-group-item">
               <i class="el-icon-info"></i>
               用户名称
-              <div class="pull-right">{{ contact.displayName }}</div>
+              <div class="pull-right">{{ vContact.displayName }}</div>
             </li>
           </ul>
         </el-col>
       </el-row>
 
-      <div v-if="contact.isGroup">
+      <div v-if="vContact && vContact.isGroup">
         <!-- <div class="slot-contact-fixedtop">
           <input class="slot-search" v-on:keyup.13="searchUserList" v-model="searchValue" placeholder="搜索群用户"/>
           <el-button icon="el-icon-circle-plus-outline" @click="showAddFriends" type="text" circle></el-button>
@@ -89,14 +88,14 @@
             <div class="groupInfoItemTitle">
               群名称
             </div>
-            <div class="groupInfoItemContent">{{ this.contact.displayName }}</div>
+            <div class="groupInfoItemContent">{{ this.vContact.displayName }}</div>
           </div>
         </div>
       </div>
     </div>
 
     <el-dialog title="修改群" :visible.sync="addGroupOpen" :modal="false" width="500px">
-      <EditGroup @grouprMethod="gbAddGroupOpen" :group="contact"/>
+      <EditGroup @grouprMethod="gbAddGroupOpen" :group="vContact"/>
     </el-dialog>
 
     <el-dialog :visible.sync="deleteUserOpen" :modal="false" width="400px">
@@ -154,7 +153,7 @@
 </template>
 
 <script>
-import {groupMembers, deleteGroupUser, getNoGroupUser,addGroupUserList, getUserByOrgid, getOrgList, addMemberToGroup} from "../api/data"
+import {groupMembers, getUserByOrgid, getOrgList, addMemberToGroup} from "../api/data"
 import EditGroup from "./EditGroup";
 import {Dialog, Table, TableColumn, Row, Col, Button, Input, Message, Avatar, Checkbox, Tag} from 'element-ui'
 export default {
@@ -173,13 +172,26 @@ export default {
     elCheckbox: Checkbox,
     elTag: Tag
   },
+  props: {
+    baseUrl: {
+      type: String,
+      default: 'https://im.shandian8.com'
+    },
+    contact: {
+      type: Object
+    }
+  },
   watch: {
-    "$store.state.contacti": {
+    baseUrl(newValue, oldValue) {
+      this.my_baseUrl = newValue
+    },
+    contact: {
       deep: true,
       handler: function (newValue, oldValue) {
+        console.log(newValue, this.contact)
         this.searchValue = ''
-        this.contact = newValue
-        if (this.contact.isGroup) {
+        this.vContact = newValue
+        if (this.vContact.isGroup) {
           this.all = false
           this.getList()
         }
@@ -188,7 +200,6 @@ export default {
   },
   data() {
     return {
-      contact: {},
       searchValue: '',
       all: false,
       list: [],
@@ -204,15 +215,22 @@ export default {
       orgList: [],
       selectOrgId: '',
       selectOrgUsers: [],
-      selecedUser: []
+      selecedUser: [],
+      my_baseUrl: this.baseUrl,
+      vContact: this.contact
     }
   },
-  created() {
-    this.contact = this.$store.state.contacti
-    if (this.contact.isGroup) {
-      this.all = false
-      this.getList()
-    }
+  mounted() {
+    console.log(this.contact, this.baseUrl)
+    setTimeout(() => {
+      console.log(this.contact)
+    }, 1000)
+    // this.vContact = this.contact
+    // console.log(this.vContact)
+    // if (this.vContact.isGroup) {
+    //   this.all = false
+    //   this.getList()
+    // }
   },
   methods: {
     // 多选框选中数据
@@ -221,16 +239,14 @@ export default {
     },
     searchAddUserList() {
       let data = {
-        groupId: this.contact.id,
+        groupId: this.vContact.id,
         searchValue: this.searchAddUser
       }
-      getNoGroupUser(data).then(value => {
-        this.addUserList = value.data
-      })
+      
     },
     
     getList() {
-      groupMembers(this.$store.state.axiosBaseUrl, this.contact.id).then(res => {
+      groupMembers(this.my_baseUrl, this.vContact.id).then(res => {
         if(res.status === 200) {
             this.groupMemberList = res.data.data
           } else {
@@ -257,29 +273,7 @@ export default {
       this.deleteUser = user
       this.deleteUserOpen = true
     },
-    submitDeleteUser() {
-      let data = {
-        groupId: this.contact.id,
-        userId: this.deleteUser.id
-      }
-      deleteGroupUser(data).then(value => {
-        this.deleteUserOpen = false
-        this.all = false
-        this.getList();
-      })
-    },
-    submitAddUserUser() {
-      const ids = this.ids.toString()
-      let data = {
-        ids: ids,
-        groupId: this.contact.id
-      }
-      addGroupUserList(data).then(value => {
-        this.addUserOpen = false
-        this.all = false
-        this.getList();
-      })
-    },
+    
 
     //加人
     handleAddMemberToGroup() {
@@ -288,7 +282,7 @@ export default {
     },
     //获取机构列表
     getOrgList() {
-      getOrgList(this.$store.state.axiosBaseUrl).then(res => {
+      getOrgList(this.my_baseUrl).then(res => {
         console.log(res)
         if(res.status === 200) {
           this.orgList = res.data.data
@@ -306,7 +300,7 @@ export default {
 
     //获取机构下人员
     getUserByOrgid() {
-      getUserByOrgid(this.$store.state.axiosBaseUrl, this.selectOrgId).then(res => {
+      getUserByOrgid(this.my_baseUrl, this.selectOrgId).then(res => {
         if(res.status === 200) {
           let selectUserIds = this.selecedUser.map(item => {
             return item.id
@@ -348,7 +342,7 @@ export default {
       let selectUserIds = this.selecedUser.map(item => {
         return Number(item.id)
       })
-      addMemberToGroup(this.$store.state.axiosBaseUrl, this.contact.id, selectUserIds).then(res => {
+      addMemberToGroup(this.my_baseUrl, this.vContact.id, selectUserIds).then(res => {
         console.log(res)
         if(res.status === 200) {
           Message.success(res.data.msg)

@@ -1,8 +1,8 @@
+var webpack = require('webpack')
 const path = require('path');
 function resolve(dir) {
     return path.resolve(__dirname, dir)
 }
-var webpack = require('webpack')
 module.exports = {
     pages: {
         index: {
@@ -11,9 +11,6 @@ module.exports = {
             filename: 'index.html',
         },
     },
-    
-
-    productionSourceMap: false,
     configureWebpack: {
         output: {
             libraryExport: 'default'
@@ -30,37 +27,27 @@ module.exports = {
                 $: "jquery",
                 jQuery: "jquery",
                 plupload: "plupload"
-            }),
-        ],
-        module: { //这个节点用于配置所有的第三方模块加载器
-          rules: [
-            {
-                test: /\.vue$/,
-                loader: ["vue-loader"],
-            },
-            {test:/\.js$/, use:'babel-loader'},
-            // ,exclude:/node_modules/
-          ]
-      }
-    },
-    devServer:{
-        port: 8091,
-        hot: true,
-        open: 'Google Chrome'
-    },
-    chainWebpack: config => {
-        config.module
-            .rule('js')
-            .include
-            .add('/packages')
-            .end()
-            .use('babel')
-            .loader('babel-loader')
-            .tap(options => {
-                return options
             })
+        ]
     },
+    // 如果你不需要使用eslint，把lintOnSave设为false即可
+    lintOnSave: false,
+    // 打包时不生成.map文件
+    productionSourceMap: false,
+    // chainWebpack: config => {
+    //     config.module
+    //         .rule('js')
+    //         .include
+    //         .add('/packages')
+    //         .end()
+    //         .use('babel')
+    //         .loader('babel-loader')
+    //         .tap(options => {
+    //             return options
+    //         })
+    // },
     css: {
         extract: false,
-    }
+    },
+
 }
