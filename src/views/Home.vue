@@ -23,13 +23,21 @@ export default {
     setTimeout(() => {
       this.customMenu = [
         {
-          name: 'files',
+          name: 'collect',
           isBottom: false,
-          title: '文档',
+          title: '收藏',
           unread: 0,
           key: 'test',
-          icon:
-            'https://img12.iqilu.com/1/sucaiku/image_thumb/202110/19/4ada1f7d8413436abfbd2ca48f7ef009.png',
+          iconClass: 'el-icon-star-off',
+          component: testComponent,
+        },
+        {
+          name: 'files',
+          isBottom: false,
+          title: '待办',
+          unread: 0,
+          key: 'test',
+          iconClass: 'el-icon-date',
           component: testComponent,
         },
       ];

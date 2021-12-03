@@ -278,13 +278,8 @@ export default {
               // }
               // let VIDom = new VNode(nodeName, _propertyObj, undefined, nodeType)
 
-              let iClassname = 'lemon-icon-' + menuItem.name;
-              // return <i class={iClassname} />;
-              return menuItem.icon ? (
-                <img class='custom-icon-show' src={menuItem.icon} />
-              ) : (
-                <i class={iClassname} />
-              );
+              // return  <i class='lemon-icon-default' />;
+              return <i class={menuItem.iconClass}></i>;
             },
           });
         }
@@ -729,7 +724,7 @@ export default {
   height: 70px;
 }
 
-/deep/ .lemon-icon-files {
+/deep/ .lemon-icon-default {
   font-style: normal;
   &:before {
     content: '\2740';

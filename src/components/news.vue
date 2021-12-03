@@ -105,15 +105,17 @@ export default {
       handler(arr) {
         if (arr && arr.length > 0) {
           // 过滤外部参数 防止外部组件传入不规范的数据
-          let list = arr.map(({ name, isBottom, title, unread, key, icon, component }, index) => ({
-            name: name || `component_${index}`,
-            isBottom: isBottom || false,
-            title: title || '自定义',
-            unread: unread || 0,
-            key: key || `component_${index}`,
-            icon,
-            component: component || testComponent,
-          }));
+          let list = arr.map(
+            ({ name, isBottom, title, unread, key, iconClass, component }, index) => ({
+              name: name || `component_${index}`,
+              isBottom: isBottom || false,
+              title: title || '自定义',
+              unread: unread || 0,
+              key: key || `component_${index}`,
+              iconClass: iconClass || 'el-icon-menu',
+              component: component || testComponent,
+            })
+          );
 
           this.menuList = this.baseMenuList.concat(list);
         }
