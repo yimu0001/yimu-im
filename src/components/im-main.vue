@@ -346,6 +346,9 @@ export default {
         // },
       ]);
       // IMUI.initEmoji(EmojiData);
+      IMUI.setLastContentRender('text', (message) => {
+        return <span>{message.content}</span>;
+      });
       IMUI.setLastContentRender('image', (message) => {
         return <span>[图片]</span>;
       });
@@ -716,6 +719,9 @@ export default {
 }
 /deep/ .lemon-menu .lemon-menu__item {
   padding: 10px;
+  /deep/ .iconfont {
+    font-size: 24px;
+  }
 }
 /deep/.lemon-message-image .lemon-message__content img {
   min-width: auto !important;
@@ -729,9 +735,5 @@ export default {
   &:before {
     content: '\2740';
   }
-}
-/deep/ .custom-icon-show {
-  width: 22px;
-  height: 22px;
 }
 </style>
