@@ -1,59 +1,72 @@
 <script>
-import { formatByte } from "utils";
+import Toolbar from './toolbar.vue';
+function formatByte(value) {
+  if (null == value || value == '') {
+    return '0 Bytes';
+  }
+  var unitArr = ['B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'];
+  var index = 0;
+  var srcsize = parseFloat(value);
+  index = Math.floor(Math.log(srcsize) / Math.log(1024));
+  var size = srcsize / Math.pow(1024, index);
+  size = parseFloat(size.toFixed(2));
+  return size + unitArr[index];
+}
+
 export default {
-  name: "lemonMessageFile",
+  name: 'lemonMessageFile',
   inheritAttrs: false,
+  components: { Toolbar },
   render() {
     return (
       <lemon-message-basic
-        class="lemon-message-file"
+        class='lemon-message-file'
         props={{ ...this.$attrs }}
         scopedSlots={{
-          content: props => [
-            <div class="lemon-message-file__inner">
-              <p class="lemon-message-file__name">{props.fileName}</p>
-              <p class="lemon-message-file__byte">
-                {formatByte(props.fileSize)}
-              </p>
+          content: (props) => [
+            // <div class='tool-bar-wrapper'>
+            <div class='lemon-message-file__inner'>
+              <p class='lemon-message-file__name'>{props.fileName}</p>
+              <p class='lemon-message-file__byte'>{formatByte(props.fileSize)}</p>
             </div>,
-            <div class="lemon-message-file__sfx">
-              <i class="lemon-icon-attah" />
-            </div>
-          ]
+            <div class='lemon-message-file__sfx'>
+              <i class='lemon-icon-attah' />
+            </div>,
+            <toolbar props={{ ...this.$attrs }}></toolbar>,
+            // </div>,
+          ],
         }}
       />
     );
-  }
+  },
 };
 </script>
-<style lang="stylus">
-@import '~styles/utils/index'
-+b(lemon-message-file)
-  +b(lemon-message)
-    +e(content)
-      display flex
-      cursor pointer
-      width 200px
-      background #fff
-      padding 12px 18px
-      overflow hidden
-      p
-        margin 0
-  +e(tip)
-    display none
-  +e(inner)
-    flex 1
-  +e(name)
-    font-size 14px
-  +e(byte)
-    font-size 12px
-    color #aaa
-  +e(sfx)
-    display flex
-    align-items center
-    justify-content center
-    font-weight bold
-    user-select none
-    font-size 34px
-    color #ccc
+
+<style lang="less">
+.lemon-message.lemon-message-file {
+  user-select: none;
+  margin-bottom: 12px;
+  .lemon-message__content {
+    overflow: visible;
+    position: relative;
+    .tool-bar {
+      position: absolute;
+      left: 0;
+      bottom: -32px;
+      padding: 5px 0;
+      visibility: hidden;
+      .iconfont {
+        margin: 0 5px;
+        font-size: 16px;
+        color: #999;
+        &:hover {
+          color: rgb(45, 153, 224);
+        }
+      }
+    }
+    &:hover .tool-bar {
+      visibility: visible;
+    }
+  }
+}
 </style>

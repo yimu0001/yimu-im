@@ -26,6 +26,7 @@ export default {
   },
 };
 </script>
+
 <style lang="less">
 .lemon-message.lemon-message-image {
   user-select: none;
@@ -48,7 +49,7 @@ export default {
       box-shadow: 0 0 6px rgba(0, 0, 0, 0.04);
     }
     .tool-bar {
-      padding: 5px 0;
+      padding: 3px 0;
       visibility: hidden;
       .iconfont {
         margin: 0 5px;

@@ -55,7 +55,7 @@ export default {
           title: '待办',
           unread: 0,
           key: 'pending',
-          iconClass: 'iconfont icon-daiban1',
+          iconClass: 'iconfont icon-daibanshixiang',
           component: testComponent,
         },
         {

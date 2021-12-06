@@ -5,6 +5,7 @@
       &nbsp;&nbsp;
       <span>我的IM</span>
     </div>
+    <!-- :destroy-on-close="true" -->
     <el-dialog
       class="imDialog"
       :visible.sync="showList"
@@ -698,6 +699,9 @@ export default {
   }
 }
 .imDialog {
+  .el-dialog {
+    width: 800px;
+  }
   /deep/.el-dialog__header {
     padding: 0;
   }

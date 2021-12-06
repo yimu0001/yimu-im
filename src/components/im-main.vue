@@ -26,9 +26,14 @@
       </template>
       <template #message-title="contact">
         <span>{{ contact.displayName }}</span>
-        <small v-if="contact.id != 'admin'" class="more" @click="changeDrawer(contact, $refs.IMUI)">
-          <i v-if="!drawerVisibleShow" class="el-icon-s-unfold" />
-          <i v-if="drawerVisibleShow" class="el-icon-s-fold" />
+        <small
+          v-if="contact.id != 'admin'"
+          class="more-setting"
+          @click="changeDrawer(contact, $refs.IMUI)"
+        >
+          <!-- <i v-if="!drawerVisibleShow" class="el-icon-s-unfold" />
+          <i v-if="drawerVisibleShow" class="el-icon-s-fold" /> -->
+          <i class="iconfont icon-gengduo" title="更多"></i>
         </small>
         <br />
       </template>
@@ -175,7 +180,7 @@ export default {
       show_message_list: this.messageList,
       targetUser: {},
       //右侧抽屉
-      drawerVisibleShow: true,
+      drawerVisibleShow: false,
       // 新增组
       addGroupOpen: false,
       outerVisible: false,
@@ -360,6 +365,11 @@ export default {
       });
     },
     handleChangeMenu(menuName) {
+      if (this.drawerVisibleShow) {
+        this.$refs.IMUI.changeDrawer();
+        this.drawerVisibleShow = false;
+      }
+
       console.log('Event:change-menu', menuName);
       // if(menuName === 'messages') {
       //   this.$emit('changeMenuMessage')
@@ -531,16 +541,16 @@ export default {
       //   next();
       // }, 1000);
     },
-
     //打开抽屉
     changeDrawer(contact, instance) {
-      console.log(contact);
+      this.drawerVisibleShow = !this.drawerVisibleShow;
+
       instance.changeDrawer({
-        //width: 240,
-        //height: "90%",
-        //offsetX:0 ,
-        //offsetY: ,
-        //position: "center",
+        width: 50,
+        height: '100%',
+        offsetX: -2,
+        offsetY: 0,
+        position: 'right',
         // inside: true,
         // offsetX: -280,
         // offsetY: -100,
@@ -699,22 +709,14 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.more {
-  font-size: 12px;
-  line-height: 24px;
-  height: 24px;
+.more-setting {
   position: absolute;
   top: 14px;
   right: 14px;
-  cursor: pointer;
-  user-select: none;
-  color: #f1f1f1;
-  display: inline-block;
-  border-radius: 4px;
-  background: #111;
-  padding: 0 8px;
-  &:active {
-    background: #999;
+  .icon-gengduo {
+    font-size: 20px;
+    color: #666;
+    cursor: pointer;
   }
 }
 /deep/ .lemon-menu .lemon-menu__item {
@@ -722,6 +724,10 @@ export default {
   /deep/ .iconfont {
     font-size: 24px;
   }
+}
+
+/deep/ .lemon-message__content {
+  color: #666;
 }
 /deep/.lemon-message-image .lemon-message__content img {
   min-width: auto !important;
@@ -735,5 +741,54 @@ export default {
   &:before {
     content: '\2740';
   }
+}
+/deep/ .lemon-message-text {
+  .lemon-message__content {
+    padding: 0;
+    background: none;
+    border-radius: 0;
+    &:before {
+      content: '';
+    }
+
+    .tool-bar-wrapper .content-show {
+      font-size: 14px;
+      line-height: 20px;
+      padding: 8px 10px;
+      background: #fff;
+      border-radius: 4px;
+      position: relative;
+      margin: 0;
+    }
+  }
+}
+/deep/ .lemon-message-file .lemon-message__content:hover /deep/ .tool-bar {
+  visibility: visible;
+}
+/deep/ .lemon-message--reverse.lemon-message-file .lemon-message__content:before {
+  content: ' ';
+  position: absolute;
+  top: 6px;
+  width: 0;
+  height: 0;
+  border: 4px solid transparent;
+  left: auto;
+  right: -4px;
+  border-right: none;
+  border-left-color: #fff;
+}
+
+/deep/ .lemon-message--reverse.lemon-message-text {
+  .tool-bar-wrapper .content-show {
+    background: #35d863;
+  }
+}
+
+/deep/ .lemon-editor {
+  border: 1px solid #ececec;
+}
+/deep/ .lemon-drawer {
+  top: 0 !important;
+  border-left: 1px solid #ececec;
 }
 </style>

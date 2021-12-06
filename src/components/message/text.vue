@@ -15,7 +15,7 @@ export default {
             const content = this.IMUI.emojiNameToImage(props.content);
             return (
               <div class='tool-bar-wrapper'>
-                <span class='content-show' domProps={{ innerHTML: content }} />
+                <div class='content-show' domProps={{ innerHTML: content }} />
                 <toolbar props={{ ...this.$attrs }}></toolbar>
               </div>
             );
@@ -26,37 +26,19 @@ export default {
   },
 };
 </script>
-<!--<style lang="stylus">
-@import '~styles/utils/index'
-+b(lemon-message-text)
-  +b(lemon-message)
-    +e(content)
-      img
-        width 18px
-        height 18px
-        display inline-block
-        background transparent
-        position relative
-        top -1px
-        padding 0 2px
-        vertical-align middle
-</style>-->
 
 <style lang="less" scoped>
 .tool-bar-wrapper {
-  position: relative;
   .content-show {
     border-radius: 2px;
     box-shadow: 0 0 6px rgba(0, 0, 0, 0.04);
+    margin-bottom: 8px;
   }
   .tool-bar {
-    position: absolute;
-    bottom: -36px;
-    left: 0;
     padding: 5px 0;
     visibility: hidden;
     .iconfont {
-      margin: 0 5px;
+      margin: 5px 5px 0;
       font-size: 16px;
       color: #999;
       &:hover {
@@ -64,12 +46,11 @@ export default {
       }
     }
   }
-  // TODO 有bug
   &:hover .tool-bar {
     visibility: visible;
   }
 }
-// .lemon-message__inner:hover .tool-bar {
-//   visibility: visible;
+// /deep/ .lemon-message--reverse .lemon-message__content:before{
+//       border-left-color: #fff;
 // }
 </style>
