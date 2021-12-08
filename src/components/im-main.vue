@@ -25,10 +25,10 @@
         </div>
       </template>
       <template #message-title="contact">
-        <div class="close-line">
+        <div class="close-line" @click="closeModal">
           <i class="el-icon-close"></i>
         </div>
-        <span>{{ contact.displayName }}</span>
+        <p class="cur-user">{{ contact.displayName }}</p>
         <small
           v-if="contact.id != 'admin'"
           class="more-setting"
@@ -375,11 +375,17 @@ export default {
         return <span>[文件]</span>;
       });
     },
-    handleChangeMenu(menuName) {
+    closeModal() {
+      this.$emit('closeModal');
+    },
+    closeRightDrawer() {
       if (this.drawerVisibleShow) {
         this.$refs.IMUI.closeDrawer();
         this.drawerVisibleShow = false;
       }
+    },
+    handleChangeMenu(menuName) {
+      this.closeRightDrawer();
 
       console.log('Event:change-menu', menuName);
       // if(menuName === 'messages') {
@@ -387,6 +393,8 @@ export default {
       // }
     },
     handleChangeContact(contact, instance) {
+      this.closeRightDrawer();
+
       console.log('Event:change-contact', contact);
       this.targetUser = contact;
       instance.updateContact({
@@ -723,6 +731,11 @@ export default {
   .el-icon-close {
     font-size: 12px;
   }
+}
+.cur-user {
+  margin-top: 4px;
+  font-size: 16px;
+  color: #000;
 }
 .more-setting {
   position: absolute;

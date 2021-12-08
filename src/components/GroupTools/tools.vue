@@ -383,9 +383,9 @@ export default {
 
         setTimeout(() => {
           this.parentInstance.changeDrawer({
-            width: 500,
+            width: 400,
             height: '100%',
-            offsetX: -500,
+            offsetX: -400,
             offsetY: 0,
             position: 'right',
             inside: true,

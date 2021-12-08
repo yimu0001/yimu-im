@@ -24,6 +24,7 @@
         :firstConversationId="firstConversationId"
         :currentOrgUsers="currentOrgUsers"
         @changeMenuMessage="getConnetList"
+        @closeModal="handleClose"
       ></im-main>
       <span slot="footer" class="dialog-footer"> </span>
     </el-dialog>
@@ -586,7 +587,10 @@ export default {
           console.log('发送文字消息失败', error.code, error.msg);
         });
     },
-
+    // 从聊天界面点击关闭会话
+    handleClose() {
+      this.showList = false;
+    },
     //唤起会话
     changeContact(contact) {
       this.showList = true;

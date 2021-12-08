@@ -31,7 +31,7 @@
     <div v-if="vContact && vContact.isGroup">
       <!-- 群成员展示 -->
       <el-row class="memberList" :gutter="4">
-        <el-col :span="3" class="memberItem">
+        <el-col :span="4" class="memberItem">
           <div class="memberItemImg addMemberImg" @click="handleAddMemberToGroup">
             <img src="../../assets/add.png" />
           </div>
@@ -39,7 +39,7 @@
             <span>添加</span>
           </div>
         </el-col>
-        <el-col :span="3" class="memberItem" v-for="(item, index) of groupMemberList" :key="index">
+        <el-col :span="4" class="memberItem" v-for="(item, index) of groupMemberList" :key="index">
           <div class="memberItemImg">
             <img :src="item.avatar" />
           </div>
@@ -58,7 +58,6 @@
             </li>
             <li class="list-group-item">
               <p class="item-label">群名称</p>
-              <!-- <div v-if="editNameShow" class="set-input">{{ vContact.displayName }}</div> -->
               <el-input
                 v-if="editNameShow"
                 class="set-input"
@@ -77,9 +76,22 @@
                 {{ vContact.displayName }}
               </p>
             </li>
+            <li class="list-group-item">
+              <p class="item-label">群聊置顶</p>
+              <el-switch class="switch-btn" v-model="isTop" active-color="#13ce66"> </el-switch>
+            </li>
+            <li class="list-group-item">
+              <p class="item-label">消息免打扰</p>
+              <el-switch class="switch-btn" v-model="isNoPrompt" active-color="#13ce66">
+              </el-switch>
+            </li>
           </ul>
         </el-col>
       </el-row>
+
+      <div class="quit-btn">
+        <el-button type="danger" size="mini" @click="handleQuitGroup">退出群聊</el-button>
+      </div>
     </div>
 
     <el-dialog title="修改群" :visible.sync="addGroupOpen" :modal="false" width="500px">
@@ -151,7 +163,7 @@
         </el-col>
       </el-row>
       <div class="controlDom">
-        <el-button type="primary" @click="addMemberToGroup">确定</el-button>
+        <el-button type="primary" size="small" @click="addMemberToGroup">确认添加</el-button>
       </div>
     </el-dialog>
   </div>
@@ -178,7 +190,10 @@ import {
   Tag,
   Tabs,
   TabPane,
+  Switch,
+  MessageBox,
 } from 'element-ui';
+
 export default {
   name: 'CustomDrawer',
   data() {
@@ -203,6 +218,8 @@ export default {
       vContact: this.contact,
       editNameShow: false,
       initDisplayName: '',
+      isTop: false,
+      isNoPrompt: false,
     };
   },
   props: {
@@ -233,6 +250,7 @@ export default {
     elTag: Tag,
     elTabs: Tabs,
     elTabPane: TabPane,
+    elSwitch: Switch,
     'mark-drawer': MarkDrawer,
     'pending-drawer': PendingDrawer,
     'notice-drawer': NoticeDrawer,
@@ -283,6 +301,8 @@ export default {
 
       this.closeMethod();
     },
+
+    // 有关群聊设置
     handleEditName() {
       this.editNameShow = true;
       this.initDisplayName = this.vContact.displayName;
@@ -298,6 +318,15 @@ export default {
       this.vContact.displayName = this.initDisplayName;
       Message.success('修改成功');
       this.editNameShow = false;
+    },
+    handleQuitGroup() {
+      MessageBox.confirm('确定要退出当前群聊吗？', '提示', { type: 'warning' })
+        .then((_) => {
+          // TODO 从当前群聊中去除该用户 并且关闭当前聊天
+          Message.success('退群成功');
+          done();
+        })
+        .catch((_) => {});
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -476,11 +505,11 @@ p {
   margin: 10px 30px;
   padding: 0;
   font-size: 14px;
-  line-height: 28px;
+  line-height: 32px;
   .list-group-item {
     display: flex;
     .item-label {
-      width: 55px;
+      width: 80px;
       color: #606266;
     }
     .item-value {
@@ -494,6 +523,10 @@ p {
     .set-input {
       width: 220px;
     }
+    .switch-btn {
+      width: 60px;
+      margin: 7px 0 0 15px;
+    }
   }
 }
 
@@ -503,6 +536,7 @@ p {
   border-bottom: 1px solid #eee;
   .memberItem {
     text-align: center;
+    padding: 6px 0;
     .memberItemImg {
       overflow: hidden;
       width: 36px;
@@ -537,34 +571,43 @@ p {
 }
 
 //群组添加用户
-.controlDom {
-  text-align: center;
-  padding: 30px 0 20px;
+
+.addUserDialog {
+  /deep/ .el-dialog__body {
+    padding-top: 50px !important;
+  }
+  .addUserDom {
+    height: 450px;
+    .orgListDom {
+      height: 450px;
+      overflow-y: auto;
+      .orgItem {
+        width: 80%;
+        margin: 10px auto;
+        border: 1px solid #eee;
+        padding: 8px 10px;
+      }
+    }
+    .userListDom {
+      height: 450px;
+      overflow-y: auto;
+      .userItem {
+        // background-color: #eee;
+        margin-top: 10px;
+        height: 38px;
+        line-height: 38px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+    }
+  }
+  .controlDom {
+    text-align: center;
+    padding: 30px 0 20px;
+  }
 }
-.addUserDom {
-  padding-top: 40px;
-  height: 450px;
-  .orgListDom {
-    height: 450px;
-    overflow-y: auto;
-    .orgItem {
-      width: 80%;
-      margin: 10px auto;
-      border: 1px solid #eee;
-      padding: 8px 10px;
-    }
-  }
-  .userListDom {
-    height: 450px;
-    overflow-y: auto;
-    .userItem {
-      // background-color: #eee;
-      margin-top: 10px;
-      height: 38px;
-      line-height: 38px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-  }
+
+.quit-btn {
+  text-align: center;
 }
 </style>

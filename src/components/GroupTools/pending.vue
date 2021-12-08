@@ -43,7 +43,6 @@
               <div v-else class="unchecked-circle"></div>
             </div>
             <div class="main-item">
-              <div class="top-user">{{ item.pendUser }}</div>
               <p
                 class="msg-content"
                 :style="item.status === 1 ? 'text-decoration: line-through;' : ''"
@@ -256,10 +255,6 @@ export default {
         }
         .main-item {
           width: 90%;
-        }
-        .top-user {
-          text-align: right;
-          color: #999;
         }
         .msg-content {
           padding: 4px 0;
