@@ -19,22 +19,27 @@
       width="100%"
     >
       <template #cover>
-        <div class="cover">
+        <div class="im-cover">
           <i class="lemon-icon-message"></i>
-          <p><b>hello </b> 我是易木</p>
+          <p>你好，欢迎进入闪电云聊天系统</p>
         </div>
       </template>
       <template #message-title="contact">
+        <div class="close-line">
+          <i class="el-icon-close"></i>
+        </div>
         <span>{{ contact.displayName }}</span>
         <small
           v-if="contact.id != 'admin'"
           class="more-setting"
-          @click="changeDrawer(contact, $refs.IMUI)"
+          @click="openRightTool(contact, $refs.IMUI)"
         >
-          <!-- <i v-if="!drawerVisibleShow" class="el-icon-s-unfold" />
-          <i v-if="drawerVisibleShow" class="el-icon-s-fold" /> -->
           <i class="iconfont icon-gengduo" title="更多"></i>
         </small>
+        <div v-if="drawerVisibleShow" class="right-toolbar-column">
+          <!-- this.targetUser -->
+          <groupInfo :baseUrl="my_baseUrl" :contact="targetUser" :parentInstance="$refs.IMUI" />
+        </div>
         <br />
       </template>
     </lemon-imui>
@@ -48,21 +53,26 @@
 <script>
 import AddGroup from './AddGroup.vue';
 import CreateGroup from './CreateGroup';
-import groupInfo from './groupInfo';
+import groupInfo from './GroupTools/tools';
 import { Dialog, Image, Message } from 'element-ui';
 import testComponent from './testComponent.vue';
 
 import LemonIMUI from 'lemon-imui';
 import 'lemon-imui/dist/index.css';
-const getTime = () => {
-  return new Date().getTime();
-};
-const generateRandId = () => {
-  return Math.random()
-    .toString(36)
-    .substr(-8);
-};
 import { getUserByOrgid, uploadFile } from '../api/data';
+
+import LemonPopover from 'lemon-imui';
+console.log('LemonPopover', LemonPopover);
+
+// const getTime = () => {
+//   return new Date().getTime();
+// };
+// const generateRandId = () => {
+//   return Math.random()
+//     .toString(36)
+//     .substr(-8);
+// };
+
 export default {
   name: 'imMain',
   props: {
@@ -96,6 +106,7 @@ export default {
     Message,
     groupInfo,
     LemonIMUI,
+    LemonPopover,
   },
   data() {
     return {
@@ -366,7 +377,7 @@ export default {
     },
     handleChangeMenu(menuName) {
       if (this.drawerVisibleShow) {
-        this.$refs.IMUI.changeDrawer();
+        this.$refs.IMUI.closeDrawer();
         this.drawerVisibleShow = false;
       }
 
@@ -424,7 +435,7 @@ export default {
             break;
           case 'RC:InfoNtf':
             messageItem.type = 'event';
-            messageItem.content = item.content.content;
+            messageItem.content = item.content.message;
             break;
         }
 
@@ -541,23 +552,9 @@ export default {
       //   next();
       // }, 1000);
     },
-    //打开抽屉
-    changeDrawer(contact, instance) {
+    //打开右侧工具栏 contact, instance
+    openRightTool() {
       this.drawerVisibleShow = !this.drawerVisibleShow;
-
-      instance.changeDrawer({
-        width: 50,
-        height: '100%',
-        offsetX: -2,
-        offsetY: 0,
-        position: 'right',
-        // inside: true,
-        // offsetX: -280,
-        // offsetY: -100,
-        render: () => {
-          return <groupInfo baseUrl={this.my_baseUrl} contact={contact} />;
-        },
-      });
     },
 
     //添加群组
@@ -709,15 +706,44 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.close-line {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  cursor: pointer;
+  color: #999;
+  &:hover {
+    color: #fff;
+    background-color: rgb(250, 97, 97);
+  }
+  .el-icon-close {
+    font-size: 12px;
+  }
+}
 .more-setting {
   position: absolute;
-  top: 14px;
+  top: 28px;
   right: 14px;
   .icon-gengduo {
     font-size: 20px;
     color: #666;
     cursor: pointer;
   }
+}
+.right-toolbar-column {
+  height: 100%;
+  width: 50px;
+  overflow: auto;
+  position: absolute;
+  right: -50px;
+  top: 0;
+  background-color: #f4f4f4;
+  border: 1px solid #ececec;
+  box-sizing: border-box;
 }
 /deep/ .lemon-menu .lemon-menu__item {
   padding: 10px;
@@ -726,12 +752,6 @@ export default {
   }
 }
 
-/deep/ .lemon-message__content {
-  color: #666;
-}
-/deep/.lemon-message-image .lemon-message__content img {
-  min-width: auto !important;
-}
 /deep/ .editorImg {
   height: 70px;
 }
@@ -741,6 +761,14 @@ export default {
   &:before {
     content: '\2740';
   }
+}
+
+// 消息样式
+/deep/ .lemon-message__content {
+  color: #666;
+}
+/deep/.lemon-message-image .lemon-message__content img {
+  min-width: auto !important;
 }
 /deep/ .lemon-message-text {
   .lemon-message__content {
@@ -762,9 +790,7 @@ export default {
     }
   }
 }
-/deep/ .lemon-message-file .lemon-message__content:hover /deep/ .tool-bar {
-  visibility: visible;
-}
+
 /deep/ .lemon-message--reverse.lemon-message-file .lemon-message__content:before {
   content: ' ';
   position: absolute;
@@ -790,5 +816,18 @@ export default {
 /deep/ .lemon-drawer {
   top: 0 !important;
   border-left: 1px solid #ececec;
+}
+.im-cover {
+  margin-top: 200px;
+  width: 100%;
+  text-align: center;
+  font-size: 16px;
+  .lemon-icon-message {
+    font-size: 35px;
+    margin-bottom: 10px;
+  }
+}
+/deep/ .lemon-drawer {
+  box-shadow: -4px 0px 16px -10px #ccc;
 }
 </style>

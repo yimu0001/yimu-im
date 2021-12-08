@@ -60,7 +60,7 @@ export default {
         font-size: 16px;
         color: #999;
         &:hover {
-          color: rgb(45, 153, 224);
+          color: #0fd547;
         }
       }
     }

@@ -42,7 +42,7 @@ export default {
       font-size: 16px;
       color: #999;
       &:hover {
-        color: rgb(45, 153, 224);
+        color: #0fd547;
       }
     }
   }
@@ -50,7 +50,4 @@ export default {
     visibility: visible;
   }
 }
-// /deep/ .lemon-message--reverse .lemon-message__content:before{
-//       border-left-color: #fff;
-// }
 </style>
