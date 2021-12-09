@@ -4,7 +4,7 @@ import router from './router';
 import store from './store';
 import LemonIMUI from 'lemon-imui';
 import 'lemon-imui/dist/index.css';
-import iconfont from '@/assets/iconfont/iconfont.css';
+// import iconfont from './assets/iconfont/iconfont.css';
 import LemonMessageImage from '@/components/message/image.vue';
 import LemonMessageText from '@/components/message/text.vue';
 import LemonMessageFile from '@/components/message/file.vue';

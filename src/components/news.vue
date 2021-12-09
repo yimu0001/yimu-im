@@ -39,6 +39,7 @@
 
 <script>
 import 'element-ui/lib/theme-chalk/index.css';
+import '../assets/iconfont/iconfont.css';
 import imMain from './im-main';
 import { Avatar, Dialog, Message } from 'element-ui';
 import * as RongIMLib from '@rongcloud/imlib-v4';
