@@ -741,6 +741,8 @@ export default {
   position: absolute;
   top: 28px;
   right: 14px;
+  height: 22px;
+  width: 22px;
   .icon-gengduo {
     font-size: 20px;
     color: #666;
@@ -784,6 +786,7 @@ export default {
   min-width: auto !important;
 }
 /deep/ .lemon-message-text {
+  padding: 0;
   .lemon-message__content {
     padding: 0;
     background: none;

@@ -35,7 +35,7 @@ export default {
     margin-bottom: 8px;
   }
   .tool-bar {
-    padding: 5px 0;
+    padding: 3px 0;
     visibility: hidden;
     .iconfont {
       margin: 5px 5px 0;

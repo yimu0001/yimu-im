@@ -4,10 +4,10 @@ function resolve(dir) {
   return path.resolve(__dirname, dir);
 }
 
-const BASE_URL = process.env.NODE_ENV === 'production' ? '/dist' : '';
+const BASE_URL = process.env.NODE_ENV === 'production' ? '../../' : '';
 
 module.exports = {
-  publicPath: BASE_URL,
+  //   publicPath: BASE_URL,
   pages: {
     index: {
       entry: 'src/main.js',

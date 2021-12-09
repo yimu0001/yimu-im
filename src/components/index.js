@@ -3,17 +3,16 @@
 // import 'lemon-imui/dist/index.css';
 // Vue.use(LemonIMUI);
 import YimuIm from './news.vue';
-
-import LemonMessageImage from '../components/message/image.vue';
-import LemonMessageText from '../components/message/text.vue';
-import LemonMessageFile from '../components/message/file.vue';
+import LemonMessageImage from './message/image.vue';
+import LemonMessageText from './message/text.vue';
+import LemonMessageFile from './message/file.vue';
+import '../assets/iconfont/iconfont.css';
 
 YimuIm.install = function(Vue) {
+  Vue.component(YimuIm.name, YimuIm);
   Vue.component(LemonMessageImage.name, LemonMessageImage);
   Vue.component(LemonMessageText.name, LemonMessageText);
   Vue.component(LemonMessageFile.name, LemonMessageFile);
-
-  Vue.component(YimuIm.name, YimuIm);
 };
 
 export default YimuIm;
