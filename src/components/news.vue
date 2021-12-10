@@ -52,6 +52,16 @@ import {
 import Bus from '../libs/bus';
 import testComponent from '../components/testComponent.vue';
 
+import Vue from 'vue';
+import LemonMessageImage from '@/components/message/image.vue';
+import LemonMessageText from '@/components/message/text.vue';
+import LemonMessageFile from '@/components/message/file.vue';
+setTimeout(() => {
+  Vue.component(LemonMessageImage.name, LemonMessageImage);
+  Vue.component(LemonMessageText.name, LemonMessageText);
+  Vue.component(LemonMessageFile.name, LemonMessageFile);
+}, 0);
+
 export default {
   name: 'yimuIm',
   data() {

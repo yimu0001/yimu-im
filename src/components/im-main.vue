@@ -715,7 +715,7 @@ export default {
   position: absolute;
   top: 0;
   right: 0;
-  padding-top: 2px;
+  padding: 2px 0;
   width: 30px;
   height: 22px;
   line-height: 22px;
