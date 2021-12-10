@@ -1,6 +1,6 @@
 {
   "name": "yimu-im",
-  "version": "0.1.32",
+  "version": "0.1.33",
   "private": false,
   "main": "lib/yimu-im.common.js",
   "scripts": {
