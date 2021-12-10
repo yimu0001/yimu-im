@@ -2,7 +2,9 @@
   <div class="set-box" @click="handleCloseEdit">
     <div class="common-drawer-title">
       <p class="title">群设置</p>
-      <div class="close-btn" @click="closePop"><i class="el-icon-close"></i></div>
+      <div class="close-btn" @click="closePop">
+        <i class="iconfont icon-guanbi" title="关闭"></i>
+      </div>
     </div>
 
     <!-- 如果是个人用户 -->

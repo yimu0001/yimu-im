@@ -2,7 +2,9 @@
   <div class="notice-box">
     <div class="common-drawer-title">
       <p class="title">群公告</p>
-      <div class="close-btn" @click="closePop"><i class="el-icon-close"></i></div>
+      <div class="close-btn" @click="closePop">
+        <i class="iconfont icon-guanbi" title="关闭"></i>
+      </div>
     </div>
     <div class="notice-main">
       <div class="list-block">

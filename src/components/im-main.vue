@@ -26,7 +26,7 @@
       </template>
       <template #message-title="contact">
         <div class="close-line" @click="closeModal">
-          <i class="el-icon-close"></i>
+          <i class="iconfont icon-guanbi1" title="关闭"></i>
         </div>
         <p class="cur-user">{{ contact.displayName }}</p>
         <small
@@ -54,15 +54,12 @@
 import AddGroup from './AddGroup.vue';
 import CreateGroup from './CreateGroup';
 import groupInfo from './GroupTools/tools';
-import { Dialog, Image, Message } from 'element-ui';
-import testComponent from './testComponent.vue';
-
 import LemonIMUI from 'lemon-imui';
-import 'lemon-imui/dist/index.css';
-import { getUserByOrgid, uploadFile } from '../api/data';
-
 import LemonPopover from 'lemon-imui';
-console.log('LemonPopover', LemonPopover);
+import 'lemon-imui/dist/index.css';
+
+import { Dialog, Image, Message } from 'element-ui';
+import { getUserByOrgid, uploadFile } from '../api/data';
 
 // const getTime = () => {
 //   return new Date().getTime();
@@ -718,6 +715,7 @@ export default {
   position: absolute;
   top: 0;
   right: 0;
+  padding-top: 2px;
   width: 30px;
   height: 22px;
   line-height: 22px;
@@ -728,7 +726,7 @@ export default {
     color: #fff;
     background-color: rgb(250, 97, 97);
   }
-  .el-icon-close {
+  .icon-guanbi1 {
     font-size: 12px;
   }
 }

@@ -345,8 +345,11 @@ export default {
               // conversation.destory().then(() => console.log('删除会话成功', item.targetId));
               groupInfos(this.my_baseUrl, item.targetId).then((res) => {
                 if (res.status === 200) {
-                  item.displayName = res.data.data[item.targetId].content;
-                  item.avatar = res.data.data[item.targetId].avatar;
+                  let infos = res.data.data;
+                  let loadOk = infos && infos[item.targetId];
+                  item.displayName = loadOk ? infos[item.targetId].content : '';
+                  item.avatar = loadOk ? infos[item.targetId].avatar : '';
+
                   let userItem = {
                     id: item.targetId,
                     displayName: item.displayName,

@@ -2,7 +2,9 @@
   <div class="pend-box">
     <div class="common-drawer-title">
       <p class="title">待办列表</p>
-      <div class="close-btn" @click="closePop"><i class="el-icon-close"></i></div>
+      <div class="close-btn" @click="closePop">
+        <i class="iconfont icon-guanbi" title="关闭"></i>
+      </div>
     </div>
     <div class="pend-main">
       <el-tabs v-model="activePendKey">
