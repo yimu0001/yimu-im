@@ -10,6 +10,7 @@
       :hide-menu-avatar="hideMenuAvatar"
       :hide-message-name="hideMessageName"
       :hide-message-time="hideMessageTime"
+      :sendKey="setSendKey"
       @change-menu="handleChangeMenu"
       @change-contact="handleChangeContact"
       @pull-messages="handlePullMessages"
@@ -24,6 +25,23 @@
           <p>你好，欢迎进入闪电云聊天系统</p>
         </div>
       </template>
+      <!-- 消息筛选 添加群组 -->
+      <template #sidebar-message-fixedtop>
+        <div class="search-line">
+          <el-input
+            class="search-inp"
+            v-model="historyKeyword"
+            size="mini"
+            placeholder="请输入"
+            clearable
+          >
+            <i slot="prefix" class="iconfont icon-sousuo"></i>
+          </el-input>
+          <i class="iconfont icon-tianjia" title="添加"></i>
+        </div>
+      </template>
+      <!-- 用户群组筛选 -->
+      <!-- <template #sidebar-contact-fixedtop></template> -->
       <template #message-title="contact">
         <div class="close-line" @click="closeModal">
           <i class="iconfont icon-guanbi1" title="关闭"></i>
@@ -42,11 +60,34 @@
         </div>
         <br />
       </template>
+      <template #editor-footer>
+        <div class="bottom-line">
+          <div class="reply-box" v-if="replyObj.type">
+            <el-tag closable type="info" @close="cancelReply">
+              <div v-if="replyObj.type === 'text'" class="rep-text">
+                {{ replyObj.fromUser.displayName }}：{{ replyObj.content }}
+              </div>
+              <div v-if="replyObj.type === 'image'" class="rep-text">
+                {{ replyObj.fromUser.displayName }}：[图片]
+              </div>
+              <div v-if="replyObj.type === 'file'" class="rep-text">
+                {{ replyObj.fromUser.displayName }}：<i class="lemon-icon-attah" />{{
+                  replyObj.fileName
+                }}
+              </div>
+            </el-tag>
+          </div>
+
+          <p class="tips">使用 ctrl + enter 快捷发送消息</p>
+        </div>
+      </template>
     </lemon-imui>
 
     <el-dialog title="查看图片(可再次点击放大)" :visible.sync="outerVisible" width="500px">
       <el-image :src="imgUrl" :preview-src-list="srcList"> </el-image>
     </el-dialog>
+
+    <el-dialog title="创建待办" :visible.sync="pendingPop" width="600px">创建待办</el-dialog>
   </div>
 </template>
 
@@ -58,17 +99,9 @@ import LemonIMUI from 'lemon-imui';
 import LemonPopover from 'lemon-imui';
 import 'lemon-imui/dist/index.css';
 
-import { Dialog, Image, Message } from 'element-ui';
+import { Dialog, Image, Message, Tag, Input } from 'element-ui';
 import { getUserByOrgid, uploadFile } from '../api/data';
-
-// const getTime = () => {
-//   return new Date().getTime();
-// };
-// const generateRandId = () => {
-//   return Math.random()
-//     .toString(36)
-//     .substr(-8);
-// };
+import bus from '@/libs/bus';
 
 export default {
   name: 'imMain',
@@ -99,7 +132,9 @@ export default {
     AddGroup,
     CreateGroup,
     elDialog: Dialog,
+    elInput: Input,
     elImage: Image,
+    elTag: Tag,
     Message,
     groupInfo,
     LemonIMUI,
@@ -198,6 +233,9 @@ export default {
 
       //联系人列表
       all_users: [],
+      replyObj: {}, // id: '', type: '', content: '', displayText: ''
+      historyKeyword: '',
+      pendingPop: false,
     };
   },
   watch: {
@@ -231,6 +269,9 @@ export default {
   mounted() {
     this.getCurrentOrgUsers();
     this.handleMenu();
+    bus.$on('reply', (data) => {
+      this.replyObj = data;
+    });
   },
   methods: {
     handleMenu() {
@@ -273,52 +314,17 @@ export default {
             isBottom: menuItem.isBottom,
             title: menuItem.title,
             unread: menuItem.unread,
-            renderContainer: (abc) => {
-              // let menuItemKey = menuItem.component[menuItem.key]
+            renderContainer: () => {
               let menuItemKey = menuItem.component;
               return <menuItemKey></menuItemKey>;
             },
             render: (menu) => {
-              // let iDom = document.createElement('i')
-              // iDom.className = "menu-icon-"+menuItem.name
-              // let nodeType = iDom.nodeType
-              // let nodeName = iDom.nodeName
-              // let property = iDom.attributes;
-              // let _propertyObj = {}
-              // console.log(property, property.length)
-              // for(let i=0; i< property.length; i++) {
-              //   _propertyObj[property[i].nodeName] = property[i].nodeValue
-              // }
-              // let VIDom = new VNode(nodeName, _propertyObj, undefined, nodeType)
-
-              // return  <i class='lemon-icon-default' />;
               return <i class={menuItem.iconClass}></i>;
             },
           });
         }
       });
-      // [
-      //   {
-      //     name: "messages",
-      //   },
-      //   {
-      //     name: "contacts",
-      //   },
-      //   {
-      //     name: "createGroup",
-      //     title: "添加群组",
-      //     unread: 0,
-      //     renderContainer: () => {
-      //       return (
-      //         <addGroup></addGroup>
-      //       )
-      //     },
-      //     render: menu => {
-      //       return <i class="lemon-icon-group" />;
-      //     },
-      //     isBottom: true,
-      //   },
-      // ]
+
       IMUI.initMenus(menus);
 
       IMUI.initEditorTools([
@@ -337,26 +343,6 @@ export default {
             return <span>Excel</span>;
           },
         },
-        // {
-        //   name: "test1",
-        //   click: () => {
-        //     IMUI.initEditorTools([{ name: "uploadFile" }, { name: "emoji" }]);
-        //   },
-        //   render: () => {
-        //     return <span>重制工具栏</span>;
-        //   },
-        // },
-        // {
-        //   name: "test2",
-        //   isRight: true,
-        //   title: "上传 Excel",
-        //   click: () => {
-        //     alert("点击了 ··· ");
-        //   },
-        //   render: () => {
-        //     return <b>···</b>;
-        //   },
-        // },
       ]);
       // IMUI.initEmoji(EmojiData);
       IMUI.setLastContentRender('text', (message) => {
@@ -380,6 +366,10 @@ export default {
         this.$refs.IMUI.closeDrawer();
         this.drawerVisibleShow = false;
       }
+    },
+    setSendKey(e) {
+      // return e.keyCode == 13;
+      return e.keyCode == 13 && e.ctrlKey;
     },
     handleChangeMenu(menuName) {
       this.closeRightDrawer();
@@ -412,7 +402,6 @@ export default {
     //历史记录
     pullHistore(list, hasMore, next, otheruser) {
       let messages = list.map((item) => {
-        let messageContent = '';
         let messageItem = {
           id: item.messageUId,
           status: 'succeed',
@@ -421,8 +410,15 @@ export default {
           content: '',
           toContactId: item.targetId,
           fromUser: item.messageDirection == '1' ? this.user : otheruser,
+          canIncludeExpansion: item.canIncludeExpansion || false,
+          expansion: item.expansion || {},
         };
         switch (item.messageType) {
+          case 'RC:ReferenceMsg':
+            messageItem.type = 'text';
+            const { content, objName, referMsg, referMsgUserId } = item.content;
+            messageItem = { ...messageItem, content, objName, referMsg, referMsgUserId };
+            break;
           case 'RC:TxtMsg':
             messageItem.type = 'text';
             messageItem.content = item.content.content;
@@ -475,38 +471,77 @@ export default {
     handleMenuAvatarClick() {
       console.log('Event:menu-avatar-click');
     },
+
+    cancelReply() {
+      this.replyObj = {};
+      console.log('取消引用', this.replyObj);
+    },
+    updateReplyMessage(data) {
+      const { IMUI } = this.$refs;
+      const messages = IMUI.getCurrentMessages();
+      if (messages.length > 0) {
+        const message = messages[messages.length - 1];
+        const { referMsg, referMsgUserId } = data.content;
+        if (referMsg) {
+          const updateMsg = { ...message, referMsg, referMsgUserId };
+          IMUI.updateMessage(updateMsg);
+          IMUI.messageViewToBottom();
+        }
+      }
+    },
     handleSend(message, next, file) {
-      let conversation_type = '';
-      let messageContent = {};
+      let msg = {
+        target_id: this.targetUser.id,
+        isGroup: this.targetUser.isGroup ? this.targetUser.isGroup : false,
+        fun: (data) => {
+          if (data.status !== 'failed' && !!this.replyObj.type) {
+            this.updateReplyMessage(data);
+            this.replyObj = {};
+          }
+
+          next();
+        },
+      };
+
       switch (message.type) {
         case 'text':
-          conversation_type = 'RC:TxtMsg';
-          messageContent = {
-            content: message.content,
-          };
-          this.$emit('handleSendMessage', {
-            target_id: this.targetUser.id,
-            isGroup: this.targetUser.isGroup ? this.targetUser.isGroup : false,
-            conversation_type,
-            content: messageContent,
-            fun: next,
-          });
+          let isReply = !!this.replyObj.type;
+          // 回复消息
+          if (isReply) {
+            const { id, type, content, fromUser, fileName = '' } = this.replyObj;
+            this.$emit('handleSendMessage', {
+              ...msg,
+              conversation_type: 'RC:ReferenceMsg',
+              content: {
+                content: message.content,
+              },
+              referMsgUserId: fromUser.id,
+              referMsg: { id, type, content, fileName, displayName: fromUser.displayName },
+            });
+          } else {
+            this.$emit('handleSendMessage', {
+              ...msg,
+              conversation_type: 'RC:TxtMsg',
+              content: {
+                content: message.content,
+              },
+            });
+          }
+
           break;
         case 'image':
-          conversation_type = 'RC:ImgMsg';
           uploadFile(this.my_baseUrl, file)
             .then((res) => {
+              // 还有图片现在上传结束消息那展示的是blob类型的数据，为了方便回复，建议直接加一个修改该条消息内容改成url/
               if (res.status === 200) {
-                messageContent = {
-                  content: res.data.data.require_thumb,
-                  imageUri: res.data.data.file,
-                };
+                // require_thumb(base64) file(url)
+                const { file } = res.data.data;
                 this.$emit('handleSendMessage', {
-                  target_id: this.targetUser.id,
-                  isGroup: this.targetUser.isGroup ? this.targetUser.isGroup : false,
-                  conversation_type,
-                  content: messageContent,
-                  fun: next,
+                  ...msg,
+                  conversation_type: 'RC:ImgMsg',
+                  content: {
+                    imageUri: file,
+                  },
                 });
               } else {
                 Message.error(res.data.msg);
@@ -517,25 +552,14 @@ export default {
             });
           break;
         case 'file':
-          conversation_type = 'RC:FileMsg';
-          console.log(message, file);
-          let { size, type, name } = file;
-
+          let { name, size, type } = file;
           uploadFile(this.my_baseUrl, file)
             .then((res) => {
               if (res.status === 200) {
-                messageContent = {
-                  name,
-                  size,
-                  type,
-                  fileUrl: res.data.data.file,
-                };
                 this.$emit('handleSendMessage', {
-                  target_id: this.targetUser.id,
-                  isGroup: this.targetUser.isGroup ? this.targetUser.isGroup : false,
-                  conversation_type,
-                  content: messageContent,
-                  fun: next,
+                  ...msg,
+                  conversation_type: 'RC:FileMsg',
+                  content: { name, size, type, fileUrl: res.data.data.file },
                 });
               } else {
                 Message.error(res.data.msg);
@@ -555,7 +579,7 @@ export default {
 
       // setTimeout(() => {
       //   next();
-      // }, 1000);
+      // }, 500);
     },
     //打开右侧工具栏 contact, instance
     openRightTool() {
@@ -759,7 +783,7 @@ export default {
   box-sizing: border-box;
 }
 /deep/ .lemon-menu .lemon-menu__item {
-  padding: 10px;
+  padding: 8px 10px;
   /deep/ .iconfont {
     font-size: 24px;
   }
@@ -777,6 +801,14 @@ export default {
 }
 
 // 消息样式
+/deep/ .lemon-message {
+  padding: 5px 0;
+}
+/deep/ .lemon-message__title {
+  overflow: hidden;
+  padding-bottom: 0;
+  margin-bottom: 4px;
+}
 /deep/ .lemon-message__content {
   color: #666;
 }
@@ -843,5 +875,50 @@ export default {
 }
 /deep/ .lemon-drawer {
   box-shadow: -4px 0px 16px -10px #ccc;
+}
+.bottom-line {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.reply-box {
+  width: 300px;
+  margin-right: 20px;
+  line-height: 24px;
+  box-sizing: border-box;
+  .rep-text {
+    display: inline-block;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /deep/ .el-tag__close {
+    margin-top: -18px;
+  }
+}
+
+.search-line {
+  padding: 14px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ecebeb;
+  .search-inp {
+    width: 80%;
+  }
+  .icon-sousuo {
+    margin-left: 3px;
+    font-size: 15px;
+    color: #999;
+    line-height: 28px;
+  }
+  .icon-tianjia {
+    cursor: pointer;
+    width: 20%;
+    text-align: center;
+    font-size: 22px;
+    color: #999;
+  }
 }
 </style>

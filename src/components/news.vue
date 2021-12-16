@@ -41,7 +41,7 @@
 import 'element-ui/lib/theme-chalk/index.css';
 import imMain from './im-main';
 import { Avatar, Dialog, Message } from 'element-ui';
-import * as RongIMLib from '@rongcloud/imlib-v4';
+import * as RongIMLib from '@rongcloud/imlib-next';
 import {
   registerUser,
   getCurrentUser,
@@ -61,6 +61,16 @@ setTimeout(() => {
   Vue.component(LemonMessageText.name, LemonMessageText);
   Vue.component(LemonMessageFile.name, LemonMessageFile);
 }, 0);
+
+const Type_Key_Obj = {
+  'RC:ReferenceMsg': { type: 'text', key: 'content' },
+  'RC:ImgMsg': { type: 'image', key: 'imageUri' },
+  'RC:TxtMsg': { type: 'text', key: 'content' },
+  'RC:VcMsg': { type: 'text', key: null, content: '视频通话' },
+  'RC:InfoNtf': { type: 'event', key: 'message' },
+  'RC:FileMsg': { type: 'file', key: 'name' },
+};
+const Default_Content = { type: 'text', key: null, content: '未知消息' };
 
 export default {
   name: 'yimuIm',
@@ -90,6 +100,8 @@ export default {
         { name: 'contacts', isBottom: false },
         { name: 'createGroup', isBottom: true },
       ],
+      loadStep: 0,
+      conversationObj: {},
     };
   },
   props: {
@@ -134,9 +146,15 @@ export default {
       },
       immediate: true,
     },
+    loadStep(step) {
+      if (step === 2) {
+        this.messageList = Object.values(this.conversationObj);
+        this.getCurrentOrgUsers();
+      }
+    },
   },
   mounted() {
-    this.getCurrentUser();
+    this.getAllCurrentUser();
     this.im = RongIMLib.init({ appkey: 'cpj2xarlctfmn', connectType: 'comet' });
     this.imWatcher();
 
@@ -144,175 +162,67 @@ export default {
 
     Bus.$on('createGroupOk', (id) => {
       setTimeout(() => {
-        this.im.Conversation.getList({
-          count: 10,
-          startTime: 0,
-          order: 0,
-        }).then((conversationList) => {
-          console.log('获取会话列表成功', conversationList);
-          conversationList.forEach((item) => {
-            if (item.targetId == id) {
-              // this.getConnetList()
-              groupInfos(this.my_baseUrl, id).then((res) => {
-                if (res.status === 200) {
-                  newConversation.displayName = res.data.data[id].content;
-                  newConversation.avatar = res.data.data[id].avatar;
-                  let userItem = {
-                    id: id,
-                    displayName: newConversation.displayName,
-                    avatar: newConversation.avatar,
-                    index: '[2]群组',
-                    unread: newConversation.unreadMessageCount,
-                    lastSendTime: newConversation.latestMessage.sentTime,
-                    lastContent: {},
-                    isGroup: true,
-                  };
-                  if (newConversation.latestMessage.messageType == 'RC:ImgMsg') {
-                    userItem.lastContent = {
-                      type: 'image',
-                      content: item.latestMessage.content.imageUri,
-                    };
-                  } else if (newConversation.latestMessage.messageType == 'RC:TxtMsg') {
-                    userItem.lastContent = {
-                      type: 'text',
-                      content: item.latestMessage.content.content,
-                    };
-                  } else if (newConversation.latestMessage.messageType == '"RC:VcMsg"') {
-                    userItem.lastContent = { type: 'text', content: '视频通话' };
-                  } else {
-                    console.log(newConversation.latestMessage.messageType);
-                    userItem.lastContent = { type: 'text', content: '未知消息' };
-                  }
-                  console.log(userItem);
-                  this.$refs.imMain.addNewContact(userItem);
-                }
-              });
-            }
-          });
-        });
+        // 获取会话列表
+        this.getNewConnectList(id);
       }, 500);
     });
   },
   methods: {
     imWatcher() {
-      let im = this.im;
-      let _this = this;
-      _this.im.watch({
-        // 监听会话列表变更事件
-        conversation(event) {
-          // 假定存在 getExistedConversationList 方法，以获取当前已存在的会话列表数据
-          console.log(event);
-          // _this.getConnetList()
-          // 发生变更的会话列表
-          // const updatedConversationList = event.updatedConversationList;
-          // 通过 im.Conversation.merge 计算最新的会话列表
-          // const latestConversationList = this.im.Conversation.merge({ conversationList, updatedConversationList })
-        },
-        // 监听消息通知
-        message(event) {
-          // 新接收到的消息内容
-          const message = event.message;
-          let messageData = {};
-          switch (message.messageType) {
-            case 'RC:TxtMsg':
-              messageData = {
-                id: message.messageUId,
-                status: 'succeed',
-                type: 'text',
-                sendTime: message.sentTime,
-                content: message.content.content,
-                toContactId: message.targetId,
-                fromUser: {
-                  id: message.content.user.id,
-                  displayName: message.content.user.name,
-                  avatar: message.content.user.portrait,
-                },
-              };
-              break;
-            case 'RC:ImgMsg':
-              messageData = {
-                id: message.messageUId,
-                status: 'succeed',
-                type: 'image',
-                sendTime: message.sentTime,
-                content: message.content.imageUri,
-                toContactId: message.targetId,
-                fromUser: {
-                  id: message.content.user.id,
-                  displayName: message.content.user.name,
-                  avatar: message.content.user.portrait,
-                },
-              };
-              break;
-            case 'RC:InfoNtf':
-              messageData = {
-                id: message.messageUId,
-                status: 'succeed',
-                type: 'event',
-                sendTime: message.sentTime,
-                content: message.content.msg,
-                toContactId: message.targetId,
-                fromUser: {
-                  id: message.content.user.id || -1,
-                  displayName: message.content.user.name || '系统通知',
-                  avatar:
-                    message.content.user.portrait || 'https://im.shandian8.com/public/notify.png',
-                },
-              };
-          }
-          !_this.showList &&
-            Message({
-              message: '`${message.content.user.name}给您发了条消息`',
-              center: true,
-              offset: 1000,
-            });
-          if (_this.$refs.imMainDom) {
-            _this.$refs.imMainDom.appendMessage(messageData);
-          } else {
-            messageData.id && _this.saveMessageList.push(messageData);
-          }
-
-          // IMUI.appendMessage(data);
-        },
-        // 监听 IM 连接状态变化
-        status(event) {
-          console.log('connection status:', event.status);
-        },
-        // 监听聊天室 KV 数据变更
-        chatroom(event) {
-          /**
-           * 聊天室 KV 存储数据更新
-           * @example
-           * [
-           *  {
-           *    "key": "name",
-           *    "value": "我是小融融",
-           *    "timestamp": 1597591258338,
-           *    "chatroomId": "z002",
-           *    "type": 1 // 1: 更新（ 含:修改和新增 ）、2: 删除
-           *  },
-           * ]
-           */
-          const updatedEntries = event.updatedEntries;
-        },
-        expansion(event) {
-          /**
-           * 更新的消息拓展数据
-           * @example {
-           *    expansion: { key: 'value' },      // 设置或更新的扩展值
-           *    messageUId: 'URIT-URIT-ODMF-DURR' // 设置或更新扩展的消息 uid
-           * }
-           */
-          const updatedExpansion = event.updatedExpansion;
-          /**
-           * 删除的消息拓展数据
-           * @example {
-           *    deletedKeys: ['key1', 'key2'],    // 设置或更新的扩展值
-           *    messageUId: 'URIT-URIT-ODMF-DURR' // 设置或更新扩展的消息 uid
-           * }
-           */
-          const deletedExpansion = event.deletedExpansion;
-        },
+      // 添加事件监听
+      const Events = RongIMLib.Events;
+      RongIMLib.addEventListener(Events.CONNECTING, function() {
+        console.log('正在链接服务器');
+      });
+      RongIMLib.addEventListener(Events.CONNECTED, function() {
+        console.log('已经链接到服务器');
+      });
+      RongIMLib.addEventListener(Events.MESSAGES, function(messages) {
+        console.log(messages);
+        let message = messages; // TODO
+        console.log('新接收到的消息内容', message);
+        let userinfo = message.content.user;
+        let messageData = {
+          id: message.messageUId,
+          status: 'succeed',
+          sendTime: message.sentTime,
+          toContactId: message.targetId,
+          fromUser: {
+            id: userinfo.id,
+            displayName: userinfo.name,
+            avatar: userinfo.portrait,
+          },
+        };
+        switch (message.messageType) {
+          case 'RC:TxtMsg':
+            messageData = { ...messageData, type: 'text', content: message.content.content };
+            break;
+          case 'RC:ImgMsg':
+            messageData = { ...messageData, type: 'image', content: message.content.imageUri };
+            break;
+          case 'RC:InfoNtf':
+            messageData = {
+              ...messageData,
+              type: 'event',
+              content: message.content.msg,
+              fromUser: {
+                id: userinfo.id || -1,
+                displayName: userinfo.name || '系统通知',
+                avatar: userinfo.portrait || 'https://im.shandian8.com/public/notify.png',
+              },
+            };
+        }
+        !this.showList &&
+          Message({
+            message: '`${message.content.user.name}给您发了条消息`',
+            center: true,
+            offset: 1000,
+          });
+        if (this.$refs.imMainDom) {
+          this.$refs.imMainDom.appendMessage(messageData);
+        } else {
+          messageData.id && this.saveMessageList.push(messageData);
+        }
       });
     },
     connectRongyun() {
@@ -321,15 +231,15 @@ export default {
           if (res.status === 200) {
             this.user_token = res.data.data.token;
             this.user_id = res.data.data.userId;
-            this.im
-              .connect({ token: this.user_token })
-              .then((user) => {
-                console.log('链接成功, 链接用户 id 为: ', user.id);
+
+            RongIMLib.connect(this.user_token).then((res) => {
+              if (res.code === RongIMLib.ErrorCode.SUCCESS) {
+                console.log('链接成功, 链接用户 id 为: ', res.data.userId);
                 this.getConnetList();
-              })
-              .catch((error) => {
-                console.log('链接失败: ', error.code, error.msg);
-              });
+              } else {
+                console.warn('链接失败, code:', res.code);
+              }
+            });
           } else {
             Message.error(res.data.msg);
           }
@@ -339,197 +249,179 @@ export default {
         });
     },
     getConnetList() {
-      this.im.Conversation.getList()
-        .then((conversationList) => {
-          console.log('获取会话列表成功', conversationList);
-          this.firstConversationId = conversationList[0] ? conversationList[0].targetId : undefined;
-          // type类型注解 1系统
-          // target => id
-          let exit_message_list = [];
-          for (let item of conversationList) {
-            if (item.type == 3) {
-              // const conversation = this.im.Conversation.get({
-              //   targetId: item.targetId,
-              //   type: RongIMLib.CONVERSATION_TYPE.PRIVATE
-              // });
-              // conversation.destory().then(() => console.log('删除会话成功', item.targetId));
-              groupInfos(this.my_baseUrl, item.targetId).then((res) => {
-                if (res.status === 200) {
-                  let infos = res.data.data;
-                  let loadOk = infos && infos[item.targetId];
-                  item.displayName = loadOk ? infos[item.targetId].content : '';
-                  item.avatar = loadOk ? infos[item.targetId].avatar : '';
-
-                  let userItem = {
-                    id: item.targetId,
-                    displayName: item.displayName,
-                    avatar: item.avatar,
-                    index: '[2]群组',
-                    unread: item.unreadMessageCount,
-                    lastSendTime: item.latestMessage.sentTime,
-                    lastContent: {},
-                    isGroup: true,
-                  };
-                  if (item.latestMessage.messageType == 'RC:ImgMsg') {
-                    userItem.lastContent = {
-                      type: 'image',
-                      content: item.latestMessage.content.imageUri,
-                    };
-                  } else if (item.latestMessage.messageType == 'RC:TxtMsg') {
-                    userItem.lastContent = {
-                      type: 'text',
-                      content: item.latestMessage.content.content,
-                    };
-                  } else if (item.latestMessage.messageType == 'RC:VcMsg') {
-                    userItem.lastContent = { type: 'text', content: '视频通话' };
-                  } else if (item.latestMessage.messageType == 'RC:InfoNtf') {
-                    userItem.lastContent = {
-                      type: 'event',
-                      content: item.latestMessage.content.message,
-                    };
-                  } else if (item.latestMessage.messageType == 'RC:FileMsg') {
-                    userItem.lastContent = {
-                      type: 'file',
-                      content: item.latestMessage.content.namne,
-                    };
-                  } else {
-                    userItem.lastContent = { type: 'text', content: '未知消息' };
-                  }
-                  exit_message_list.push(userItem);
-                } else {
-                  Message.error(res.data.msg);
-                }
-              });
-            } else {
-              if (Number(item.targetId) > 0) {
-                getTargetInfoById(this.my_baseUrl, item.targetId)
-                  .then((res) => {
-                    if (res.status === 200 && res.data.data.length) {
-                      item.displayName = res.data.data[0].nickname;
-                      item.avatar = res.data.data[0].avatar;
-                      let userItem = {
-                        id: item.targetId,
-                        displayName: item.displayName,
-                        avatar: item.avatar,
-                        index: '[1]群组',
-                        unread: item.unreadMessageCount,
-                        lastSendTime: item.latestMessage.sentTime,
-                        lastContent: {},
-                      };
-                      if (item.latestMessage.messageType == 'RC:ImgMsg') {
-                        userItem.lastContent = {
-                          type: 'image',
-                          content: item.latestMessage.content.imageUri,
-                        };
-                      } else if (item.latestMessage.messageType == 'RC:TxtMsg') {
-                        userItem.lastContent = {
-                          type: 'text',
-                          content: item.latestMessage.content.content,
-                        };
-                      } else if (item.latestMessage.messageType == '"RC:VcMsg"') {
-                        userItem.lastContent = { type: 'text', content: '视频通话' };
-                      } else if (item.latestMessage.messageType == 'RC:InfoNtf') {
-                        userItem.lastContent = {
-                          type: 'event',
-                          content: item.latestMessage.content.message,
-                        };
-                      } else if (item.latestMessage.messageType == 'RC:FileMsg') {
-                        userItem.lastContent = {
-                          type: 'file',
-                          content: item.latestMessage.content.namne,
-                        };
-                      } else {
-                        userItem.lastContent = { type: 'text', content: '未知消息' };
-                      }
-                      exit_message_list.push(userItem);
-                    } else if (res.status === 200 && !res.data.data.length) {
-                      let userItem = {
-                        id: item.targetId,
-                        displayName: '未知用户',
-                        avatar: 'https://im.shandian8.com/public/shenhe.png',
-                        index: '[1]群组',
-                        unread: item.unreadMessageCount,
-                        lastSendTime: item.latestMessage.sentTime,
-                        lastContent: {},
-                      };
-                      if (item.latestMessage.messageType == 'RC:ImgMsg') {
-                        userItem.lastContent = {
-                          type: 'image',
-                          content: item.latestMessage.content.imageUri,
-                        };
-                      } else if (item.latestMessage.messageType == 'RC:TxtMsg') {
-                        userItem.lastContent = {
-                          type: 'text',
-                          content: item.latestMessage.content.content,
-                        };
-                      } else if (item.latestMessage.messageType == '"RC:VcMsg"') {
-                        userItem.lastContent = { type: 'text', content: '视频通话' };
-                      } else if (item.latestMessage.messageType == 'RC:InfoNtf') {
-                        userItem.lastContent = {
-                          type: 'event',
-                          content: item.latestMessage.content.message,
-                        };
-                      } else if (item.latestMessage.messageType == 'RC:FileMsg') {
-                        userItem.lastContent = {
-                          type: 'file',
-                          content: item.latestMessage.content.namne,
-                        };
-                      } else {
-                        userItem.lastContent = { type: 'text', content: '未知消息' };
-                      }
-                      exit_message_list.push(userItem);
-                    }
-                  })
-                  .catch((err) => {
-                    console.log(err);
-                  });
-              } else {
-                if (item.targetId === '-1') {
-                  item.displayName = '系统审核';
-                  item.avatar = 'https://im.shandian8.com/public/shenhe.png';
-                } else if (item.targetId === '-2') {
-                  item.displayName = '通知提醒';
-                  item.avatar = 'https://im.shandian8.com/public/notify.png';
-                } else if (item.targetId === '-3') {
-                  item.displayName = '内容监控';
-                  item.avatar = 'https://im.shandian8.com/public/shenhe.png';
-                }
-                let userItem = {
-                  id: item.targetId,
-                  displayName: item.displayName,
-                  avatar: item.avatar,
-                  index: '[1]群组',
-                  unread: item.unreadMessageCount,
-                  lastSendTime: item.latestMessage.sentTime,
-                  lastContent: { type: 'text', content: item.latestMessage.content.content },
-                };
-                // if(item.latestMessage.content.messageType == 'RC:ImgMsg'){
-                //   userItem.lastContent = '[图片]'
-                // }
-                exit_message_list.push(userItem);
-              }
-              // const conversation = this.im.Conversation.get({
-              //   targetId: item.targetId,
-              //   type: RongIMLib.CONVERSATION_TYPE.GROUP
-              // });
-              // conversation.destory().then(() => console.log('删除会话成功'+item.targetId));
-            }
+      // 获取会话列表
+      RongIMLib.getConversationList()
+        .then(({ code, data: conversationList }) => {
+          if (code === 0) {
+            console.log('获取会话列表成功', conversationList);
+            this.firstConversationId = conversationList[0]?.targetId;
+            const { groupList, singleList, noticeList } = this.classifyConnectList(
+              conversationList
+            );
+            this.$nextTick(() => {
+              this.handleConnectList(groupList, singleList, noticeList);
+            });
+          } else {
+            console.log('获取会话列表失败: ', error.code, error.msg);
           }
-          // if(this.messageList.length){
-          //   setTimeout(() => {
-          //     console.log('sjkdkljasdjklsadkjlsadfjklfjklsda', exit_message_list)
-          //     this.messageList = exit_message_list
-          //   }, 1500)
-          // } else {
-          this.messageList = exit_message_list;
-          // }
-          this.getCurrentOrgUsers();
         })
-        .catch((error) => {
-          console.log('获取会话列表失败: ', error, error.code, error.msg);
+        .catch((err) => {
+          console.log('获取会话列表失败err', err);
         });
     },
-    getCurrentUser() {
+
+    classifyConnectList(conversationList) {
+      this.conversationObj = {};
+      conversationList.forEach((it) => {
+        this.conversationObj[it.targetId] = it;
+      });
+      let groupList = [];
+      let singleList = [];
+      let noticeList = [];
+
+      conversationList.forEach((item) => {
+        if (item.conversationType === 3) {
+          groupList.push(item);
+        }
+        if (item.conversationType === 1) {
+          if (Number(item.targetId) > 0) {
+            singleList.push(item);
+          } else {
+            noticeList.push(item);
+          }
+        }
+      });
+
+      return { groupList, singleList, noticeList };
+    },
+    handleConnectList(groupList, singleList, noticeList) {
+      let groupIds = groupList.map(({ targetId }) => targetId).join();
+      let singleIds = singleList.map(({ targetId }) => targetId).join();
+      this.loadStep = 0;
+
+      // 群组会话
+      groupInfos(this.my_baseUrl, groupIds).then((res) => {
+        if (res.status === 200) {
+          let infos = res.data.data;
+          Object.entries(infos).forEach(([id, { content, avatar }]) => {
+            let userItem = {
+              ...this.conversationObj[id],
+              displayName: content || '选题群组',
+              avatar,
+            };
+            this.conversationObj[id] = this.handleChatInfo(userItem, true);
+          });
+        } else {
+          Message.error(res.data.msg);
+        }
+        this.loadStep += 1;
+      });
+
+      // 个人会话
+      getTargetInfoById(this.my_baseUrl, singleIds)
+        .then((res) => {
+          if (res.status === 200) {
+            let list = res.data.data;
+            list.forEach(({ id, nickname, avatar }) => {
+              let userItem = {
+                ...this.conversationObj[id],
+                displayName: nickname || '未知用户',
+                avatar: avatar || 'https://im.shandian8.com/public/shenhe.png',
+              };
+              this.conversationObj[id] = this.handleChatInfo(userItem, false);
+            });
+          }
+          this.loadStep += 1;
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+
+      // 通知消息
+      noticeList.forEach((item) => {
+        this.conversationObj[item.targetId] = this.handleNoticeInfo(item);
+      });
+    },
+    handleChatInfo(item, isGroup = false) {
+      let userItem = {
+        id: item.targetId,
+        displayName: item.displayName,
+        avatar: item.avatar,
+        index: isGroup ? '[2]群组' : '[1]群组',
+        unread: item.unreadMessageCount,
+        lastSendTime: item.latestMessage.sentTime,
+        lastContent: {},
+        isGroup,
+      };
+      let { messageType, content } = item.latestMessage;
+      let obj = Type_Key_Obj[messageType] || Default_Content;
+      userItem.lastContent = {
+        type: obj.type,
+        content: obj.key ? content[obj.key] : obj.content,
+      };
+
+      return userItem;
+    },
+    handleNoticeInfo(item) {
+      // 通知
+      if (item.targetId === '-1') {
+        item.displayName = '系统审核';
+        item.avatar = 'https://im.shandian8.com/public/shenhe.png';
+      } else if (item.targetId === '-2') {
+        item.displayName = '通知提醒';
+        item.avatar = 'https://im.shandian8.com/public/notify.png';
+      } else if (item.targetId === '-3') {
+        item.displayName = '内容监控';
+        item.avatar = 'https://im.shandian8.com/public/shenhe.png';
+      }
+      let userItem = {
+        id: item.targetId,
+        displayName: item.displayName,
+        avatar: item.avatar,
+        index: '[1]群组',
+        unread: item.unreadMessageCount,
+        lastSendTime: item.latestMessage.sentTime,
+        lastContent: { type: 'text', content: item.latestMessage.content.content },
+      };
+
+      return userItem;
+    },
+
+    // 删除会话 暂时
+    deleteConnect(groupList, singleList, noticeList) {
+      let groupIds = groupList.map(({ targetId }) => targetId);
+      let singleIds = singleList.map(({ targetId }) => targetId);
+      let noticeIds = noticeList.map(({ targetId }) => targetId);
+      let ids = [...singleIds, ...noticeIds];
+      groupIds.forEach((id) => {
+        RongIMLib.removeConversation({
+          conversationType: 3,
+          targetId: id,
+        }).then((res) => {
+          // 删除指定会话成功
+          if (res.code === 0) {
+            console.log(res.code);
+          } else {
+            console.log(res.code, res.msg);
+          }
+        });
+      });
+      ids.forEach((id) => {
+        RongIMLib.removeConversation({
+          conversationType: 1,
+          targetId: id,
+        }).then((res) => {
+          // 删除指定会话成功
+          if (res.code === 0) {
+            console.log(res.code);
+          } else {
+            console.log(res.code, res.msg);
+          }
+        });
+      });
+    },
+
+    getAllCurrentUser() {
       getCurrentUser(this.my_baseUrl)
         .then((res) => {
           if (res.status === 200) {
@@ -540,28 +432,88 @@ export default {
           console.log(err);
         });
     },
-    handleSendMessage(item) {
-      let { target_id, conversation_type, content, fun, isGroup, imageUri } = item;
-      const conversation = this.im.Conversation.get({
-        targetId: target_id,
-        type: isGroup ? RongIMLib.CONVERSATION_TYPE.GROUP : RongIMLib.CONVERSATION_TYPE.PRIVATE,
+    // 创建群组之后 获取会话列表
+    getNewConnectList(id) {
+      RongIMLib.getConversationList().then(({ code, data: conversationList }) => {
+        if (code === 0) {
+          console.log('创建群组之后 获取会话列表', conversationList);
+          let curConverse = conversationList.filter((item) => item.targetId == id);
+
+          groupInfos(this.my_baseUrl, id).then((res) => {
+            if (res.status === 200) {
+              const { content: displayName, avatar } = res.data.data[id];
+              let { messageType, content, sentTime } = curConverse.latestMessage;
+              let obj = Type_Key_Obj[messageType] || Default_Content;
+              let userItem = {
+                id: id,
+                displayName,
+                avatar,
+                index: '[2]群组',
+                unread: curConverse.unreadMessageCount,
+                lastSendTime: sentTime,
+                lastContent: {
+                  type: obj.type,
+                  content: obj.key ? content[obj.key] : obj.content,
+                },
+                isGroup: true,
+              };
+              this.$refs.imMain.addNewContact(userItem);
+            }
+          });
+        } else {
+          console.log('获取会话列表失败: ', error.code, error.msg);
+        }
       });
-      // 向会话内发消息
-      conversation
-        .send({
-          // 消息类型，其中 RongIMLib.MESSAGE_TYPE 为 IMLib 内部的内置消息类型常量定义
-          messageType: conversation_type, // 'RC:TxtMsg'
-          // 消息内容
-          content: content,
-        })
-        .then(function(message) {
-          console.log(fun);
-          fun();
-        })
-        .catch((error) => {
-          console.log('发送文字消息失败', error.code, error.msg);
-          fun({ status: 'failed' });
+    },
+    handleSendMessage(item) {
+      let {
+        target_id,
+        conversation_type,
+        content, //  object
+        fun,
+        isGroup,
+        referMsgUserId,
+        referMsg,
+      } = item;
+
+      // 指定消息发送的目标会话
+      const conversation = {
+        targetId: target_id,
+        type: isGroup ? RongIMLib.ConversationType.GROUP : RongIMLib.ConversationType.PRIVATE,
+      };
+
+      // 类型 conversation_type 'RC:ReferenceMsg' 'RC:TxtMsg' 'RC:ImgMsg' 'RC:FileMsg' 'RC:InfoNtf'
+      let message = null;
+      if (conversation_type === 'RC:ReferenceMsg') {
+        message = new RongIMLib.ReferenceMessage({
+          referMsgUserId,
+          referMsg,
+          content: content.content,
+          objName: RongIMLib.MessageType.TEXT,
         });
+      } else if (conversation_type === 'RC:TxtMsg') {
+        message = new RongIMLib.TextMessage(content);
+      } else if (conversation_type === 'RC:ImgMsg') {
+        // Base64改为线上链接url
+        message = new RongIMLib.ImageMessage({
+          imageUri: content.imageUri || '', // 图片的远程访问地址
+        });
+      } else if (conversation_type === 'RC:FileMsg') {
+        message = new RongIMLib.FileMessage(content);
+      } else if (conversation_type === 'RC:InfoNtf') {
+        // web端不会主动发送这种类型消息
+      }
+
+      // 发送消息
+      RongIMLib.sendMessage(conversation, message).then(({ code, data }) => {
+        if (code === 0) {
+          // console.log('消息发送成功：', data);
+          fun(data);
+        } else {
+          console.log('消息发送失败：', code);
+          fun({ status: 'failed' });
+        }
+      });
     },
     handleOpenedDialog() {
       console.log(this.saveMessageList);
@@ -571,16 +523,12 @@ export default {
       this.saveMessageList = [];
     },
     handlePullMessages(args) {
-      const conversation = this.im.Conversation.get({
-        targetId: args.contact.id,
-        type: args.contact.isGroup
-          ? RongIMLib.CONVERSATION_TYPE.GROUP
-          : RongIMLib.CONVERSATION_TYPE.PRIVATE,
-      });
-      const otheruser = {
-        id: args.contact.id,
-        displayName: args.contact.displayName,
-        avatar: args.contact.avatar,
+      const { id, isGroup, displayName, avatar } = args.contact;
+      const conversation = {
+        targetId: id,
+        conversationType: isGroup
+          ? RongIMLib.ConversationType.GROUP
+          : RongIMLib.ConversationType.PRIVATE,
       };
       const option = {
         // 获取历史消息的时间戳，默认为 0，表示从当前时间获取
@@ -588,13 +536,16 @@ export default {
         // 获取条数，有效值 1-20，默认为 20
         count: 20,
       };
-      conversation
-        .getMessages(option)
-        .then((result) => {
-          const list = result.list; // 获取到的消息列表
-          const hasMore = result.hasMore; // 是否还有历史消息可获取
-          console.log('获取历史消息成功', list, hasMore);
-          this.$refs.imMainDom.pullHistore(list, hasMore, args.next, otheruser);
+      RongIMLib.getHistoryMessages(conversation, option)
+        .then(({ code, data }) => {
+          if (code === 0) {
+            const list = data.list; // 获取到的消息列表
+            const hasMore = data.hasMore; // 是否还有历史消息可获取
+            console.log('获取历史消息成功', list, hasMore);
+
+            let otheruser = { id, displayName, avatar };
+            this.$refs.imMainDom.pullHistore(list, hasMore, args.next, otheruser);
+          }
         })
         .catch((error) => {
           console.log('发送文字消息失败', error.code, error.msg);
@@ -615,56 +566,58 @@ export default {
     getCurrentOrgUsers() {
       getUserByOrgid(this.my_baseUrl, this.currentUser.orgid)
         .then((res) => {
-          if (res.status === 200) {
-            let userList = res.data.data;
-            let currentorgUsers = userList.map((item) => {
-              let userItem = {
-                id: item.id,
-                displayName: item.name,
-                avatar: item.avatar,
-                index: '[1]群组',
-                unread: 0,
-                lastSendTime: '',
-                lastContent: '',
-              };
-              this.messageList.forEach((messageUserItem, messageUserIndex) => {
-                if (messageUserItem.id == userItem.id) {
-                  if (messageUserItem.lastContent == '') {
-                    messageUserItem.lastContent = '未知消息';
-                  }
-                  userItem.unread = this.messageList[messageUserIndex].unread;
-                  userItem.lastSendTime = this.messageList[messageUserIndex].lastSendTime;
-                  userItem.lastContent = this.messageList[messageUserIndex].lastContent;
-                  // messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
-                }
-              });
-              return userItem;
-            });
-            // this.currentOrgUsers = currentorgUsers
-            // this.$store.commit('setCurrentOrgUsers', currentorgUsers)
-
-            this.messageList.forEach((messageUserItem, messageUserIndex) => {
-              if (messageUserItem.id < 0) {
-                let message = messageUserItem.lastContent;
-                if (!messageUserItem.lastContent) {
-                  message = '未知消息';
-                }
-                // messageUserItem.lastContent = IMUI.lastContentRender(message)
-                currentorgUsers.push(messageUserItem);
-              }
-              if (messageUserItem.isGroup) {
-                if (!messageUserItem.lastContent) {
-                  messageUserItem.lastContent = '未知消息';
-                }
-                // messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
-                currentorgUsers.push(messageUserItem);
-              }
-            });
-            this.showComponent = true;
-            this.currentOrgUsers = currentorgUsers;
-          } else {
+          if (res.status !== 200) {
             Message.error(res.data.msg);
+            return;
           }
+
+          let userList = res.data.data;
+          // console.log('获取当前机构用户', userList);
+          let currentorgUsers = userList.map((item) => {
+            let userItem = {
+              id: item.id,
+              displayName: item.name,
+              avatar: item.avatar,
+              index: '[1]群组',
+              unread: 0,
+              lastSendTime: '',
+              lastContent: '',
+            };
+            this.messageList.forEach((it, i) => {
+              if (it.id == userItem.id) {
+                if (it.lastContent == '') {
+                  it.lastContent = '未知消息';
+                }
+                userItem.unread = this.messageList[i].unread;
+                userItem.lastSendTime = this.messageList[i].lastSendTime;
+                userItem.lastContent = this.messageList[i].lastContent;
+                // it.lastContent = IMUI.lastContentRender(it.lastContent)
+              }
+            });
+            return userItem;
+          });
+
+          this.messageList.forEach((messageUserItem, messageUserIndex) => {
+            if (messageUserItem.id < 0) {
+              let message = messageUserItem.lastContent;
+              if (!messageUserItem.lastContent) {
+                message = '未知消息';
+              }
+              // messageUserItem.lastContent = IMUI.lastContentRender(message)
+              currentorgUsers.push(messageUserItem);
+            }
+            if (messageUserItem.isGroup) {
+              if (!messageUserItem.lastContent) {
+                messageUserItem.lastContent = '未知消息';
+              }
+              // messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
+              currentorgUsers.push(messageUserItem);
+            }
+          });
+          this.showComponent = true;
+          this.currentOrgUsers = currentorgUsers;
+
+          // console.log('获取当前机构用户=========this.currentOrgUsers', this.currentOrgUsers);
         })
         .catch((err) => {
           console.log(err);

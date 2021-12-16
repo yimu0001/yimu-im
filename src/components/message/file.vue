@@ -32,7 +32,7 @@ export default {
             <div class='lemon-message-file__sfx'>
               <i class='lemon-icon-attah' />
             </div>,
-            <toolbar props={{ ...this.$attrs }}></toolbar>,
+            <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>,
             // </div>,
           ],
         }}
@@ -52,8 +52,7 @@ export default {
     .tool-bar {
       position: absolute;
       left: 0;
-      bottom: -32px;
-      padding: 5px 0;
+      bottom: -29px;
       visibility: hidden;
       .iconfont {
         margin: 0 5px;

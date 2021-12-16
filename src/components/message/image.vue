@@ -12,11 +12,10 @@ export default {
         props={{ ...this.$attrs }}
         scopedSlots={{
           content: (props) => {
-            // return <span>{props.content}&nbsp;🔈</span>;
             return (
               <div class='tool-bar-wrapper'>
                 <img class='content-show img-show' src={props.content} />
-                <toolbar props={{ ...this.$attrs }}></toolbar>
+                <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
               </div>
             );
           },
@@ -49,7 +48,7 @@ export default {
       box-shadow: 0 0 6px rgba(0, 0, 0, 0.04);
     }
     .tool-bar {
-      padding: 3px 0;
+      padding: 3px 0 0 0;
       visibility: hidden;
       .iconfont {
         margin: 0 5px;
