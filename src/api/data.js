@@ -1,97 +1,98 @@
-import commonAxios from 'ym-bridge-shandianyun'
+import commonAxios from 'ym-bridge-shandianyun';
+const BaseUrl = 'https://im.shandian8.com';
 
-export const registerUser = (baseUrl) => {
+export const registerUser = () => {
   return commonAxios.request({
-    url: baseUrl+'/register',
+    url: BaseUrl + '/register',
     method: 'post',
-  })
-}
+  });
+};
 
 //获取当前用户
-export const getCurrentUser = (baseUrl) => {
+export const getCurrentUser = () => {
   return commonAxios.request({
-    url: baseUrl+'/current-user',
+    url: BaseUrl + '/current-user',
     method: 'get',
-  })
-}
+  });
+};
 
 //根据多个用户id获取用户
-export const getTargetInfoById = (baseUrl, ids) => {
+export const getTargetInfoById = (ids) => {
   return commonAxios.request({
-    url: baseUrl+'/org/multi-users',
+    url: BaseUrl + '/org/multi-users',
     method: 'get',
     params: {
-      ids
-    }
-  })
-}
+      ids,
+    },
+  });
+};
 
 //通过机构id获取用户
-export const getUserByOrgid = (baseUrl, orgid) => {
+export const getUserByOrgid = (orgid) => {
   return commonAxios.request({
-    url: baseUrl+'/org/'+orgid+'/users',
+    url: BaseUrl + '/org/' + orgid + '/users',
     method: 'get',
-  })
-}
+  });
+};
 
 //通过机构id获取用户
-export const getOrgList = (baseUrl) => {
+export const getOrgList = () => {
   return commonAxios.request({
-    url: baseUrl+'/orgs',
+    url: BaseUrl + '/orgs',
     method: 'get',
-  })
-}
-
+  });
+};
 
 //创建群组
-export const createGroup = (baseUrl, name, members, type = 4) => {
+export const createGroup = (name, members, type = 4) => {
   return commonAxios.request({
-    url: baseUrl+'/group',
+    url: BaseUrl + '/group',
     method: 'post',
     data: {
-      name, members, type
-    }
-  })
-}
-
+      name,
+      members,
+      type,
+    },
+  });
+};
 
 //获取群组信息接口
-export const groupInfos = (baseUrl, groupIds) => {
+export const groupInfos = (groupIds) => {
   return commonAxios.request({
-    url: baseUrl+'/groupInfos',
+    url: BaseUrl + '/groupInfos',
     method: 'get',
     params: {
-      groupIds
-    }
-  })
-}
+      groupIds,
+    },
+  });
+};
 
 //获取群组信息接口
-export const groupMembers = (baseUrl, groupIds) => {
+export const groupMembers = (groupIds) => {
   return commonAxios.request({
-    url: baseUrl+'/group/'+groupIds+'/members',
+    url: BaseUrl + '/group/' + groupIds + '/members',
     method: 'get',
-  })
-}
+  });
+};
 
 //群组加人接口
-export const addMemberToGroup = (baseUrl, groupId, userIds) => {
+export const addMemberToGroup = (groupId, userIds) => {
   return commonAxios.request({
-    url: baseUrl+'/group/'+groupId+'/member-inc',
+    url: BaseUrl + '/group/' + groupId + '/member-inc',
     method: 'post',
     data: {
-      members: userIds
-    }
-  })
-}
+      members: userIds,
+    },
+  });
+};
 
 //上传附件
-export const uploadFile = (baseUrl, file) => {
-  const fd = new FormData()
-  fd.append('file', file)
+export const uploadFile = (file) => {
+  const fd = new FormData();
+  fd.append('file', file);
   return commonAxios.request({
-    url: baseUrl+'/notify/upload',
+    url: BaseUrl + '/notify/upload',
     method: 'post',
-    data: fd
-  })
-}
+    data: fd,
+  });
+};

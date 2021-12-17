@@ -223,23 +223,10 @@ export default {
       selectOrgId: '',
       selectOrgUsers: [],
       selecedUser: [],
-      my_baseUrl: this.baseUrl,
       vContact: this.contact,
     };
   },
   props: {
-    baseUrl: {
-      type: String,
-      default: 'https://im.shandian8.com',
-    },
-    // avatar: "https://im.shandian8.com/public/qunzu.png"
-    // displayName: "易木测试群20"
-    // id: "60185"
-    // index: "群组"
-    // isGroup: true
-    // lastContent: "[通知]"
-    // lastSendTime: 1637630992638
-    // unread: 0
     contact: {
       type: Object,
     },
@@ -268,9 +255,6 @@ export default {
     'setting-drawer': SettingDrawer,
   },
   watch: {
-    baseUrl(newValue) {
-      this.my_baseUrl = newValue;
-    },
     contact: {
       deep: true,
       handler(newValue) {
@@ -294,8 +278,6 @@ export default {
     },
   },
   mounted() {
-    console.log('mounted tools====contact', this.contact, this.baseUrl);
-
     // if (this.vContact.isGroup) {
     //   this.all = false
     //   this.getList()
@@ -316,11 +298,7 @@ export default {
             inside: true,
             render: () => {
               return (
-                <mark-drawer
-                  baseUrl={this.my_baseUrl}
-                  contact={this.contact}
-                  closeMethod={this.parentInstance.closeDrawer}
-                />
+                <mark-drawer contact={this.contact} closeMethod={this.parentInstance.closeDrawer} />
               );
             },
           });
@@ -342,7 +320,6 @@ export default {
             render: () => {
               return (
                 <pending-drawer
-                  baseUrl={this.my_baseUrl}
                   contact={this.contact}
                   closeMethod={this.parentInstance.closeDrawer}
                 />
@@ -367,7 +344,6 @@ export default {
             render: () => {
               return (
                 <notice-drawer
-                  baseUrl={this.my_baseUrl}
                   contact={this.contact}
                   closeMethod={this.parentInstance.closeDrawer}
                 />
@@ -392,7 +368,6 @@ export default {
             render: () => {
               return (
                 <setting-drawer
-                  baseUrl={this.my_baseUrl}
                   contact={this.contact}
                   closeMethod={this.parentInstance.closeDrawer}
                 />
@@ -417,7 +392,7 @@ export default {
     },
 
     getList() {
-      groupMembers(this.my_baseUrl, this.vContact.id).then((res) => {
+      groupMembers(this.vContact.id).then((res) => {
         if (res.status === 200) {
           this.groupMemberList = res.data.data;
         } else {
@@ -452,7 +427,7 @@ export default {
     },
     //获取机构列表
     getOrgList() {
-      getOrgList(this.my_baseUrl)
+      getOrgList()
         .then((res) => {
           console.log(res);
           if (res.status === 200) {
@@ -472,7 +447,7 @@ export default {
 
     //获取机构下人员
     getUserByOrgid() {
-      getUserByOrgid(this.my_baseUrl, this.selectOrgId)
+      getUserByOrgid(this.selectOrgId)
         .then((res) => {
           if (res.status === 200) {
             let selectUserIds = this.selecedUser.map((item) => {
@@ -516,7 +491,7 @@ export default {
       let selectUserIds = this.selecedUser.map((item) => {
         return Number(item.id);
       });
-      addMemberToGroup(this.my_baseUrl, this.vContact.id, selectUserIds)
+      addMemberToGroup(this.vContact.id, selectUserIds)
         .then((res) => {
           console.log(res);
           if (res.status === 200) {

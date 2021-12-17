@@ -55,7 +55,7 @@ export default {
     },
     handlePending(e) {
       e.stopPropagation();
-      this.pendingPop = true;
+      bus.$emit('openPending', this.message);
       // 打开待办弹窗 填写并发布
       console.log('创建待办', e);
     },

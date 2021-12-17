@@ -1,32 +1,31 @@
-import Vue from 'vue'
-import Vuex from 'vuex'
+import Vue from 'vue';
+import Vuex from 'vuex';
 
-Vue.use(Vuex)
+Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
-    axiosBaseUrl: 'https://im.shandian8.com',
+    axiosBaseUrl: 'https://im.shandian8.com', // 暂时没用到
     contacti: {},
-    currentOrgUsers: []
+    currentOrgUsers: [],
   },
   mutations: {
-    setAxiosBaseUrl(state, url){
-      state.axiosBaseUrl = url
+    setAxiosBaseUrl(state, url) {
+      state.axiosBaseUrl = url;
     },
     SET_CONTACT: (state, contacti) => {
-      state.contacti = contacti
+      state.contacti = contacti;
     },
     setCurrentOrgUsers(state, users) {
-      state.currentOrgUsers = users 
-    }
+      state.currentOrgUsers = users;
+    },
   },
   actions: {
     SetContact({ commit }, contacti) {
       return new Promise(() => {
-          commit('SET_CONTACT', contacti)
-      })
+        commit('SET_CONTACT', contacti);
+      });
+    },
   },
-  },
-  modules: {
-  }
-})
+  modules: {},
+});

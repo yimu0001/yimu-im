@@ -246,18 +246,11 @@ export default {
     elTabPane: TabPane,
   },
   props: {
-    baseUrl: {
-      type: String,
-      default: 'https://im.shandian8.com',
-    },
     contact: {
       type: Object,
     },
   },
   watch: {
-    baseUrl(newValue, oldValue) {
-      this.my_baseUrl = newValue;
-    },
     contact: {
       deep: true,
       handler: function(newValue, oldValue) {
@@ -319,12 +312,10 @@ export default {
       selectOrgId: '',
       selectOrgUsers: [],
       selecedUser: [],
-      my_baseUrl: this.baseUrl,
       vContact: this.contact,
     };
   },
   mounted() {
-    console.log(this.contact, this.baseUrl);
     setTimeout(() => {
       console.log(this.contact);
     }, 1000);
@@ -358,7 +349,7 @@ export default {
     },
 
     getList() {
-      groupMembers(this.my_baseUrl, this.vContact.id).then((res) => {
+      groupMembers(this.vContact.id).then((res) => {
         if (res.status === 200) {
           this.groupMemberList = res.data.data;
         } else {
@@ -393,7 +384,7 @@ export default {
     },
     //获取机构列表
     getOrgList() {
-      getOrgList(this.my_baseUrl)
+      getOrgList()
         .then((res) => {
           console.log(res);
           if (res.status === 200) {
@@ -413,7 +404,7 @@ export default {
 
     //获取机构下人员
     getUserByOrgid() {
-      getUserByOrgid(this.my_baseUrl, this.selectOrgId)
+      getUserByOrgid(this.selectOrgId)
         .then((res) => {
           if (res.status === 200) {
             let selectUserIds = this.selecedUser.map((item) => {
@@ -457,7 +448,7 @@ export default {
       let selectUserIds = this.selecedUser.map((item) => {
         return Number(item.id);
       });
-      addMemberToGroup(this.my_baseUrl, this.vContact.id, selectUserIds)
+      addMemberToGroup(this.vContact.id, selectUserIds)
         .then((res) => {
           console.log(res);
           if (res.status === 200) {

@@ -17,19 +17,19 @@
         ref="imMainDom"
         :menuList="menuList"
         :messageList="messageList"
-        :baseUrl="my_baseUrl"
         :currentUser="currentUser"
-        @handleSendMessage="handleSendMessage"
-        @handlePullMessages="handlePullMessages"
         :firstConversationId="firstConversationId"
         :currentOrgUsers="currentOrgUsers"
+        :orgUserList="orgUserList"
+        @handleSendMessage="handleSendMessage"
+        @handlePullMessages="handlePullMessages"
         @changeMenuMessage="getConnetList"
         @closeModal="handleClose"
       ></im-main>
       <span slot="footer" class="dialog-footer"> </span>
     </el-dialog>
     <!-- <div v-if="showList" style="width: 40%">
-      <im-main ref="imMainDom" :messageList = "messageList" :baseUrl='my_baseUrl' :currentUser = 'currentUser' @handleSendMessage="handleSendMessage" 
+      <im-main ref="imMainDom" :messageList = "messageList" :currentUser = 'currentUser' @handleSendMessage="handleSendMessage" 
       @handlePullMessages='handlePullMessages'
       :firstConversationId='firstConversationId'
       @changeMenuMessage='getConnetList'></im-main>
@@ -76,13 +76,13 @@ export default {
   name: 'yimuIm',
   data() {
     return {
-      value: true,
+      historyDate: +new Date(),
+      concatId: null,
       showList: false,
       im: undefined,
-      my_baseUrl: this.baseUrl,
       user_token: '',
       user_id: '',
-      messageList: [],
+      messageList: [], // 目前来看这个数组没有用到
       currentUser: {},
       //用来储存
       saveMessageList: [],
@@ -102,13 +102,10 @@ export default {
       ],
       loadStep: 0,
       conversationObj: {},
+      orgUserList: [], // 创建待办 负责人下拉列表
     };
   },
   props: {
-    baseUrl: {
-      type: String,
-      default: 'https://im.shandian8.com',
-    },
     customMenu: {
       type: Array,
       default: [],
@@ -121,10 +118,6 @@ export default {
     Message,
   },
   watch: {
-    baseUrl(newValue, oldValue) {
-      this.my_baseUrl = newValue;
-      // this.$store.commit('setAxiosBaseUrl', newValue)
-    },
     customMenu: {
       handler(arr) {
         if (arr && arr.length > 0) {
@@ -154,7 +147,7 @@ export default {
     },
   },
   mounted() {
-    this.getAllCurrentUser();
+    this.getCurrentChatUser();
     this.im = RongIMLib.init({ appkey: 'cpj2xarlctfmn', connectType: 'comet' });
     this.imWatcher();
 
@@ -226,7 +219,7 @@ export default {
       });
     },
     connectRongyun() {
-      registerUser(this.my_baseUrl)
+      registerUser()
         .then((res) => {
           if (res.status === 200) {
             this.user_token = res.data.data.token;
@@ -300,7 +293,7 @@ export default {
       this.loadStep = 0;
 
       // 群组会话
-      groupInfos(this.my_baseUrl, groupIds).then((res) => {
+      groupInfos(groupIds).then((res) => {
         if (res.status === 200) {
           let infos = res.data.data;
           Object.entries(infos).forEach(([id, { content, avatar }]) => {
@@ -318,7 +311,7 @@ export default {
       });
 
       // 个人会话
-      getTargetInfoById(this.my_baseUrl, singleIds)
+      getTargetInfoById(singleIds)
         .then((res) => {
           if (res.status === 200) {
             let list = res.data.data;
@@ -421,8 +414,8 @@ export default {
       });
     },
 
-    getAllCurrentUser() {
-      getCurrentUser(this.my_baseUrl)
+    getCurrentChatUser() {
+      getCurrentUser()
         .then((res) => {
           if (res.status === 200) {
             this.currentUser = res.data.data;
@@ -437,9 +430,9 @@ export default {
       RongIMLib.getConversationList().then(({ code, data: conversationList }) => {
         if (code === 0) {
           console.log('创建群组之后 获取会话列表', conversationList);
-          let curConverse = conversationList.filter((item) => item.targetId == id);
+          let curConverse = conversationList.filter((item) => item.targetId == id)[0] || null;
 
-          groupInfos(this.my_baseUrl, id).then((res) => {
+          groupInfos(id).then((res) => {
             if (res.status === 200) {
               const { content: displayName, avatar } = res.data.data[id];
               let { messageType, content, sentTime } = curConverse.latestMessage;
@@ -523,7 +516,16 @@ export default {
       this.saveMessageList = [];
     },
     handlePullMessages(args) {
+      console.log('开始获取历史消息');
       const { id, isGroup, displayName, avatar } = args.contact;
+      // 首次进入聊天
+      !this.concatId && (this.concatId = id);
+      // 聊天对象被切换了
+      if (this.concatId !== id) {
+        this.historyDate = +new Date();
+        this.concatId = id;
+      }
+
       const conversation = {
         targetId: id,
         conversationType: isGroup
@@ -532,7 +534,7 @@ export default {
       };
       const option = {
         // 获取历史消息的时间戳，默认为 0，表示从当前时间获取
-        timestamp: +new Date(),
+        timestamp: this.historyDate,
         // 获取条数，有效值 1-20，默认为 20
         count: 20,
       };
@@ -541,7 +543,8 @@ export default {
           if (code === 0) {
             const list = data.list; // 获取到的消息列表
             const hasMore = data.hasMore; // 是否还有历史消息可获取
-            console.log('获取历史消息成功', list, hasMore);
+            // console.log('获取历史消息成功', list, hasMore);
+            list[0] && (this.historyDate = list[0].sentTime);
 
             let otheruser = { id, displayName, avatar };
             this.$refs.imMainDom.pullHistore(list, hasMore, args.next, otheruser);
@@ -564,7 +567,7 @@ export default {
     },
     //获取当前机构用户
     getCurrentOrgUsers() {
-      getUserByOrgid(this.my_baseUrl, this.currentUser.orgid)
+      getUserByOrgid(this.currentUser.orgid)
         .then((res) => {
           if (res.status !== 200) {
             Message.error(res.data.msg);
@@ -572,7 +575,7 @@ export default {
           }
 
           let userList = res.data.data;
-          // console.log('获取当前机构用户', userList);
+          this.orgUserList = userList.map(({ id, name }) => ({ id, name }));
           let currentorgUsers = userList.map((item) => {
             let userItem = {
               id: item.id,
@@ -583,41 +586,26 @@ export default {
               lastSendTime: '',
               lastContent: '',
             };
-            this.messageList.forEach((it, i) => {
-              if (it.id == userItem.id) {
-                if (it.lastContent == '') {
-                  it.lastContent = '未知消息';
-                }
-                userItem.unread = this.messageList[i].unread;
-                userItem.lastSendTime = this.messageList[i].lastSendTime;
-                userItem.lastContent = this.messageList[i].lastContent;
-                // it.lastContent = IMUI.lastContentRender(it.lastContent)
-              }
-            });
+            // 会话列表-个人
+            let curMsg = this.messageList.filter(({ id }) => id == userItem.id);
+            if (curMsg && curMsg.length > 0) {
+              const { unread, lastSendTime, lastContent } = curMsg[0];
+              userItem = { ...userItem, unread, lastSendTime, lastContent };
+            }
+
             return userItem;
           });
 
-          this.messageList.forEach((messageUserItem, messageUserIndex) => {
-            if (messageUserItem.id < 0) {
-              let message = messageUserItem.lastContent;
-              if (!messageUserItem.lastContent) {
-                message = '未知消息';
-              }
-              // messageUserItem.lastContent = IMUI.lastContentRender(message)
-              currentorgUsers.push(messageUserItem);
-            }
-            if (messageUserItem.isGroup) {
-              if (!messageUserItem.lastContent) {
-                messageUserItem.lastContent = '未知消息';
-              }
-              // messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
-              currentorgUsers.push(messageUserItem);
-            }
+          this.messageList.forEach((item) => {
+            // 会话列表-通知
+            item.id < 0 && currentorgUsers.push(item);
+            // 会话列表-群组
+            item.isGroup && currentorgUsers.push(item);
           });
+
           this.showComponent = true;
           this.currentOrgUsers = currentorgUsers;
-
-          // console.log('获取当前机构用户=========this.currentOrgUsers', this.currentOrgUsers);
+          console.log('获取当前机构用户=========this.currentOrgUsers', this.currentOrgUsers);
         })
         .catch((err) => {
           console.log(err);

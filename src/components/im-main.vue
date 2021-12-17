@@ -56,7 +56,7 @@
         </small>
         <div v-if="drawerVisibleShow" class="right-toolbar-column">
           <!-- this.targetUser -->
-          <groupInfo :baseUrl="my_baseUrl" :contact="targetUser" :parentInstance="$refs.IMUI" />
+          <groupInfo :contact="targetUser" :parentInstance="$refs.IMUI" />
         </div>
         <br />
       </template>
@@ -83,11 +83,13 @@
       </template>
     </lemon-imui>
 
-    <el-dialog title="查看图片(可再次点击放大)" :visible.sync="outerVisible" width="500px">
-      <el-image :src="imgUrl" :preview-src-list="srcList"> </el-image>
+    <el-dialog title="图片预览" :visible.sync="outerVisible" append-to-body width="600px">
+      <el-image :src="imgUrl" :preview-src-list="srcList" title="查看大图"> </el-image>
     </el-dialog>
 
-    <el-dialog title="创建待办" :visible.sync="pendingPop" width="600px">创建待办</el-dialog>
+    <el-dialog title="创建待办" :visible.sync="pendingPop" append-to-body width="600px">
+      <add-pending ref="pendingDom" :orgUserList="orgUserList" :msgId="curPendingItem.id" />
+    </el-dialog>
   </div>
 </template>
 
@@ -95,12 +97,13 @@
 import AddGroup from './AddGroup.vue';
 import CreateGroup from './CreateGroup';
 import groupInfo from './GroupTools/tools';
+import addPending from './message/addPending.vue';
 import LemonIMUI from 'lemon-imui';
 import LemonPopover from 'lemon-imui';
 import 'lemon-imui/dist/index.css';
 
 import { Dialog, Image, Message, Tag, Input } from 'element-ui';
-import { getUserByOrgid, uploadFile } from '../api/data';
+import { uploadFile } from '@/api/data';
 import bus from '@/libs/bus';
 
 export default {
@@ -114,16 +117,16 @@ export default {
       type: Object,
       default: () => {},
     },
-    baseUrl: {
-      type: String,
-      default: 'https://im.shandian8.com',
-    },
     menuList: {
       type: Array,
       default: () => [],
     },
     firstConversationId: String || undefined,
     currentOrgUsers: {
+      type: Array,
+      default: () => [],
+    },
+    orgUserList: {
       type: Array,
       default: () => [],
     },
@@ -137,6 +140,7 @@ export default {
     elTag: Tag,
     Message,
     groupInfo,
+    addPending,
     LemonIMUI,
     LemonPopover,
   },
@@ -229,13 +233,13 @@ export default {
       outerVisible: false,
       imgUrl: undefined,
       srcList: undefined,
-      my_baseUrl: this.baseUrl,
 
       //联系人列表
       all_users: [],
       replyObj: {}, // id: '', type: '', content: '', displayText: ''
       historyKeyword: '',
       pendingPop: false,
+      curPendingItem: {},
     };
   },
   watch: {
@@ -246,9 +250,6 @@ export default {
         orgid: newValue.orgid || '',
         avatar: this.currentUser.avatar,
       };
-    },
-    baseUrl(newValue, oldValue) {
-      this.my_baseUrl = newValue;
     },
     messageList(newValue, oldValue) {
       console.log('数据变化', newValue, oldValue);
@@ -272,6 +273,16 @@ export default {
     bus.$on('reply', (data) => {
       this.replyObj = data;
     });
+    bus.$on('openPending', (obj) => {
+      this.curPendingItem = obj;
+      this.pendingPop = true;
+    });
+
+    bus.$on('previewImg', (url) => {
+      this.imgUrl = url;
+      this.srcList = [url];
+      this.outerVisible = true;
+    });
   },
   methods: {
     handleMenu() {
@@ -289,7 +300,7 @@ export default {
             title: '添加群组',
             unread: 0,
             renderContainer: () => {
-              return <addGroup baseUrl={this.my_baseUrl}></addGroup>;
+              return <addGroup />;
             },
             render: (menu) => {
               return <i class='lemon-icon-group' />;
@@ -530,7 +541,7 @@ export default {
 
           break;
         case 'image':
-          uploadFile(this.my_baseUrl, file)
+          uploadFile(file)
             .then((res) => {
               // 还有图片现在上传结束消息那展示的是blob类型的数据，为了方便回复，建议直接加一个修改该条消息内容改成url/
               if (res.status === 200) {
@@ -553,7 +564,7 @@ export default {
           break;
         case 'file':
           let { name, size, type } = file;
-          uploadFile(this.my_baseUrl, file)
+          uploadFile(file)
             .then((res) => {
               if (res.status === 200) {
                 this.$emit('handleSendMessage', {
@@ -596,51 +607,10 @@ export default {
     appendMessage(data) {
       this.$refs.IMUI.appendMessage(data);
     },
-    //获取当前机构用户
+    // 获取当前机构用户
     getCurrentOrgUsers() {
       let IMUI = this.$refs.IMUI;
       let currentOrgUsers = this.currentOrgUsers;
-      // let all_user = []
-      // currentOrgUsers.forEach(userItem => {
-      //   let key = -1
-      //   this.show_message_list.forEach((messageUserItem, messageUserIndex) => {
-      //     if(messageUserItem.id == userItem.id){
-      //       if(messageUserItem.lastContent == ''){
-      //         messageUserItem.lastContent = '未知消息'
-      //       }
-      //       messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
-      //       key = messageUserIndex
-      //     }
-      //   })
-      //   if(key > -1) {
-      //     userItem.unread = this.show_message_list[key].unread
-      //     userItem.lastSendTime = this.show_message_list[key].lastSendTime
-      //     userItem.lastContent = this.show_message_list[key].lastContent
-      //   }
-      //   all_user.push(userItem)
-      // })
-      // this.show_message_list.forEach((messageUserItem, messageUserIndex) => {
-      //   if(messageUserItem.id < 0) {
-      //     let message = messageUserItem.lastContent
-      //     if(!messageUserItem.lastContent){
-      //       message = '未知消息'
-      //     }
-      //     messageUserItem.lastContent = IMUI.lastContentRender(message)
-      //     all_user.push(messageUserItem)
-      //   }
-      //   if(messageUserItem.isGroup) {
-      //     if(!messageUserItem.lastContent){
-      //       messageUserItem.lastContent = '未知消息'
-      //     }
-      //     messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
-      //     all_user.push(messageUserItem)
-      //   }
-      // })
-      // this.all_users = all_user
-      // this.$refs.IMUI.initContacts(all_user);
-      // setTimeout(() => {
-      //   this.firstConversationId && IMUI.changeContact(this.firstConversationId);
-      // }, 500);
 
       currentOrgUsers.forEach((item) => {
         if (item.lastContent) {
@@ -651,74 +621,6 @@ export default {
       setTimeout(() => {
         this.firstConversationId && IMUI.changeContact(this.firstConversationId);
       }, 500);
-
-      // getUserByOrgid(this.my_baseUrl, this.user.orgid).then(res => {
-      //   if(res.status === 200){
-      //     let userList = res.data.data
-      //     let all_user = []
-
-      //     userList.forEach(item => {
-      //       let key = -1
-      //       let userItem = {
-      //         id: item.id,
-      //         displayName: item.name,
-      //         avatar: item.avatar,
-      //         index: '[1]群组',
-      //         unread: 0,
-      //         lastSendTime: '',
-      //         lastContent: ''
-      //       }
-      //       this.show_message_list.forEach((messageUserItem, messageUserIndex) => {
-      //         if(messageUserItem.id == item.id){
-      //           if(messageUserItem.lastContent == ''){
-      //             messageUserItem.lastContent = '未知消息'
-      //           }
-      //           messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
-      //           key = messageUserIndex
-      //         }
-      //       })
-      //       if(key > -1) {
-      //         userItem.unread = this.show_message_list[key].unread
-      //         userItem.lastSendTime = this.show_message_list[key].lastSendTime
-      //         userItem.lastContent = this.show_message_list[key].lastContent
-      //       }
-      //       all_user.push(userItem)
-      //     })
-      //     this.show_message_list.forEach((messageUserItem, messageUserIndex) => {
-      //       if(messageUserItem.id < 0) {
-      //         let message = messageUserItem.lastContent
-      //         if(!messageUserItem.lastContent){
-      //           message = '未知消息'
-      //         } else {
-      //           console.log(messageUserItem.lastContent)
-      //           if(messageUserItem.lastContent.content.imageUri) {
-      //             message = messageUserItem.lastContent.content.imageUri
-      //             messageUserItem.lastContent.content
-      //             messageUserItem.lastContent.type = 'image'
-      //           }
-      //         }
-      //         console.log(message)
-      //         messageUserItem.lastContent = IMUI.lastContentRender(message)
-      //         all_user.push(messageUserItem)
-      //       } else if(messageUserItem.isGroup) {
-      //         if(!messageUserItem.lastContent){
-      //             messageUserItem.lastContent = '未知消息'
-      //           }
-      //         messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
-      //         all_user.push(messageUserItem)
-      //       }
-      //     })
-      //     this.all_users = all_user
-      //     this.$refs.IMUI.initContacts(all_user);
-      //     setTimeout(() => {
-      //       this.show_message_list[0] && IMUI.changeContact(this.show_message_list[0].id);
-      //     }, 500);
-      //   } else {
-      //     Message.error(res.data.msg)
-      //   }
-      // }).catch(err => {
-      //   console.log(err)
-      // })
     },
     // 新增新机构
     addNewContact(newContact) {

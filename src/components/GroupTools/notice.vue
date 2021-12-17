@@ -65,21 +65,12 @@ export default {
     };
   },
   props: {
-    baseUrl: {
-      type: String,
-      default: 'https://im.shandian8.com',
-    },
     contact: {
       type: Object,
     },
     closeMethod: {
       type: Function,
       default: () => {},
-    },
-  },
-  watch: {
-    baseUrl(val) {
-      this.my_baseUrl = val;
     },
   },
   mounted() {},
@@ -90,7 +81,7 @@ export default {
     },
     getNoticeList() {
       console.log('接口获取待办列表');
-      // groupMembers(this.my_baseUrl, this.vContact.id).then((res) => {
+      // groupMembers(this.vContact.id).then((res) => {
       //   if (res.status === 200) {
       //     this.groupMemberList = res.data.data;
       //   } else {

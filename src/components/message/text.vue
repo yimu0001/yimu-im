@@ -1,10 +1,32 @@
 <script>
 import Toolbar from './toolbar.vue';
+import bus from '@/libs/bus';
+import { Popover } from 'element-ui';
+// <el-tooltip
+//   class='item'
+//   effect='dark'
+//   content={replyObj.content}
+//   placement='bottom'
+// >
+//   <div class='init-msg over_hide_1'>
+//     {replyObj.displayName}：{replyObj.content}
+//   </div>
+// </el-tooltip>
+
 export default {
   name: 'lemonMessageText',
   inheritAttrs: false,
   inject: ['IMUI'],
-  components: { Toolbar },
+  components: { Toolbar, elPopover: Popover },
+  methods: {
+    previewMsg() {
+      let msg = this.$attrs.message.referMsg;
+      console.log('预览', this.$attrs.message);
+      if (msg.type === 'image') {
+        bus.$emit('previewImg', msg.content);
+      }
+    },
+  },
   render() {
     return (
       <lemon-message-basic
@@ -21,18 +43,26 @@ export default {
                 {replyObj && (
                   <div>
                     {replyObj.type === 'text' && (
-                      <div class='init-msg over_hide_1'>
-                        {replyObj.displayName}：{replyObj.content}
-                      </div>
+                      <el-popover
+                        popper-class='reply-text-pre'
+                        placement='bottom'
+                        width='200'
+                        trigger='click'
+                        content={replyObj.content}
+                      >
+                        <div slot='reference' class='init-msg over_hide_1 noselect'>
+                          {replyObj.displayName}：{replyObj.content}
+                        </div>
+                      </el-popover>
                     )}
                     {replyObj.type === 'image' && (
-                      <div class='init-msg msg-img over_hide_1'>
+                      <div class='init-msg msg-img over_hide_1 noselect' onClick={this.previewMsg}>
                         {replyObj.displayName}：
                         <img class='rep-img' src={replyObj.content} alt='' />
                       </div>
                     )}
                     {replyObj.type === 'file' && (
-                      <div class='init-msg over_hide_1'>
+                      <div class='init-msg over_hide_1 noselect'>
                         {replyObj.displayName}：<i class='lemon-icon-attah' />
                         {replyObj.fileName}
                       </div>
@@ -51,11 +81,6 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.over_hide_1 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .tool-bar-wrapper {
   .content-show {
     border-radius: 2px;
@@ -63,6 +88,7 @@ export default {
     margin-bottom: 8px;
   }
   .init-msg {
+    cursor: pointer;
     margin-top: 5px;
     padding: 0 10px;
     max-width: 300px;

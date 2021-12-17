@@ -6,29 +6,46 @@
         <el-button type="primary" size="small" @click="createGroup">确认</el-button>
       </div>
     </div>
-    
+
     <div class="groupName">
       <el-input v-model="groupName" placeholder="请输入群组标题" style="width: 400px"></el-input>
     </div>
     <el-row :gutter="30" class="peopleSelectDom">
-      <el-col :span='8' :offset="1" class="orgList">
-        <div v-for="item of orgList" :key="`orgItem${item.id}`" class="orgItem" :class="activeOrgId == item.id? 'activeOrg' : ''" @click="chooseOrg(item.id)">
-          {{item.name}}
+      <el-col :span="8" :offset="1" class="orgList">
+        <div
+          v-for="item of orgList"
+          :key="`orgItem${item.id}`"
+          class="orgItem"
+          :class="activeOrgId == item.id ? 'activeOrg' : ''"
+          @click="chooseOrg(item.id)"
+        >
+          {{ item.name }}
         </div>
       </el-col>
-      <el-col :span='8' class="orgList">
+      <el-col :span="8" class="orgList">
         <div v-for="item of currentOrgUsers" :key="`currentOrgUser${item.id}`" class="userItem">
-          <el-checkbox :label="item.id" border @change='handleChangeUser($event, item)' v-model="item.checked"> {{item.name}}-{{item.dpt_name}}</el-checkbox>
+          <el-checkbox
+            :label="item.id"
+            border
+            @change="handleChangeUser($event, item)"
+            v-model="item.checked"
+          >
+            {{ item.name }}-{{ item.dpt_name }}</el-checkbox
+          >
         </div>
       </el-col>
-      <el-col :span='6' class="orgList">
+      <el-col :span="6" class="orgList">
         <div>
           已选人员：
         </div>
-        <div v-for="(item, index) of selecedUser" :key="`currentOrgUser${item.id}`" class="userItem">
+        <div
+          v-for="(item, index) of selecedUser"
+          :key="`currentOrgUser${item.id}`"
+          class="userItem"
+        >
           <!-- <el-checkbox :label="item.id" border @change='handleChangeUser($event, item)'> {{item.name}}-{{item.dpt_name}}</el-checkbox> -->
-          <el-tag closable @close='handleDelSelectUser(item.id, index)'>
-          {{item.name}}-{{item.dpt_name}}
+          <el-tag closable @close="handleDelSelectUser(item.id, index)">
+            {{ item.name }}-{{ item.dpt_name }}
           </el-tag>
         </div>
       </el-col>
@@ -37,148 +54,142 @@
 </template>
 
 <script>
-import { Button, Input, Row, Col, Message, CheckboxGroup, Checkbox, Tag} from 'element-ui';
-import { getOrgList, getUserByOrgid, createGroup } from '../api/data'
+import { Button, Input, Row, Col, Message, CheckboxGroup, Checkbox, Tag } from 'element-ui';
+import { getOrgList, getUserByOrgid, createGroup } from '../api/data';
 import Bus from '../libs/bus';
-  export default {
-    name: 'addGroup',
-    components: {
-      elButton: Button,
-      elInput: Input,
-      elRow: Row,
-      elCol: Col,
-      Message,
-      elCheckboxGroup: CheckboxGroup,
-      elCheckbox: Checkbox,
-      elTag: Tag
-    },
-    props: {
-      baseUrl: {
-        type: String,
-        default: 'https://im.shandian8.com'
-      },
-    },
-    watch: {
-      baseUrl(newValue, oldValue) {
-        this.my_baseUrl = newValue
-      }
-    },
-    data() {
-      return {
-        groupName: '',
-        orgList: [],
-        activeOrgId: '', //选中的机构
-        currentOrgUsers: [],
-        checkUser: [],
-        selecedUser: [],
-        my_baseUrl: this.baseUrl
-      }
-    },
-    mounted () {
-      this.getOrgList();
-    },
-    methods: {
-      getOrgList() {
-        getOrgList(this.my_baseUrl).then(res => {
-          console.log(res)
-          if(res.status === 200) {
-            this.orgList = res.data.data
+export default {
+  name: 'addGroup',
+  components: {
+    elButton: Button,
+    elInput: Input,
+    elRow: Row,
+    elCol: Col,
+    Message,
+    elCheckboxGroup: CheckboxGroup,
+    elCheckbox: Checkbox,
+    elTag: Tag,
+  },
+  data() {
+    return {
+      groupName: '',
+      orgList: [],
+      activeOrgId: '', //选中的机构
+      currentOrgUsers: [],
+      checkUser: [],
+      selecedUser: [],
+    };
+  },
+  mounted() {
+    this.getOrgList();
+  },
+  methods: {
+    getOrgList() {
+      getOrgList()
+        .then((res) => {
+          console.log(res);
+          if (res.status === 200) {
+            this.orgList = res.data.data;
           } else {
-            Message.error(res.data.msg)
+            Message.error(res.data.msg);
           }
-        }).catch(err => {
-          console.log(err)
         })
-      },
-      chooseOrg(id) {
-        this.activeOrgId = id
-        this.getUserByOrgid()
-      },
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    chooseOrg(id) {
+      this.activeOrgId = id;
+      this.getUserByOrgid();
+    },
 
-      //获取机构下人员
-      getUserByOrgid() {
-        getUserByOrgid(this.my_baseUrl, this.activeOrgId).then(res => {
-          console.log(res)
-          if(res.status === 200) {
-            let selectUserIds = this.selecedUser.map(item => {
-              return item.id
-            })
-            this.currentOrgUsers = res.data.data.map(item => {
-              item.checked = false
-              if(selectUserIds.includes(item.id)){
-                item.checked = true
+    //获取机构下人员
+    getUserByOrgid() {
+      getUserByOrgid(this.activeOrgId)
+        .then((res) => {
+          console.log(res);
+          if (res.status === 200) {
+            let selectUserIds = this.selecedUser.map((item) => {
+              return item.id;
+            });
+            this.currentOrgUsers = res.data.data.map((item) => {
+              item.checked = false;
+              if (selectUserIds.includes(item.id)) {
+                item.checked = true;
               }
-              return item
-            })
+              return item;
+            });
           } else {
-            Message.error(res.data.msg)
+            Message.error(res.data.msg);
           }
-        }).catch(err => {
-          console.log(err)
         })
-      },
-      handleChangeUser(e, item){
-        if(e){
-          this.selecedUser.push(item)
-        } else {
-          this.selecedUser = this.selecedUser.filter(user => {
-            return user.id != item.id
-          })
-        }
-      },
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    handleChangeUser(e, item) {
+      if (e) {
+        this.selecedUser.push(item);
+      } else {
+        this.selecedUser = this.selecedUser.filter((user) => {
+          return user.id != item.id;
+        });
+      }
+    },
 
-      //删除所选人员
-      handleDelSelectUser(id, index) {
-        this.selecedUser.splice(index,1)
-        this.currentOrgUsers.forEach(item => {
-          if(item.id == id){
-            item.checked = false
-          }
-        })
-      },
-      createGroup() {
-        let userIds = this.selecedUser.map(user => {
-          return Number(user.id)
-        })
-        createGroup(this.my_baseUrl, this.groupName, userIds).then(res => {
-          if(res.status === 200) {
-            Message.success('创建成功！')
+    //删除所选人员
+    handleDelSelectUser(id, index) {
+      this.selecedUser.splice(index, 1);
+      this.currentOrgUsers.forEach((item) => {
+        if (item.id == id) {
+          item.checked = false;
+        }
+      });
+    },
+    createGroup() {
+      let userIds = this.selecedUser.map((user) => {
+        return Number(user.id);
+      });
+      createGroup(this.groupName, userIds)
+        .then((res) => {
+          if (res.status === 200) {
+            Message.success('创建成功！');
             Bus.$emit('createGroupOk', res.data.data.id);
           } else {
-            Message.error(res.data.msg)
+            Message.error(res.data.msg);
           }
-        }).catch(err => {
-          console.log(err)
         })
-      }
+        .catch((err) => {
+          console.log(err);
+        });
     },
-  }
+  },
+};
 </script>
 
 <style lang="less" scoped>
-.domTitle{
+.domTitle {
   font-size: 16px;
   font-weight: bold;
   padding: 10px;
   margin-bottom: 30px;
   position: relative;
-  .domButton{
+  .domButton {
     position: absolute;
     right: 10px;
-    top: 10px
+    top: 10px;
   }
 }
-.groupName{
+.groupName {
   text-align: center;
   margin-bottom: 22px;
 }
-.peopleSelectDom{
-  .orgList{
+.peopleSelectDom {
+  .orgList {
     // background: #d3dce6;
     border-radius: 4px;
     height: 406px;
     overflow-y: scroll;
-    .orgItem{
+    .orgItem {
       background-color: #eee;
       margin-top: 10px;
       height: 38px;
@@ -187,11 +198,11 @@ import Bus from '../libs/bus';
       border-radius: 5px;
       cursor: pointer;
     }
-    .activeOrg{
-      background-color: #409EFF;
+    .activeOrg {
+      background-color: #409eff;
       color: #fff;
     }
-    .userItem{
+    .userItem {
       // background-color: #eee;
       margin-top: 10px;
       height: 38px;
