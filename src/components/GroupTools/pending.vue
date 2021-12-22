@@ -146,7 +146,6 @@ export default {
   mounted() {},
   methods: {
     closePop() {
-      console.log('关闭抽屉');
       this.closeMethod();
     },
     getPendList() {

@@ -204,7 +204,7 @@ import {
   TabPane,
 } from 'element-ui';
 export default {
-  name: 'CustomDrawer',
+  name: 'groupTools',
   data() {
     return {
       searchValue: '',
@@ -284,10 +284,13 @@ export default {
     // }
   },
   methods: {
+    handleHistory(item) {
+      this.$emit('openHistory', item);
+    },
     handleGroupMark() {
       if (this.parentInstance) {
         this.parentInstance.closeDrawer();
-
+        // const handleHistory = this.handleHistory;
         setTimeout(() => {
           this.parentInstance.changeDrawer({
             width: 500,
@@ -298,7 +301,11 @@ export default {
             inside: true,
             render: () => {
               return (
-                <mark-drawer contact={this.contact} closeMethod={this.parentInstance.closeDrawer} />
+                <mark-drawer
+                  contact={this.contact}
+                  closeMethod={this.parentInstance.closeDrawer}
+                  openHistory={this.handleHistory}
+                />
               );
             },
           });

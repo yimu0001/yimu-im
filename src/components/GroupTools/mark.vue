@@ -30,7 +30,7 @@
             <div class="send-user">
               <p class="user">{{ item.sendUser }}</p>
               <p class="time">{{ item.sendTime }}</p>
-              <i class="iconfont icon-jinru" title="查看"></i>
+              <i class="iconfont icon-jinru" title="查看" @click="checkHistory(item)"></i>
             </div>
           </div>
         </div>
@@ -74,6 +74,7 @@ export default {
           markUser: '刘金栋',
         },
       ],
+      historyPop: false,
     };
   },
   props: {
@@ -81,6 +82,10 @@ export default {
       type: Object,
     },
     closeMethod: {
+      type: Function,
+      default: () => {},
+    },
+    openHistory: {
       type: Function,
       default: () => {},
     },
@@ -99,7 +104,6 @@ export default {
   mounted() {},
   methods: {
     closePop() {
-      console.log('关闭抽屉');
       this.closeMethod();
     },
     getMarkList() {
@@ -116,6 +120,9 @@ export default {
     // handleSelectionChange(selection) {
     //   this.ids = selection.map((item) => item.id);
     // },
+    checkHistory(item) {
+      this.openHistory(item);
+    },
   },
 };
 </script>

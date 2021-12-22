@@ -34,10 +34,10 @@
       <!-- 群成员展示 -->
       <el-row class="memberList" :gutter="4">
         <el-col :span="4" class="memberItem">
-          <div class="memberItemImg addMemberImg" @click="handleAddMemberToGroup">
+          <div class="memberItemImg addMemberImg" @click="handleAddMember">
             <img src="../../assets/add.png" />
           </div>
-          <div class="memberItemName" @click="handleAddMemberToGroup">
+          <div class="memberItemName" @click="handleAddMember">
             <span>添加</span>
           </div>
         </el-col>
@@ -151,21 +151,26 @@
           </div>
         </el-col>
         <el-col :span="8" class="userListDom">
-          <div></div>
+          <div v-for="item of originalMember" :key="item.id" class="userItem">
+            <el-tag :closable="false"> {{ item.name }}-{{ item.dpt_name }} </el-tag>
+          </div>
           <div
             v-for="(item, index) of selecedUser"
             :key="`currentOrgUser${item.id}`"
             class="userItem"
           >
             <!-- <el-checkbox :label="item.id" border @change='handleChangeUser($event, item)'> {{item.name}}-{{item.dpt_name}}</el-checkbox> -->
-            <el-tag closable @close="handleDelSelectUser(item.id, index)">
+            <el-tag
+              :closable="item.noclose ? false : true"
+              @close="handleDelSelectUser(item.id, index)"
+            >
               {{ item.name }}-{{ item.dpt_name }}
             </el-tag>
           </div>
         </el-col>
       </el-row>
       <div class="controlDom">
-        <el-button type="primary" size="small" @click="addMemberToGroup">确认添加</el-button>
+        <el-button type="primary" size="small" @click="confirmAddMember">确认添加</el-button>
       </div>
     </el-dialog>
   </div>
@@ -216,6 +221,7 @@ export default {
       selectOrgId: '',
       selectOrgUsers: [],
       selecedUser: [],
+      originalMember: [], // 邀请群成员时 回显群内成员
       vContact: this.contact,
       editNameShow: false,
       initDisplayName: '',
@@ -287,7 +293,6 @@ export default {
   },
   methods: {
     closePop() {
-      console.log('关闭抽屉');
       if (this.editNameShow) {
         this.editNameShow = false;
       }
@@ -362,9 +367,18 @@ export default {
     },
 
     //加人
-    handleAddMemberToGroup() {
+    handleAddMember() {
       this.getAllOrgList();
       this.addUserOpen = true;
+
+      this.originalMember = this.groupMemberList.map(({ avatar, dptname, id, nickname }) => ({
+        avatar,
+        checked: true,
+        dpt_name: dptname,
+        id,
+        name: nickname,
+        org_name: '',
+      }));
     },
     //获取机构列表
     getAllOrgList() {
@@ -391,9 +405,10 @@ export default {
       getUserByOrgid(this.selectOrgId)
         .then((res) => {
           if (res.status === 200) {
-            let selectUserIds = this.selecedUser.map((item) => {
-              return item.id;
-            });
+            let selectUserIds = this.selecedUser.map(({ id }) => id);
+            console.log('已选id', selectUserIds);
+            console.log('返回值', res.data.data);
+
             this.selectOrgUsers = res.data.data.map((item) => {
               item.checked = false;
               if (selectUserIds.includes(item.id)) {
@@ -428,7 +443,7 @@ export default {
       });
     },
 
-    addMemberToGroup() {
+    confirmAddMember() {
       let selectUserIds = this.selecedUser.map((item) => {
         return Number(item.id);
       });
@@ -438,6 +453,7 @@ export default {
           if (res.status === 200) {
             Message.success(res.data.msg);
             this.addUserOpen = false;
+            this.originalMember = [];
           } else {
             Message.error(res.data.msg);
           }
@@ -572,18 +588,25 @@ p {
   .addUserDom {
     height: 450px;
     .orgListDom {
+      padding: 0 20px;
       height: 450px;
       overflow-y: auto;
+      overflow-x: hidden;
+      border-right: 1px solid #ececec;
       .orgItem {
-        width: 80%;
+        cursor: pointer;
+        // width: 80%;
         margin: 10px auto;
         border: 1px solid #eee;
         padding: 8px 10px;
       }
     }
     .userListDom {
+      padding: 0 20px;
       height: 450px;
       overflow-y: auto;
+      overflow-x: hidden;
+      border-right: 1px solid #ececec;
       .userItem {
         // background-color: #eee;
         margin-top: 10px;

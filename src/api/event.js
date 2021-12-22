@@ -2,7 +2,7 @@
 import commonAxios from 'ym-bridge-shandianyun';
 const BaseUrl = 'https://im.shandian8.com';
 
-//创建群组
+// 创建待办
 export const createPending = (item) => {
   return commonAxios.request({
     url: BaseUrl + '/group',

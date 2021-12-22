@@ -1,14 +1,16 @@
 <template>
   <div>
-    <div class="domTitle">
-      创建群组
-      <div class="domButton">
-        <el-button type="primary" size="small" @click="createGroup">确认</el-button>
-      </div>
-    </div>
-
-    <div class="groupName">
-      <el-input v-model="groupName" placeholder="请输入群组标题" style="width: 400px"></el-input>
+    <div class="group-info">
+      <el-input
+        v-model="groupName"
+        size="small"
+        placeholder="请输入群组标题"
+        style="width: 400px"
+        clearable
+      ></el-input>
+      <el-button class="con-btn" type="primary" size="small" @click="confirmCreate"
+        >确认创建</el-button
+      >
     </div>
     <el-row :gutter="30" class="peopleSelectDom">
       <el-col :span="8" :offset="1" class="orgList">
@@ -145,7 +147,7 @@ export default {
         }
       });
     },
-    createGroup() {
+    confirmCreate() {
       let userIds = this.selecedUser.map((user) => {
         return Number(user.id);
       });
@@ -167,21 +169,12 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.domTitle {
-  font-size: 16px;
-  font-weight: bold;
-  padding: 10px;
-  margin-bottom: 30px;
-  position: relative;
-  .domButton {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-  }
-}
-.groupName {
-  text-align: center;
+.group-info {
+  // text-align: center;
   margin-bottom: 22px;
+  .con-btn {
+    margin-left: 20px;
+  }
 }
 .peopleSelectDom {
   .orgList {

@@ -13,6 +13,9 @@
       @opened="handleOpenedDialog"
       center
     >
+      <div class="close-line" @click="handleClose">
+        <i class="iconfont icon-guanbi1" title="关闭"></i>
+      </div>
       <im-main
         ref="imMainDom"
         :menuList="menuList"
@@ -49,7 +52,7 @@ import {
   groupInfos,
   getUserByOrgid,
 } from '../api/data.js';
-import Bus from '../libs/bus';
+import bus from '../libs/bus';
 import testComponent from '../components/testComponent.vue';
 
 import Vue from 'vue';
@@ -93,12 +96,12 @@ export default {
       baseMenuList: [
         { name: 'messages', isBottom: false },
         { name: 'contacts', isBottom: false },
-        { name: 'createGroup', isBottom: true },
+        // { name: 'createGroup', isBottom: true },
       ],
       menuList: [
         { name: 'messages', isBottom: false },
         { name: 'contacts', isBottom: false },
-        { name: 'createGroup', isBottom: true },
+        // { name: 'createGroup', isBottom: true },
       ],
       loadStep: 0,
       conversationObj: {},
@@ -109,6 +112,11 @@ export default {
     customMenu: {
       type: Array,
       default: [],
+    },
+    fromSystem: {
+      type: String,
+      required: false,
+      default: '',
     },
   },
   components: {
@@ -142,6 +150,7 @@ export default {
     loadStep(step) {
       if (step === 2) {
         this.messageList = Object.values(this.conversationObj);
+        console.log('消息列表', this.messageList);
         this.getCurrentOrgUsers();
       }
     },
@@ -153,15 +162,22 @@ export default {
 
     this.connectRongyun();
 
-    Bus.$on('createGroupOk', (id) => {
+    bus.$on('createGroupOk', (id) => {
       setTimeout(() => {
         // 获取会话列表
         this.getNewConnectList(id);
       }, 500);
     });
+
+    bus.$on('setExpansion', this.setRongExpansion);
+  },
+  beforeDestroy() {
+    bus.$off('createGroupOk');
+    bus.$off('setExpansion');
   },
   methods: {
     imWatcher() {
+      let that = this;
       // 添加事件监听
       const Events = RongIMLib.Events;
       RongIMLib.addEventListener(Events.CONNECTING, function() {
@@ -170,34 +186,103 @@ export default {
       RongIMLib.addEventListener(Events.CONNECTED, function() {
         console.log('已经链接到服务器');
       });
-      RongIMLib.addEventListener(Events.MESSAGES, function(messages) {
-        console.log(messages);
-        let message = messages; // TODO
-        console.log('新接收到的消息内容', message);
-        let userinfo = message.content.user;
+      RongIMLib.addEventListener(Events.MESSAGES, function({ messages }) {
+        console.log('新接收到的消息内容', messages);
+        if (messages && messages.length > 0) {
+          that.handleReceiveMessage(messages);
+        }
+      });
+      // 监听消息扩展通知
+      RongIMLib.addEventListener(RongIMLib.Events.EXPANSION, (evt) => {
+        console.log('监听消息扩展通知');
+        console.log(evt);
+      });
+    },
+    setRongExpansion(expansion, message, cb) {
+      let messageType = '';
+      switch (message.type) {
+        case 'text':
+          if (message.referMsg && message.referMsgUserId) {
+            messageType = 'RC:ReferenceMsg';
+          } else {
+            messageType = 'RC:TxtMsg';
+          }
+          break;
+        case 'image':
+          messageType = 'RC:ImgMsg';
+          break;
+        case 'file':
+          messageType = 'RC:FileMsg';
+      }
+
+      let RongMsg = {
+        canIncludeExpansion: true,
+        messageUId: message.id,
+        senderUserId: message.fromUser ? message.fromUser.id : '',
+        targetId: message.toContactId,
+        messageType,
+      };
+
+      RongIMLib.updateMessageExpansion(expansion, RongMsg).then((res) => {
+        cb && cb(res);
+        if (res.code === 0 && this.$refs.imMainDom) {
+          let newExpansion = { ...message.expansion, ...expansion };
+          this.$refs.imMainDom.updateExpansion(newExpansion, message);
+          if (this.fromSystem === 'custom') {
+            // TODO 调接口通知IM后端 所设置扩展的情况
+          }
+        } else {
+          console.log(res.code, res.msg, '设置扩展-更新失败');
+        }
+      });
+    },
+    // 融云消息类型 处理成lemon-ui的格式 并插入
+    handleReceiveMessage(messages) {
+      messages.forEach((item) => {
+        let userinfo = item.content.user || {};
         let messageData = {
-          id: message.messageUId,
+          id: item.messageUId,
           status: 'succeed',
-          sendTime: message.sentTime,
-          toContactId: message.targetId,
+          sendTime: item.sentTime,
+          toContactId: item.targetId,
           fromUser: {
             id: userinfo.id,
             displayName: userinfo.name,
             avatar: userinfo.portrait,
           },
+          canIncludeExpansion: item.canIncludeExpansion || false,
+          expansion: item.expansion || {},
         };
-        switch (message.messageType) {
+        switch (item.messageType) {
           case 'RC:TxtMsg':
-            messageData = { ...messageData, type: 'text', content: message.content.content };
+            const { content, objName, referMsg, referMsgUserId } = item.content;
+            messageData = {
+              ...messageData,
+              type: 'text',
+              content,
+              objName,
+              referMsg,
+              referMsgUserId,
+            };
             break;
           case 'RC:ImgMsg':
-            messageData = { ...messageData, type: 'image', content: message.content.imageUri };
+            messageData = { ...messageData, type: 'image', content: item.content.imageUri };
+            break;
+          case 'RC:FileMsg':
+            const { fileUrl, size, name } = item.content;
+            messageData = {
+              ...messageData,
+              type: 'file',
+              content: fileUrl,
+              fileSize: size,
+              fileName: name,
+            };
             break;
           case 'RC:InfoNtf':
             messageData = {
               ...messageData,
               type: 'event',
-              content: message.content.msg,
+              content: item.content.message,
               fromUser: {
                 id: userinfo.id || -1,
                 displayName: userinfo.name || '系统通知',
@@ -205,19 +290,23 @@ export default {
               },
             };
         }
+
         !this.showList &&
+          ['text', 'image'].includes(messageData.type) &&
           Message({
-            message: '`${message.content.user.name}给您发了条消息`',
+            // message: `${item.content.user.name}给您发了条消息`,
+            message: '收到新消息',
             center: true,
             offset: 1000,
           });
         if (this.$refs.imMainDom) {
           this.$refs.imMainDom.appendMessage(messageData);
-        } else {
-          messageData.id && this.saveMessageList.push(messageData);
+        } else if (messageData.id) {
+          this.saveMessageList.push(messageData);
         }
       });
     },
+
     connectRongyun() {
       registerUser()
         .then((res) => {
@@ -340,13 +429,13 @@ export default {
         id: item.targetId,
         displayName: item.displayName,
         avatar: item.avatar,
-        index: isGroup ? '[2]群组' : '[1]群组',
+        index: isGroup ? '[1]群聊' : '[2]好友',
         unread: item.unreadMessageCount,
-        lastSendTime: item.latestMessage.sentTime,
+        lastSendTime: item.latestMessage ? item.latestMessage.sentTime : item.lastSendTime,
         lastContent: {},
         isGroup,
       };
-      let { messageType, content } = item.latestMessage;
+      let { messageType, content } = item.latestMessage || {};
       let obj = Type_Key_Obj[messageType] || Default_Content;
       userItem.lastContent = {
         type: obj.type,
@@ -371,7 +460,7 @@ export default {
         id: item.targetId,
         displayName: item.displayName,
         avatar: item.avatar,
-        index: '[1]群组',
+        index: '[2]好友',
         unread: item.unreadMessageCount,
         lastSendTime: item.latestMessage.sentTime,
         lastContent: { type: 'text', content: item.latestMessage.content.content },
@@ -379,46 +468,20 @@ export default {
 
       return userItem;
     },
-
-    // 删除会话 暂时
-    deleteConnect(groupList, singleList, noticeList) {
-      let groupIds = groupList.map(({ targetId }) => targetId);
-      let singleIds = singleList.map(({ targetId }) => targetId);
-      let noticeIds = noticeList.map(({ targetId }) => targetId);
-      let ids = [...singleIds, ...noticeIds];
-      groupIds.forEach((id) => {
-        RongIMLib.removeConversation({
-          conversationType: 3,
-          targetId: id,
-        }).then((res) => {
-          // 删除指定会话成功
-          if (res.code === 0) {
-            console.log(res.code);
-          } else {
-            console.log(res.code, res.msg);
-          }
-        });
-      });
-      ids.forEach((id) => {
-        RongIMLib.removeConversation({
-          conversationType: 1,
-          targetId: id,
-        }).then((res) => {
-          // 删除指定会话成功
-          if (res.code === 0) {
-            console.log(res.code);
-          } else {
-            console.log(res.code, res.msg);
-          }
-        });
-      });
-    },
-
     getCurrentChatUser() {
       getCurrentUser()
         .then((res) => {
           if (res.status === 200) {
             this.currentUser = res.data.data;
+            const { id, nickname, orgid, avatar } = res.data.data;
+            let user = {
+              id: String(id),
+              displayName: nickname,
+              orgid: orgid,
+              avatar: avatar,
+            };
+            sessionStorage.setItem('current_user', JSON.stringify(user));
+            bus.$emit('setUserInfo', user);
           }
         })
         .catch((err) => {
@@ -441,7 +504,7 @@ export default {
                 id: id,
                 displayName,
                 avatar,
-                index: '[2]群组',
+                index: '[1]群聊',
                 unread: curConverse.unreadMessageCount,
                 lastSendTime: sentTime,
                 lastContent: {
@@ -450,7 +513,9 @@ export default {
                 },
                 isGroup: true,
               };
-              this.$refs.imMain.addNewContact(userItem);
+
+              this.currentOrgUsers.push(userItem);
+              this.$refs.imMain.addNewContact(this.currentOrgUsers);
             }
           });
         } else {
@@ -458,6 +523,7 @@ export default {
         }
       });
     },
+    // 仅当发送消息时指定 canIncludeExpansion 值为 true，才可对消息进行拓展
     handleSendMessage(item) {
       let {
         target_id,
@@ -497,8 +563,10 @@ export default {
         // web端不会主动发送这种类型消息
       }
 
+      const options = { canIncludeExpansion: true };
+
       // 发送消息
-      RongIMLib.sendMessage(conversation, message).then(({ code, data }) => {
+      RongIMLib.sendMessage(conversation, message, options).then(({ code, data }) => {
         if (code === 0) {
           // console.log('消息发送成功：', data);
           fun(data);
@@ -516,7 +584,6 @@ export default {
       this.saveMessageList = [];
     },
     handlePullMessages(args) {
-      console.log('开始获取历史消息');
       const { id, isGroup, displayName, avatar } = args.contact;
       // 首次进入聊天
       !this.concatId && (this.concatId = id);
@@ -538,21 +605,22 @@ export default {
         // 获取条数，有效值 1-20，默认为 20
         count: 20,
       };
-      RongIMLib.getHistoryMessages(conversation, option)
-        .then(({ code, data }) => {
-          if (code === 0) {
-            const list = data.list; // 获取到的消息列表
-            const hasMore = data.hasMore; // 是否还有历史消息可获取
-            // console.log('获取历史消息成功', list, hasMore);
-            list[0] && (this.historyDate = list[0].sentTime);
+      id &&
+        RongIMLib.getHistoryMessages(conversation, option)
+          .then(({ code, data }) => {
+            if (code === 0) {
+              const list = data.list; // 获取到的消息列表
+              const hasMore = data.hasMore; // 是否还有历史消息可获取
+              console.log('获取历史消息成功', list, hasMore);
+              list[0] && (this.historyDate = list[0].sentTime);
 
-            let otheruser = { id, displayName, avatar };
-            this.$refs.imMainDom.pullHistore(list, hasMore, args.next, otheruser);
-          }
-        })
-        .catch((error) => {
-          console.log('发送文字消息失败', error.code, error.msg);
-        });
+              let otheruser = { id, displayName, avatar };
+              this.$refs.imMainDom.pullHistore(list, hasMore, args.next, otheruser);
+            }
+          })
+          .catch((error) => {
+            console.log('获取历史消息失败', error.code, error.msg);
+          });
     },
     // 从聊天界面点击关闭会话
     handleClose() {
@@ -576,17 +644,18 @@ export default {
 
           let userList = res.data.data;
           this.orgUserList = userList.map(({ id, name }) => ({ id, name }));
-          let currentorgUsers = userList.map((item) => {
+          let curOrgUsers = userList.map((item) => {
             let userItem = {
               id: item.id,
               displayName: item.name,
               avatar: item.avatar,
-              index: '[1]群组',
+              index: '[2]好友',
               unread: 0,
               lastSendTime: '',
               lastContent: '',
             };
             // 会话列表-个人
+
             let curMsg = this.messageList.filter(({ id }) => id == userItem.id);
             if (curMsg && curMsg.length > 0) {
               const { unread, lastSendTime, lastContent } = curMsg[0];
@@ -598,17 +667,55 @@ export default {
 
           this.messageList.forEach((item) => {
             // 会话列表-通知
-            item.id < 0 && currentorgUsers.push(item);
+            item.id < 0 && curOrgUsers.unshift(item);
             // 会话列表-群组
-            item.isGroup && currentorgUsers.push(item);
+            item.isGroup && curOrgUsers.unshift(item);
           });
 
           this.showComponent = true;
-          this.currentOrgUsers = currentorgUsers;
-          console.log('获取当前机构用户=========this.currentOrgUsers', this.currentOrgUsers);
+          // 目前不是本机构的渲染不出来 不知道如何过滤掉
+          this.currentOrgUsers = curOrgUsers;
+          console.log('当前机构用户==currentOrgUsers', this.currentOrgUsers);
         })
         .catch((err) => {
           console.log(err);
+        });
+    },
+    // 删除会话 暂时
+    deleteConnect(conversationType, targetId) {
+      RongIMLib.removeConversation({
+        conversationType, // 1个人 3群聊
+        targetId,
+      }).then((res) => {
+        if (res.code === 0) {
+          console.log('删除会话成功');
+        } else {
+          console.log(res.code, res.msg);
+        }
+      });
+    },
+    // 删除会话中某一条消息 暂时
+    deleteConnectMessage(targetId, messageUId, sentTime) {
+      const conversation = {
+        conversationType: RongIMLib.ConversationType.PRIVATE,
+        targetId, // "<目标用户ID>"
+      };
+      RongIMLib.deleteMessages(conversation, [
+        {
+          messageUId, // : "BS4O-P5AO-D1O6-9GPP"
+          sentTime, // 1632728405345
+          messageDirection: RongIMLib.MessageDirection.SEND,
+        },
+      ])
+        .then((res) => {
+          if (res.code === 0) {
+            console.log('删除消息成功');
+          } else {
+            console.log(res.code, res.msg);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
         });
     },
   },
@@ -668,6 +775,26 @@ export default {
   }
   /deep/.el-dialog--center .el-dialog__footer {
     padding: 0;
+  }
+}
+.close-line {
+  z-index: 11;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 0;
+  width: 30px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  cursor: pointer;
+  color: #999;
+  &:hover {
+    color: #fff;
+    background-color: rgb(250, 97, 97);
+  }
+  .icon-guanbi1 {
+    font-size: 12px;
   }
 }
 </style>

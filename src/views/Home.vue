@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <news ref="yimuNews" :customMenu="customMenu"></news>
+    <news ref="yimuNews" :customMenu="customMenu" :fromSystem="fromSystem"></news>
   </div>
 </template>
 
@@ -14,6 +14,7 @@ export default {
   data() {
     return {
       customMenu: [],
+      fromSystem: 'custom',
     };
   },
   components: {

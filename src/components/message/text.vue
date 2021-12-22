@@ -23,7 +23,7 @@ export default {
       let msg = this.$attrs.message.referMsg;
       console.log('预览', this.$attrs.message);
       if (msg.type === 'image') {
-        bus.$emit('previewImg', msg.content);
+        bus.$emit('previewReplyImg', msg.content);
       }
     },
   },

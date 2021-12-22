@@ -37,15 +37,25 @@
           >
             <i slot="prefix" class="iconfont icon-sousuo"></i>
           </el-input>
-          <i class="iconfont icon-tianjia" title="添加"></i>
+          <i class="iconfont icon-tianjia" title="添加" @click="handleCreateGroup"></i>
         </div>
       </template>
       <!-- 用户群组筛选 -->
-      <!-- <template #sidebar-contact-fixedtop></template> -->
-      <template #message-title="contact">
-        <div class="close-line" @click="closeModal">
-          <i class="iconfont icon-guanbi1" title="关闭"></i>
+      <template #sidebar-contact-fixedtop>
+        <div class="search-line">
+          <el-input
+            class="search-inp"
+            v-model="mailKeyword"
+            size="mini"
+            placeholder="请输入"
+            clearable
+          >
+            <i slot="prefix" class="iconfont icon-sousuo"></i>
+          </el-input>
+          <i class="iconfont icon-tianjia" title="添加" @click="handleCreateGroup"></i>
         </div>
+      </template>
+      <template #message-title="contact">
         <p class="cur-user">{{ contact.displayName }}</p>
         <small
           v-if="contact.id != 'admin'"
@@ -56,7 +66,11 @@
         </small>
         <div v-if="drawerVisibleShow" class="right-toolbar-column">
           <!-- this.targetUser -->
-          <groupInfo :contact="targetUser" :parentInstance="$refs.IMUI" />
+          <groupTools
+            :contact="targetUser"
+            :parentInstance="$refs.IMUI"
+            @openHistory="handleOpenHistory"
+          />
         </div>
         <br />
       </template>
@@ -90,13 +104,19 @@
     <el-dialog title="创建待办" :visible.sync="pendingPop" append-to-body width="600px">
       <add-pending ref="pendingDom" :orgUserList="orgUserList" :msgId="curPendingItem.id" />
     </el-dialog>
+    <el-dialog title="创建群组" :visible.sync="createPop" append-to-body width="800px">
+      <addGroup v-if="createPop" />
+    </el-dialog>
+    <el-dialog title="历史记录" :visible.sync="historyPop" append-to-body width="800px">
+      历史记录
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import AddGroup from './AddGroup.vue';
 import CreateGroup from './CreateGroup';
-import groupInfo from './GroupTools/tools';
+import groupTools from './GroupTools/tools';
 import addPending from './message/addPending.vue';
 import LemonIMUI from 'lemon-imui';
 import LemonPopover from 'lemon-imui';
@@ -139,7 +159,7 @@ export default {
     elImage: Image,
     elTag: Tag,
     Message,
-    groupInfo,
+    groupTools,
     addPending,
     LemonIMUI,
     LemonPopover,
@@ -233,13 +253,13 @@ export default {
       outerVisible: false,
       imgUrl: undefined,
       srcList: undefined,
-
-      //联系人列表
-      all_users: [],
       replyObj: {}, // id: '', type: '', content: '', displayText: ''
       historyKeyword: '',
+      mailKeyword: '',
       pendingPop: false,
       curPendingItem: {},
+      createPop: false,
+      historyPop: false,
     };
   },
   watch: {
@@ -266,6 +286,18 @@ export default {
       },
       // immediate: true,
     },
+    mailKeyword(key) {
+      const { IMUI } = this.$refs;
+      let currentOrgUsers = this.currentOrgUsers;
+      if (!key) {
+        IMUI.initContacts(this.currentOrgUsers);
+        return;
+      }
+
+      let newUsers = currentOrgUsers.filter((item) => item.displayName.includes(key));
+      console.log('newUsers', newUsers);
+      IMUI.initContacts(newUsers);
+    },
   },
   mounted() {
     this.getCurrentOrgUsers();
@@ -278,13 +310,21 @@ export default {
       this.pendingPop = true;
     });
 
-    bus.$on('previewImg', (url) => {
+    bus.$on('previewReplyImg', (url) => {
       this.imgUrl = url;
       this.srcList = [url];
       this.outerVisible = true;
     });
   },
+  beforeDestroy() {
+    bus.$off('reply');
+    bus.$off('openPending');
+    bus.$off('previewReplyImg');
+  },
   methods: {
+    handleCreateGroup() {
+      this.createPop = true;
+    },
     handleMenu() {
       //处理菜单
       const { IMUI } = this.$refs;
@@ -294,20 +334,22 @@ export default {
           menus.push({ name: 'messages' });
         } else if (menuItem.name === 'contacts') {
           menus.push({ name: 'contacts' });
-        } else if (menuItem.name === 'createGroup') {
-          menus.push({
-            name: 'createGroup',
-            title: '添加群组',
-            unread: 0,
-            renderContainer: () => {
-              return <addGroup />;
-            },
-            render: (menu) => {
-              return <i class='lemon-icon-group' />;
-            },
-            isBottom: true,
-          });
-        } else {
+        }
+        // else if (menuItem.name === 'createGroup') {
+        //   menus.push({
+        //     name: 'createGroup',
+        //     title: '添加群组',
+        //     unread: 0,
+        //     renderContainer: () => {
+        //       return <addGroup />;
+        //     },
+        //     render: (menu) => {
+        //       return <i class='lemon-icon-group' />;
+        //     },
+        //     isBottom: true,
+        //   });
+        // }
+        else {
           class VNode {
             constructor(tag, data, value, type) {
               this.tag = tag && tag.toLowerCase();
@@ -369,9 +411,6 @@ export default {
         return <span>[文件]</span>;
       });
     },
-    closeModal() {
-      this.$emit('closeModal');
-    },
     closeRightDrawer() {
       if (this.drawerVisibleShow) {
         this.$refs.IMUI.closeDrawer();
@@ -385,15 +424,22 @@ export default {
     handleChangeMenu(menuName) {
       this.closeRightDrawer();
 
-      console.log('Event:change-menu', menuName);
-      // if(menuName === 'messages') {
-      //   this.$emit('changeMenuMessage')
-      // }
+      console.log('Event:change-menu', menuName, this.currentOrgUsers);
+      if (menuName === 'messages') {
+        // this.$emit('changeMenuMessage')
+        this.$refs.IMUI.initContacts(this.currentOrgUsers);
+      } else if (this.mailKeyword && menuName === 'contacts') {
+        let filterUsers = this.currentOrgUsers.filter((item) =>
+          item.displayName.includes(this.mailKeyword)
+        );
+        this.$refs.IMUI.initContacts(filterUsers);
+      }
     },
     handleChangeContact(contact, instance) {
       this.closeRightDrawer();
 
-      console.log('Event:change-contact', contact);
+      console.log('Event:change-contact', contact, instance);
+      // this.mailKeyword && this.changeIMContact(contact);
       this.targetUser = contact;
       instance.updateContact({
         id: contact.id,
@@ -411,16 +457,40 @@ export default {
     },
 
     //历史记录
-    pullHistore(list, hasMore, next, otheruser) {
+    pullHistore(listInit, hasMore, next, otheruser) {
+      let list = [...listInit];
+      console.log('历史记录', listInit);
+
       let messages = list.map((item) => {
+        let fromUser = {};
+        // messageDirection 消息方向： 1: 发送，2: 接收
+        // 非通知类型
+        if (item.messageType !== 'RC:InfoNtf') {
+          if (item.messageDirection === 1) {
+            // 发送方
+            fromUser = this.user;
+          } else if (item.messageDirection === 2) {
+            // 接收方
+            if (item.conversationType === 1) {
+              // 单聊
+              fromUser = otheruser;
+            } else if (item.conversationType === 3) {
+              // 群聊
+              const { id, name: displayName, portrait: avatar } = item.content.user || {};
+              fromUser = { id, displayName, avatar };
+            }
+          }
+        }
+
         let messageItem = {
           id: item.messageUId,
           status: 'succeed',
           type: 'text',
+          conversationType: item.conversationType,
           sendTime: item.sentTime,
           content: '',
           toContactId: item.targetId,
-          fromUser: item.messageDirection == '1' ? this.user : otheruser,
+          fromUser,
           canIncludeExpansion: item.canIncludeExpansion || false,
           expansion: item.expansion || {},
         };
@@ -498,6 +568,16 @@ export default {
           IMUI.updateMessage(updateMsg);
           IMUI.messageViewToBottom();
         }
+      }
+    },
+    updateExpansion(expansion, obj) {
+      const { IMUI } = this.$refs;
+      const messages = IMUI.getCurrentMessages();
+      if (expansion && messages.length > 0) {
+        let message = messages.filter(({ id }) => id === obj.id)[0];
+        message.expansion = expansion;
+        console.log('修改消息扩展展示', message);
+        IMUI.updateMessage(message);
       }
     },
     handleSend(message, next, file) {
@@ -617,45 +697,30 @@ export default {
           item.lastContent = IMUI.lastContentRender(item.lastContent);
         }
       });
-      this.$refs.IMUI.initContacts(currentOrgUsers);
+      IMUI.initContacts(currentOrgUsers);
       setTimeout(() => {
         this.firstConversationId && IMUI.changeContact(this.firstConversationId);
       }, 500);
     },
     // 新增新机构
-    addNewContact(newContact) {
-      this.all_users.push(newContact);
+    addNewContact(all_user) {
       this.$refs.IMUI.initContacts(all_user);
     },
 
     //切换联系人
-    changeContact(contact) {
+    changeIMContact(contact) {
+      // console.log('切换联系人', contact);
       this.$refs.IMUI.changeContact(contact.id);
+    },
+    handleOpenHistory(item) {
+      this.historyPop = true;
+      console.log('打开历史记录弹窗', item);
     },
   },
 };
 </script>
 
 <style lang="less" scoped>
-.close-line {
-  position: absolute;
-  top: 0;
-  right: 0;
-  padding: 2px 0;
-  width: 30px;
-  height: 22px;
-  line-height: 22px;
-  text-align: center;
-  cursor: pointer;
-  color: #999;
-  &:hover {
-    color: #fff;
-    background-color: rgb(250, 97, 97);
-  }
-  .icon-guanbi1 {
-    font-size: 12px;
-  }
-}
 .cur-user {
   margin-top: 4px;
   font-size: 16px;
