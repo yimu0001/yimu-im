@@ -102,7 +102,13 @@
     </el-dialog>
 
     <el-dialog title="创建待办" :visible.sync="pendingPop" append-to-body width="600px">
-      <add-pending ref="pendingDom" :orgUserList="orgUserList" :msgId="curPendingItem.id" />
+      <!-- :orgUserList="orgUserList" -->
+      <add-pending
+        v-if="pendingPop"
+        :msgInfo="curPendingItem"
+        :pendGroupId="pendGroupId"
+        :directorList="directorList"
+      />
     </el-dialog>
     <el-dialog title="创建群组" :visible.sync="createPop" append-to-body width="800px">
       <addGroup v-if="createPop" />
@@ -260,6 +266,8 @@ export default {
       curPendingItem: {},
       createPop: false,
       historyPop: false,
+      directorList: [],
+      pendGroupId: '',
     };
   },
   watch: {
@@ -306,6 +314,17 @@ export default {
       this.replyObj = data;
     });
     bus.$on('openPending', (obj) => {
+      let contactObj = this.$refs.IMUI.getCurrentContact();
+      this.directorList = [];
+      if (contactObj.isGroup) {
+        this.pendGroupId = contactObj.id;
+      } else {
+        this.directorList = [
+          { id: contactObj.id, nickname: contactObj.displayName },
+          { id: this.currentUser.id, nickname: this.currentUser.nickname },
+        ];
+      }
+      console.log('contactObj', contactObj, this.pendGroupId, this.directorList);
       this.curPendingItem = obj;
       this.pendingPop = true;
     });
@@ -424,7 +443,7 @@ export default {
     handleChangeMenu(menuName) {
       this.closeRightDrawer();
 
-      console.log('Event:change-menu', menuName, this.currentOrgUsers);
+      console.log('Event:change-menu', menuName);
       if (menuName === 'messages') {
         // this.$emit('changeMenuMessage')
         this.$refs.IMUI.initContacts(this.currentOrgUsers);
@@ -438,7 +457,7 @@ export default {
     handleChangeContact(contact, instance) {
       this.closeRightDrawer();
 
-      console.log('Event:change-contact', contact, instance);
+      console.log('Event:change-contact', contact);
       // this.mailKeyword && this.changeIMContact(contact);
       this.targetUser = contact;
       instance.updateContact({
@@ -459,7 +478,6 @@ export default {
     //历史记录
     pullHistore(listInit, hasMore, next, otheruser) {
       let list = [...listInit];
-      console.log('历史记录', listInit);
 
       let messages = list.map((item) => {
         let fromUser = {};
@@ -766,7 +784,10 @@ export default {
     content: '\2740';
   }
 }
-
+/deep/ .lemon-badge__label {
+  min-width: 18px;
+  box-sizing: border-box;
+}
 // 消息样式
 /deep/ .lemon-message {
   padding: 5px 0;

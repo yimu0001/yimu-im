@@ -1,5 +1,5 @@
+import { BaseUrl } from './constant';
 import commonAxios from 'ym-bridge-shandianyun';
-const BaseUrl = 'https://im.shandian8.com';
 
 export const registerUser = () => {
   return commonAxios.request({

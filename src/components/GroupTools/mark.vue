@@ -41,6 +41,8 @@
 
 <script>
 import { Button, Input, Message, Avatar, Checkbox, Tabs, TabPane } from 'element-ui';
+import { fetchSingleStats, fetchGroupStats } from '@/api/chat';
+
 export default {
   name: 'MarkDrawer',
   components: {
@@ -101,14 +103,16 @@ export default {
       this.getMarkList();
     },
   },
-  mounted() {},
+  mounted() {
+    // this.getMarkList()
+  },
   methods: {
     closePop() {
       this.closeMethod();
     },
     getMarkList() {
       console.log('接口获取已标记列表');
-      // groupMembers(this.vContact.id).then((res) => {
+      // fetchSingleStats(this.vContact.id).then((res) => {
       //   if (res.status === 200) {
       //     this.groupMemberList = res.data.data;
       //   } else {

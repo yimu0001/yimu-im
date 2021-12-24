@@ -198,7 +198,7 @@ export default {
         console.log(evt);
       });
     },
-    setRongExpansion(expansion, message, cb) {
+    setRongExpansion(expansion, message, operate, cb) {
       let messageType = '';
       switch (message.type) {
         case 'text':
@@ -228,8 +228,15 @@ export default {
         if (res.code === 0 && this.$refs.imMainDom) {
           let newExpansion = { ...message.expansion, ...expansion };
           this.$refs.imMainDom.updateExpansion(newExpansion, message);
-          if (this.fromSystem === 'custom') {
+          if (this.fromSystem === 'cs') {
             // TODO 调接口通知IM后端 所设置扩展的情况
+            let param = {
+              module: this.fromSystem,
+              msg_uid: message.id,
+              extra_content: expansion,
+              operate,
+            };
+            console.log('通知IM后端扩展的情况', param);
           }
         } else {
           console.log(res.code, res.msg, '设置扩展-更新失败');
@@ -611,7 +618,6 @@ export default {
             if (code === 0) {
               const list = data.list; // 获取到的消息列表
               const hasMore = data.hasMore; // 是否还有历史消息可获取
-              console.log('获取历史消息成功', list, hasMore);
               list[0] && (this.historyDate = list[0].sentTime);
 
               let otheruser = { id, displayName, avatar };
@@ -675,7 +681,7 @@ export default {
           this.showComponent = true;
           // 目前不是本机构的渲染不出来 不知道如何过滤掉
           this.currentOrgUsers = curOrgUsers;
-          console.log('当前机构用户==currentOrgUsers', this.currentOrgUsers);
+          // console.log('当前机构用户==currentOrgUsers', this.currentOrgUsers);
         })
         .catch((err) => {
           console.log(err);

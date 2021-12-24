@@ -1,12 +1,19 @@
 <script>
 import bus from '@/libs/bus';
 import { Message } from 'element-ui';
+import { debounce } from 'lodash';
 
 export default {
   name: 'toolbar',
   inheritAttrs: false,
   data() {
-    return { message: {}, user: { id: '', displayName: '', orgid: '', avatar: '' } };
+    return {
+      message: {},
+      user: { id: '', displayName: '', orgid: '', avatar: '' },
+      debounceThumb: {},
+      debounceMark: {},
+      debounceCollect: {},
+    };
   },
   props: { msgContent: { default: {} } },
   components: { Message },
@@ -20,6 +27,10 @@ export default {
     },
   },
   mounted() {
+    this.debounceThumb = debounce(this.handleThumb, 400, false);
+    this.debounceMark = debounce(this.handleMark, 400, false);
+    this.debounceCollect = debounce(this.handleCollect, 400, false);
+
     let obj = sessionStorage.getItem('current_user');
     if (obj) {
       this.user = JSON.parse(obj);
@@ -40,6 +51,7 @@ export default {
       e.stopPropagation();
       // 本消息体设置扩展 thumbedIds
       let thumbedIds = (this.message.expansion ? this.message.expansion.thumbedIds : []) || [];
+      // 未点赞
       let unchecked = !thumbedIds.includes(this.user.id);
       if (unchecked) {
         thumbedIds.push(String(this.user.id));
@@ -48,7 +60,8 @@ export default {
       }
 
       thumbedIds = thumbedIds.filter((id) => !!id);
-      bus.$emit('setExpansion', { thumbedIds }, this.message, (res) => {
+      let operate = { type: '1', checked: !unchecked };
+      bus.$emit('setExpansion', { thumbedIds }, this.message, operate, (res) => {
         let optTip = unchecked ? '点赞' : '取消点赞';
         if (res.code === 0) {
           Message.success(optTip + '成功');
@@ -79,7 +92,8 @@ export default {
       }
       markedIds = markedIds.filter((id) => !!id);
 
-      bus.$emit('setExpansion', { markedIds }, this.message, (res) => {
+      let operate = { type: '2', checked: !unchecked };
+      bus.$emit('setExpansion', { markedIds }, this.message, operate, (res) => {
         let optTip = unchecked ? '标记' : '取消标记';
         if (res.code === 0) {
           Message.success(optTip + '成功');
@@ -92,6 +106,7 @@ export default {
     },
     handlePending(e) {
       e.stopPropagation();
+
       // 打开待办弹窗 填写并发布
       bus.$emit('openPending', this.message);
     },
@@ -107,7 +122,8 @@ export default {
       }
       collectedIds = collectedIds.filter((id) => !!id);
 
-      bus.$emit('setExpansion', { collectedIds }, this.message, (res) => {
+      let operate = { type: '3', checked: !unchecked };
+      bus.$emit('setExpansion', { collectedIds }, this.message, operate, (res) => {
         let optTip = unchecked ? '收藏' : '取消收藏';
         if (res.code === 0) {
           Message.success(optTip + '成功');
@@ -138,19 +154,19 @@ export default {
         <i
           class={['iconfont', 'icon-dianzan', thumbed ? 'selected' : 'normal']}
           title={thumbed ? '取消点赞' : '点赞'}
-          onClick={this.handleThumb}
+          onClick={this.debounceThumb}
         ></i>
 
         <i
           class={['iconfont', 'icon-icon-', marked ? 'selected' : 'normal']}
           title={marked ? '取消标记' : '标记'}
-          onClick={this.handleMark}
+          onClick={this.debounceMark}
         ></i>
 
         <i
           class={['iconfont', 'icon-shoucang1', collected ? 'selected' : 'normal']}
           title={collected ? '取消收藏' : '收藏'}
-          onClick={this.handleCollect}
+          onClick={this.debounceCollect}
         ></i>
 
         <i class='iconfont icon-daibanshixiang' title='创建待办' onClick={this.handlePending}></i>
