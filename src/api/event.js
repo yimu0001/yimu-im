@@ -20,12 +20,28 @@ export const completePending = (waitTaskId) => {
   });
 };
 
-// 获取待办列表 status状态 默认0返回所有 1未处理 200完成  keyword关键字 page limit groupId
-export const fetchPendingList = (status = 0, keyword, page, limit, groupId) => {
+// 获取待办列表 status状态 默认0返回所有 1未处理 200完成  keyword关键字 page per_page groupId
+export const fetchPendingList = (
+  isGroup = false,
+  id,
+  page = 1,
+  type,
+  status = 0,
+  keyword,
+  per_page
+) => {
+  // 单聊userId 群聊groupId
+  let params = { page, type, status, keyword, per_page };
+  if (isGroup) {
+    params.groupId = id;
+  } else {
+    params.userId = id;
+  }
+
   return commonAxios.request({
     url: CustomUrl + '/news/waitTaskList',
     method: 'get',
-    params: { status, keyword, page, limit, groupId },
+    params,
   });
 };
 // 获取待办负责人用户列表
@@ -34,5 +50,21 @@ export const fetchPendingDirectorList = (groupId) => {
     url: CustomUrl + '/news/getWaitTaskUserList',
     method: 'get',
     params: { groupId },
+  });
+};
+// 获取标记列表
+export const fetchMarkList = (isGroup = false, id, page = 1, type, keyword, per_page) => {
+  // 单聊userId 群聊groupId
+  let params = { page, type, keyword, per_page };
+  if (isGroup) {
+    params.groupId = id;
+  } else {
+    params.userId = id;
+  }
+
+  return commonAxios.request({
+    url: CustomUrl + '/news/markList',
+    method: 'get',
+    params,
   });
 };

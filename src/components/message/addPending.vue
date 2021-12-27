@@ -58,6 +58,7 @@
 import { Form, FormItem, Select, Option, Button, Input, DatePicker, Message } from 'element-ui';
 import { fetchPendingDirectorList, createPending } from '@/api/event';
 import { dateFormat } from '@/libs/tools';
+import { LogLevel } from '@rongcloud/imlib-next';
 console.log('DatePicker', DatePicker);
 
 export default {
@@ -117,12 +118,20 @@ export default {
       },
     };
   },
+  watch: {
+    'msgInfo.isGroup'(isGroup) {
+      if (isGroup) {
+        this.pendGroupId && this.getSpinner();
+      } else {
+        this.userList = this.directorList; // 当前用户和聊天者
+      }
+    },
+  },
   mounted() {
-    if (this.msgInfo.conversationType === 1) {
-      this.userList = this.directorList; // 当前用户和聊天者
-      console.log('单聊', this.userList);
-    } else {
+    if (this.msgInfo.isGroup) {
       this.pendGroupId && this.getSpinner();
+    } else {
+      this.userList = this.directorList; // 当前用户和聊天者
     }
     this.$refs.pendform.resetFields();
   },
@@ -130,9 +139,11 @@ export default {
     getSpinner() {
       fetchPendingDirectorList(this.pendGroupId)
         .then((res) => {
-          console.log('群聊fetchPendingDirectorList res', res);
           if (res.status === 200) {
+            this.userList = res.data.data;
+            console.log('群聊', this.userList);
           } else {
+            this.userList = [];
           }
         })
         .catch((err) => {
@@ -149,7 +160,8 @@ export default {
             .then((res) => {
               console.log('res', res);
               if (res.status === 200) {
-                Message.success('创建待办成功！');
+                Message.success(res.data.msg || '创建待办成功！');
+                this.$emit('close');
               } else {
                 Message.error(res.data.msg);
               }

@@ -108,6 +108,7 @@
         :msgInfo="curPendingItem"
         :pendGroupId="pendGroupId"
         :directorList="directorList"
+        @close="handleClosePending"
       />
     </el-dialog>
     <el-dialog title="创建群组" :visible.sync="createPop" append-to-body width="800px">
@@ -280,7 +281,6 @@ export default {
       };
     },
     messageList(newValue, oldValue) {
-      console.log('数据变化', newValue, oldValue);
       this.show_message_list = newValue;
       this.getCurrentOrgUsers();
     },
@@ -303,7 +303,6 @@ export default {
       }
 
       let newUsers = currentOrgUsers.filter((item) => item.displayName.includes(key));
-      console.log('newUsers', newUsers);
       IMUI.initContacts(newUsers);
     },
   },
@@ -324,8 +323,7 @@ export default {
           { id: this.currentUser.id, nickname: this.currentUser.nickname },
         ];
       }
-      console.log('contactObj', contactObj, this.pendGroupId, this.directorList);
-      this.curPendingItem = obj;
+      this.curPendingItem = { ...obj, isGroup: !!contactObj.isGroup };
       this.pendingPop = true;
     });
 
@@ -341,6 +339,12 @@ export default {
     bus.$off('previewReplyImg');
   },
   methods: {
+    handleClosePending() {
+      this.pendingPop = false;
+      this.pendGroupId = '';
+      this.directorList = [];
+      this.curPendingItem = {};
+    },
     handleCreateGroup() {
       this.createPop = true;
     },
@@ -477,6 +481,7 @@ export default {
 
     //历史记录
     pullHistore(listInit, hasMore, next, otheruser) {
+      console.log('历史记录', listInit);
       let list = [...listInit];
 
       let messages = list.map((item) => {

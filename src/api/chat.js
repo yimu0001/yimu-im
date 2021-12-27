@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-22 16:12:19
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2021-12-22 16:50:03
+ * @LastEditTime: 2021-12-24 17:15:11
  */
 import { BaseUrl, CustomUrl, BIG_PAGE_SIZE } from './constant';
 import commonAxios from 'ym-bridge-shandianyun';
@@ -65,5 +65,15 @@ export const fetchMessageHistory = (id, offset) => {
     url: BaseUrl + '/message-history/message/' + id + '/after',
     method: 'get',
     params: { offset },
+  });
+};
+
+// 消息标记扩展 module 模块名 (cs客服)  operate:{type 操作类型  checked}
+
+export const setBackExpansion = (module, msg_uid, extra_content, operate) => {
+  return commonAxios.request({
+    url: BaseUrl + '/message/expression',
+    method: 'post',
+    data: { module, msg_uid, extra_content, operate },
   });
 };

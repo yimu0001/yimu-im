@@ -60,7 +60,8 @@ export default {
       }
 
       thumbedIds = thumbedIds.filter((id) => !!id);
-      let operate = { type: '1', checked: !unchecked };
+      // type  点赞 isThumbed  标记 isMarked  收藏 isCollected
+      let operate = { type: 'isThumbed', checked: unchecked };
       bus.$emit('setExpansion', { thumbedIds }, this.message, operate, (res) => {
         let optTip = unchecked ? '点赞' : '取消点赞';
         if (res.code === 0) {
@@ -92,7 +93,7 @@ export default {
       }
       markedIds = markedIds.filter((id) => !!id);
 
-      let operate = { type: '2', checked: !unchecked };
+      let operate = { type: 'isMarked', checked: unchecked };
       bus.$emit('setExpansion', { markedIds }, this.message, operate, (res) => {
         let optTip = unchecked ? '标记' : '取消标记';
         if (res.code === 0) {
@@ -122,7 +123,7 @@ export default {
       }
       collectedIds = collectedIds.filter((id) => !!id);
 
-      let operate = { type: '3', checked: !unchecked };
+      let operate = { type: 'isCollected', checked: unchecked };
       bus.$emit('setExpansion', { collectedIds }, this.message, operate, (res) => {
         let optTip = unchecked ? '收藏' : '取消收藏';
         if (res.code === 0) {

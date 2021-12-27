@@ -39,24 +39,36 @@
           </el-input>
         </div>
         <div class="pend-list">
-          <div class="pend-item" v-for="item in pendList" :key="item.id">
+          <div class="pend-item" v-for="item in pendList" :key="item.taskId">
             <div class="pend-status">
-              <div v-if="item.status === 1" class="checked-circle"></div>
-              <div v-else class="unchecked-circle"></div>
+              <!-- 1未处理 200完成 -->
+              <div
+                v-if="item.taskStatus === 1"
+                class="unchecked-circle"
+                title="完成"
+                @click="handleComplete(item.taskId)"
+              ></div>
+              <div v-if="item.taskStatus === 200" class="checked-circle"></div>
             </div>
             <div class="main-item">
               <p
                 class="msg-content"
-                :style="item.status === 1 ? 'text-decoration: line-through;' : ''"
+                :style="item.taskStatus === 200 ? 'text-decoration: line-through;' : ''"
               >
-                {{ item.content }}
+                {{ item.taskContent }}
               </p>
               <div class="send-user">
-                <p class="user">{{ item.sendUser }}</p>
-                <p class="time">{{ item.sendTime }}</p>
+                <p class="user">{{ item.taskWaiter }}</p>
+                <p class="time">{{ item.createdAt }}</p>
               </div>
             </div>
           </div>
+          <!-- <infinite-loading @infinite="infiniteHandler">
+            <span slot="no-more" class="gray-text">到底啦</span>
+            <span slot="no-results" class="gray-text">
+              暂无评论
+            </span>
+          </infinite-loading> -->
         </div>
       </div>
     </div>
@@ -64,6 +76,8 @@
 </template>
 
 <script>
+import InfiniteLoading from 'vue-infinite-loading';
+import { fetchPendingList, completePending } from '@/api/event';
 import {
   Button,
   Select,
@@ -75,6 +89,7 @@ import {
   Tabs,
   TabPane,
   Radio,
+  MessageBox,
 } from 'element-ui';
 export default {
   name: 'PendingDrawer',
@@ -89,35 +104,20 @@ export default {
     elTabs: Tabs,
     elTabPane: TabPane,
     elRadio: Radio,
+    'infinite-loading': InfiniteLoading,
   },
   data() {
     return {
       activePendKey: 'my',
       filterForm: { status: null, keyword: '' },
+      // 1未处理 200完成
       statusOptions: [
-        { value: 0, label: '未完成' },
-        { value: 1, label: '已完成' },
+        { value: 1, label: '未处理' },
+        { value: 200, label: '已完成' },
       ],
-      pendList: [
-        {
-          id: 1,
-          content:
-            '这是一条消息，消息内容如下。这是一条消息，消息内容如下。这是一条消息，消息内容如下。这是一条消息，消息内容如下',
-          sendUser: '张三',
-          sendTime: '2021-11-25 15:25',
-          pendUser: '刘金栋',
-          status: 0,
-        },
-        {
-          id: 2,
-          content:
-            '这是一条消息，消息内容如下。这是一条消息，消息内容如下。这是一条消息，消息内容如下。这是一条消息，消息内容如下',
-          sendUser: '李四',
-          sendTime: '2021-11-15 09:54',
-          pendUser: '刘金栋',
-          status: 1,
-        },
-      ],
+      pendList: [],
+      page: 1,
+      finished: false,
     };
   },
   props: {
@@ -143,25 +143,67 @@ export default {
       deep: true,
     },
   },
-  mounted() {},
+  mounted() {
+    this.getPendList();
+  },
   methods: {
     closePop() {
       this.closeMethod();
     },
-    getPendList() {
-      console.log('接口获取待办列表');
-      // groupMembers(this.vContact.id).then((res) => {
-      //   if (res.status === 200) {
-      //     this.groupMemberList = res.data.data;
-      //   } else {
-      //     Message.error(res.data.msg);
-      //   }
-      // });
+    getPendList(cb) {
+      let type = this.activePendKey === 'my' ? 'my' : '';
+      const { status, keyword } = this.filterForm;
+      console.log('getPendList接口获取', this.contact, this.page, type, status, keyword);
+      fetchPendingList(
+        this.contact.isGroup,
+        this.contact.id,
+        this.page,
+        type,
+        status,
+        keyword
+      ).then((res) => {
+        console.log('接口获取待办列表', res.data);
+        if (res.status === 200) {
+          const { list, num, pages } = res.data.data;
+          // newsInfo taskInfo
+          this.pendList = list.map(({ taskInfo }) => ({
+            ...taskInfo,
+            taskWaiter: taskInfo.taskWaiter.map(({ name }) => name).join(' '),
+          }));
+        } else {
+          Message.error(res.data.msg);
+        }
+
+        cb && cb();
+      });
     },
-    // 多选框选中数据
-    // handleSelectionChange(selection) {
-    //   this.ids = selection.map((item) => item.id);
-    // },
+    infiniteHandler($state) {
+      if (this.finished) {
+        return false;
+      }
+
+      this.getPendList(() => {
+        this.finished ? $state.complete() : $state.loaded();
+      });
+    },
+    handleComplete(waitTaskId) {
+      MessageBox.confirm('确定已完成当前待办事项吗？', '提示', { type: 'info' })
+        .then((_) => {
+          completePending(waitTaskId)
+            .then((res) => {
+              if (res.status === 200) {
+                Message.success(res.data.msg);
+                this.getPendList();
+              } else {
+                Message.error(res.data.msg);
+              }
+            })
+            .catch((err) => {
+              console.log(err);
+            });
+        })
+        .catch((_) => {});
+    },
   },
 };
 </script>
@@ -230,6 +272,7 @@ export default {
             }
           }
           .unchecked-circle {
+            cursor: pointer;
             margin-left: 5px;
             width: 18px;
             height: 18px;

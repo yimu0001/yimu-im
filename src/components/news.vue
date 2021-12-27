@@ -51,7 +51,8 @@ import {
   getTargetInfoById,
   groupInfos,
   getUserByOrgid,
-} from '../api/data.js';
+} from '@/api/data.js';
+import { setBackExpansion } from '@/api/chat.js';
 import bus from '../libs/bus';
 import testComponent from '../components/testComponent.vue';
 
@@ -163,6 +164,7 @@ export default {
     this.connectRongyun();
 
     bus.$on('createGroupOk', (id) => {
+      this.$refs.imMainDom.createPop = false;
       setTimeout(() => {
         // 获取会话列表
         this.getNewConnectList(id);
@@ -228,15 +230,19 @@ export default {
         if (res.code === 0 && this.$refs.imMainDom) {
           let newExpansion = { ...message.expansion, ...expansion };
           this.$refs.imMainDom.updateExpansion(newExpansion, message);
+
+          // 为了统计数据 调接口通知IM后端 所设置扩展的情况
           if (this.fromSystem === 'cs') {
-            // TODO 调接口通知IM后端 所设置扩展的情况
-            let param = {
-              module: this.fromSystem,
-              msg_uid: message.id,
-              extra_content: expansion,
-              operate,
-            };
-            console.log('通知IM后端扩展的情况', param);
+            console.log('通知IM后端扩展的情况', this.fromSystem, message.id, expansion, operate);
+            setBackExpansion(this.fromSystem, message.id, expansion, operate)
+              .then((res) => {
+                if (res.status === 200) {
+                  console.log('通知后端扩展OK', res);
+                }
+              })
+              .catch((err) => {
+                console.log(err);
+              });
           }
         } else {
           console.log(res.code, res.msg, '设置扩展-更新失败');
@@ -545,7 +551,9 @@ export default {
       // 指定消息发送的目标会话
       const conversation = {
         targetId: target_id,
-        type: isGroup ? RongIMLib.ConversationType.GROUP : RongIMLib.ConversationType.PRIVATE,
+        conversationType: isGroup
+          ? RongIMLib.ConversationType.GROUP
+          : RongIMLib.ConversationType.PRIVATE,
       };
 
       // 类型 conversation_type 'RC:ReferenceMsg' 'RC:TxtMsg' 'RC:ImgMsg' 'RC:FileMsg' 'RC:InfoNtf'
@@ -612,6 +620,7 @@ export default {
         // 获取条数，有效值 1-20，默认为 20
         count: 20,
       };
+      // 有时候这里卡住
       id &&
         RongIMLib.getHistoryMessages(conversation, option)
           .then(({ code, data }) => {
@@ -681,7 +690,14 @@ export default {
           this.showComponent = true;
           // 目前不是本机构的渲染不出来 不知道如何过滤掉
           this.currentOrgUsers = curOrgUsers;
-          // console.log('当前机构用户==currentOrgUsers', this.currentOrgUsers);
+          console.log('当前机构用户==currentOrgUsers', this.currentOrgUsers);
+          // let type10 = [];
+          // curOrgUsers.forEach((item) => {
+          //   if (item.id === '13') {
+          //     type10.push(item);
+          //   }
+          // });
+          // console.log('type10', type10);
         })
         .catch((err) => {
           console.log(err);

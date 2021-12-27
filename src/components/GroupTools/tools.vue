@@ -258,7 +258,6 @@ export default {
     contact: {
       deep: true,
       handler(newValue) {
-        console.log('watch tools====contact', newValue, this.contact);
         this.searchValue = '';
         this.vContact = newValue;
         if (this.vContact.isGroup) {
