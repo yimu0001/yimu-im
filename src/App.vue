@@ -29,4 +29,11 @@
 //   font-size: 12px;
 //   color: #999;
 // }
+.selected-icon-color {
+  // color: #f5ae15;
+  color: #0fd547;
+}
+.normal-icon-color {
+  color: #999;
+}
 </style>

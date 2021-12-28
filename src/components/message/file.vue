@@ -57,7 +57,6 @@ export default {
       .iconfont {
         margin: 0 5px;
         font-size: 16px;
-        color: #999;
         &:hover {
           color: #0fd547;
         }

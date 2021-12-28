@@ -33,6 +33,12 @@
               <i class="iconfont icon-jinru" title="查看" @click="checkHistory(item)"></i>
             </div>
           </div>
+          <infinite-loading @infinite="infiniteHandler" :distance="200" :identifier="activeMarkKey">
+            <span slot="no-more" class="gray-text">到底啦</span>
+            <span slot="no-results" class="gray-text">
+              {{ finished ? '到底啦' : '暂无数据' }}
+            </span>
+          </infinite-loading>
         </div>
       </div>
     </div>
@@ -40,8 +46,8 @@
 </template>
 
 <script>
+import InfiniteLoading from 'vue-infinite-loading';
 import { Button, Input, Message, Avatar, Checkbox, Tabs, TabPane } from 'element-ui';
-import { fetchSingleStats, fetchGroupStats } from '@/api/chat';
 import { fetchMarkList } from '@/api/event';
 
 export default {
@@ -54,6 +60,7 @@ export default {
     elCheckbox: Checkbox,
     elTabs: Tabs,
     elTabPane: TabPane,
+    'infinite-loading': InfiniteLoading,
   },
   data() {
     return {
@@ -70,6 +77,7 @@ export default {
       // }]
       historyPop: false,
       page: 1,
+      finished: false,
     };
   },
   props: {
@@ -89,50 +97,64 @@ export default {
     activeMarkKey(key) {
       if (key) {
         this.markKeyword = '';
-        this.getMarkList();
+        this.refreshParam();
       }
     },
     markKeyword() {
-      this.getMarkList();
+      this.refreshParam();
+      this.$nextTick(this.getMarkList);
     },
   },
   mounted() {
-    this.getMarkList();
+    // this.getMarkList();
   },
   methods: {
     closePop() {
       this.closeMethod();
     },
-    getMarkList() {
+    refreshParam() {
+      this.finished = false;
+      this.page = 1;
+      this.markList = [];
+    },
+    getMarkList(cb) {
+      let pageNow = this.page;
       let type = this.activeMarkKey === 'my' ? 'my' : '';
-      console.log('接口获取', this.contact, this.page, type, this.markKeyword);
       fetchMarkList(this.contact.isGroup, this.contact.id, this.page, type, this.markKeyword).then(
         (res) => {
           console.log('接口获取已标记列表', res.data);
           if (res.status === 200) {
-            // this.markList = res.data.data;
-            this.markList = [
-              {
-                imId: 1,
-                imRemoteId: 'adaaf131afda',
-                userId: 63,
-                groupId: 1,
-                pushTime: '2021-12-13 16:17:26',
-                newsContent: '这是一条测试数据',
-                newsUserName: '丁照轩',
-                groupName: '测试群聊',
-                markUserId: 63,
-                markUserName: '丁照轩',
-                created_at: '2021-12-13 16:36:21',
-              },
-            ];
+            const { list, num, pages } = res.data.data;
+            if (pageNow === 1) {
+              this.markList = list;
+            } else {
+              this.markList = this.markList.concat(list);
+            }
+
+            if (pageNow >= pages) {
+              this.page = pages;
+              this.finished = true;
+            } else {
+              this.page = pageNow + 1;
+            }
           } else {
             Message.error(res.data.msg);
           }
+
+          cb && cb();
         }
       );
     },
 
+    infiniteHandler($state) {
+      if (this.finished) {
+        return false;
+      }
+
+      this.getMarkList(() => {
+        this.finished ? $state.complete() : $state.loaded();
+      });
+    },
     checkHistory(item) {
       this.openHistory(item);
     },
@@ -162,8 +184,14 @@ export default {
     }
   }
   .mark-main {
-    padding: 15px 20px;
+    padding: 15px 0 15px 20px;
+    background: #f2f2f2;
+    box-sizing: border-box;
     .mark-list {
+      margin: 10px 0;
+      padding-bottom: 40px;
+      overflow-y: scroll;
+      height: 367px;
       .mark-item {
         margin: 10px 0;
         padding: 5px 15px;

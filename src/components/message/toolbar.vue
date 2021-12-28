@@ -9,7 +9,7 @@ export default {
   data() {
     return {
       message: {},
-      user: { id: '', displayName: '', orgid: '', avatar: '' },
+      userId: '',
       debounceThumb: {},
       debounceMark: {},
       debounceCollect: {},
@@ -21,27 +21,25 @@ export default {
     msgContent: {
       immediate: true,
       deep: true,
-      handler() {
-        this.message = this.msgContent;
+      handler(val) {
+        this.message = val;
       },
     },
+  },
+  created() {
+    this.userId = sessionStorage.getItem('current_userId');
+
+    bus.$on('setUserInfo', (userinfo) => {
+      if (userinfo) {
+        // id, displayName, orgid, avatar,
+        this.userId = userinfo.id;
+      }
+    });
   },
   mounted() {
     this.debounceThumb = debounce(this.handleThumb, 400, false);
     this.debounceMark = debounce(this.handleMark, 400, false);
     this.debounceCollect = debounce(this.handleCollect, 400, false);
-
-    let obj = sessionStorage.getItem('current_user');
-    if (obj) {
-      this.user = JSON.parse(obj);
-    }
-
-    bus.$on('setUserInfo', (userinfo) => {
-      if (userinfo) {
-        // id, displayName, orgid, avatar,
-        this.user = userinfo;
-      }
-    });
   },
   beforeDestroy() {
     bus.$off('setUserInfo');
@@ -52,11 +50,11 @@ export default {
       // 本消息体设置扩展 thumbedIds
       let thumbedIds = (this.message.expansion ? this.message.expansion.thumbedIds : []) || [];
       // 未点赞
-      let unchecked = !thumbedIds.includes(this.user.id);
+      let unchecked = !thumbedIds.includes(this.userId);
       if (unchecked) {
-        thumbedIds.push(String(this.user.id));
+        thumbedIds.push(String(this.userId));
       } else {
-        thumbedIds = thumbedIds.filter((id) => id !== this.user.id);
+        thumbedIds = thumbedIds.filter((id) => id !== this.userId);
       }
 
       thumbedIds = thumbedIds.filter((id) => !!id);
@@ -85,11 +83,11 @@ export default {
       // 本消息体设置扩展 markedIds
       let markedIds = (this.message.expansion ? this.message.expansion.markedIds : []) || [];
 
-      let unchecked = !markedIds.includes(this.user.id);
+      let unchecked = !markedIds.includes(this.userId);
       if (unchecked) {
-        markedIds.push(String(this.user.id));
+        markedIds.push(String(this.userId));
       } else {
-        markedIds = markedIds.filter((id) => id !== this.user.id);
+        markedIds = markedIds.filter((id) => id !== this.userId);
       }
       markedIds = markedIds.filter((id) => !!id);
 
@@ -115,11 +113,11 @@ export default {
       e.stopPropagation();
       // 本消息体设置扩展 collectedIds
       let collectedIds = (this.message.expansion ? this.message.expansion.collectedIds : []) || [];
-      let unchecked = !collectedIds.includes(this.user.id);
+      let unchecked = !collectedIds.includes(this.userId);
       if (unchecked) {
-        collectedIds.push(String(this.user.id));
+        collectedIds.push(String(this.userId));
       } else {
-        collectedIds = collectedIds.filter((id) => id !== this.user.id);
+        collectedIds = collectedIds.filter((id) => id !== this.userId);
       }
       collectedIds = collectedIds.filter((id) => !!id);
 
@@ -137,39 +135,44 @@ export default {
     },
   },
   render() {
+    // 图片文件类型消息 状态展示失败
     let thumbed = false,
       marked = false,
       collected = false;
     if (this.message.expansion) {
       let { thumbedIds = [], markedIds = [], collectedIds = [] } = this.message.expansion;
 
-      thumbed = thumbedIds.includes(this.user.id);
-      marked = markedIds.includes(this.user.id);
-      collected = collectedIds.includes(this.user.id);
+      thumbed = thumbedIds.includes(this.userId);
+      marked = markedIds.includes(this.userId);
+      collected = collectedIds.includes(this.userId);
     }
 
     return (
       <div class='tool-bar'>
         <i class='iconfont icon-liaotian' title='回复' onClick={this.handleReply}></i>
-
         <i
-          class={['iconfont', 'icon-dianzan', thumbed ? 'selected' : 'normal']}
+          class={[
+            'iconfont',
+            'icon-dianzan',
+            thumbed ? 'selected-icon-color' : 'normal-icon-color',
+          ]}
           title={thumbed ? '取消点赞' : '点赞'}
           onClick={this.debounceThumb}
         ></i>
-
         <i
-          class={['iconfont', 'icon-icon-', marked ? 'selected' : 'normal']}
+          class={['iconfont', 'icon-icon-', marked ? 'selected-icon-color' : 'normal-icon-color']}
           title={marked ? '取消标记' : '标记'}
           onClick={this.debounceMark}
         ></i>
-
         <i
-          class={['iconfont', 'icon-shoucang1', collected ? 'selected' : 'normal']}
+          class={[
+            'iconfont',
+            'icon-shoucang1',
+            collected ? 'selected-icon-color' : 'normal-icon-color',
+          ]}
           title={collected ? '取消收藏' : '收藏'}
           onClick={this.debounceCollect}
         ></i>
-
         <i class='iconfont icon-daibanshixiang' title='创建待办' onClick={this.handlePending}></i>
       </div>
     );
@@ -190,15 +193,22 @@ export default {
       color: #0fd547;
     }
   }
-  .selected {
+  .selected-icon-color {
     // color: #f5ae15;
     color: #0fd547;
   }
-  .normal {
+  .normal-icon-color {
     color: #999;
   }
 }
 &:hover .tool-bar {
   visibility: visible;
+}
+.selected-icon-color {
+  // color: #f5ae15;
+  color: #0fd547;
+}
+.normal-icon-color {
+  color: #999;
 }
 </style>

@@ -564,12 +564,15 @@ export default {
           });
         }, 2000);
       }
-      if (message.type == 'image') {
-        this.imgUrl = message.content;
-        this.srcList = [message.content];
-        this.outerVisible = true;
-      } else if (message.type == 'file') {
-        window.open(message.content);
+      // 图片预览还要保证点击的不是工具栏 i标签
+      if (e.target.nodeName !== 'I') {
+        if (message.type == 'image') {
+          this.imgUrl = message.content;
+          this.srcList = [message.content];
+          this.outerVisible = true;
+        } else if (message.type == 'file') {
+          window.open(message.content);
+        }
       }
     },
     handleMenuAvatarClick() {
@@ -708,6 +711,7 @@ export default {
 
     //接受新消息
     appendMessage(data) {
+      console.log('appendMessage', data);
       this.$refs.IMUI.appendMessage(data);
     },
     // 获取当前机构用户

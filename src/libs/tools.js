@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-23 10:37:04
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2021-12-23 10:37:04
+ * @LastEditTime: 2021-12-27 17:10:26
  */
 import moment from 'moment';
 
@@ -23,4 +23,15 @@ export const dateFormat = (date, pattern = 'YYYY-MM-DD HH:mm:ss') => {
   }
 
   return moment(date).format(pattern);
+};
+
+// lemon-imui：会话列表的群组id为`group_${id}`  融云：会话列表的群组id为id
+//  ui那边的id传给融云之前的处理 去掉group_
+export const CalcTargetId = (id) => {
+  let targetId = id;
+  if (id.includes('group_')) {
+    targetId = id.split('_')[1];
+  }
+
+  return targetId || '';
 };

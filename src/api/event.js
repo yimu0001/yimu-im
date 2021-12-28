@@ -21,17 +21,9 @@ export const completePending = (waitTaskId) => {
 };
 
 // 获取待办列表 status状态 默认0返回所有 1未处理 200完成  keyword关键字 page per_page groupId
-export const fetchPendingList = (
-  isGroup = false,
-  id,
-  page = 1,
-  type,
-  status = 0,
-  keyword,
-  per_page
-) => {
+export const fetchPendingList = (isGroup = false, id, page = 1, type, status = 0, keyword) => {
   // 单聊userId 群聊groupId
-  let params = { page, type, status, keyword, per_page };
+  let params = { page, type, status, keyword, per_page: 20 };
   if (isGroup) {
     params.groupId = id;
   } else {
@@ -53,9 +45,9 @@ export const fetchPendingDirectorList = (groupId) => {
   });
 };
 // 获取标记列表
-export const fetchMarkList = (isGroup = false, id, page = 1, type, keyword, per_page) => {
+export const fetchMarkList = (isGroup = false, id, page = 1, type, keyword) => {
   // 单聊userId 群聊groupId
-  let params = { page, type, keyword, per_page };
+  let params = { page, type, keyword, per_page: 20 };
   if (isGroup) {
     params.groupId = id;
   } else {

@@ -177,7 +177,8 @@
 </template>
 
 <script>
-import { groupMembers, getUserByOrgid, getOrgList, addMemberToGroup } from '../../api/data';
+import { groupMembers, getUserByOrgid, getOrgList, addMemberToGroup } from '@/api/data';
+import { CalcTargetId } from '@/libs/tools';
 import MarkDrawer from './mark';
 import PendingDrawer from './pending';
 import NoticeDrawer from './notice.vue';
@@ -338,7 +339,7 @@ export default {
     },
 
     getList() {
-      groupMembers(this.vContact.id).then((res) => {
+      groupMembers(CalcTargetId(this.vContact.id)).then((res) => {
         if (res.status === 200) {
           this.groupMemberList = res.data.data;
         } else {
@@ -384,7 +385,6 @@ export default {
     getAllOrgList() {
       getOrgList()
         .then((res) => {
-          console.log(res);
           if (res.status === 200) {
             this.orgList = res.data.data;
           } else {
@@ -447,11 +447,10 @@ export default {
       let selectUserIds = this.selecedUser.map((item) => {
         return Number(item.id);
       });
-      addMemberToGroup(this.vContact.id, selectUserIds)
+      addMemberToGroup(CalcTargetId(this.vContact.id), selectUserIds)
         .then((res) => {
-          console.log(res);
           if (res.status === 200) {
-            Message.success(res.data.msg);
+            Message.success(res.data.data || '邀请成功');
             this.addUserOpen = false;
             this.originalMember = [];
           } else {

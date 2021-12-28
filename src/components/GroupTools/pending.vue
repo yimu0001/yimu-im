@@ -63,12 +63,12 @@
               </div>
             </div>
           </div>
-          <!-- <infinite-loading @infinite="infiniteHandler">
+          <infinite-loading @infinite="infiniteHandler" :distance="200" :identifier="activePendKey">
             <span slot="no-more" class="gray-text">到底啦</span>
             <span slot="no-results" class="gray-text">
-              暂无评论
+              {{ finished ? '到底啦' : '暂无数据' }}
             </span>
-          </infinite-loading> -->
+          </infinite-loading>
         </div>
       </div>
     </div>
@@ -132,28 +132,38 @@ export default {
   watch: {
     activePendKey(key) {
       if (key) {
-        this.filterForm = { status: null, keyword: '' };
-        this.getPendList();
+        console.log('watch activePendKey============');
+        // this.filterForm = { status: null, keyword: '' };
+        this.refreshParam();
       }
     },
     filterForm: {
       handler() {
-        this.getPendList();
+        console.log('watch filterForm============');
+        this.refreshParam();
+        this.$nextTick(this.getPendList);
       },
       deep: true,
     },
   },
   mounted() {
-    this.getPendList();
+    // this.getPendList();
   },
   methods: {
     closePop() {
       this.closeMethod();
     },
+    refreshParam() {
+      this.finished = false;
+      this.page = 1;
+      this.pendList = [];
+    },
     getPendList(cb) {
+      console.log('getPendList============', this.page);
+      let pageNow = this.page;
       let type = this.activePendKey === 'my' ? 'my' : '';
       const { status, keyword } = this.filterForm;
-      console.log('getPendList接口获取', this.contact, this.page, type, status, keyword);
+      // console.log('getPendList接口获取', this.contact, this.page, type, status, keyword);
       fetchPendingList(
         this.contact.isGroup,
         this.contact.id,
@@ -166,10 +176,26 @@ export default {
         if (res.status === 200) {
           const { list, num, pages } = res.data.data;
           // newsInfo taskInfo
-          this.pendList = list.map(({ taskInfo }) => ({
-            ...taskInfo,
-            taskWaiter: taskInfo.taskWaiter.map(({ name }) => name).join(' '),
-          }));
+          let info =
+            list.map(({ taskInfo }) => ({
+              ...taskInfo,
+              taskWaiter: taskInfo.taskWaiter.map(({ name }) => name).join(' '),
+            })) || [];
+
+          if (pageNow === 1) {
+            this.pendList = info;
+          } else {
+            this.pendList = this.pendList.concat(info);
+          }
+
+          if (pageNow >= pages) {
+            console.log('11111');
+            this.page = pages;
+            this.finished = true;
+          } else {
+            console.log('2222');
+            this.page = pageNow + 1;
+          }
         } else {
           Message.error(res.data.msg);
         }
@@ -178,6 +204,7 @@ export default {
       });
     },
     infiniteHandler($state) {
+      console.log('infiniteHandler============', this.page);
       if (this.finished) {
         return false;
       }
@@ -230,12 +257,18 @@ export default {
     }
   }
   .pend-main {
-    padding: 15px 20px;
+    padding: 15px 0 15px 20px;
+    background: #f2f2f2;
+    box-sizing: border-box;
     .filter-line {
       display: flex;
       justify-content: space-between;
     }
     .pend-list {
+      margin: 10px 0;
+      padding-bottom: 40px;
+      overflow-y: scroll;
+      height: 367px;
       .pend-item {
         margin: 10px 0;
         padding: 5px 15px;

@@ -53,7 +53,8 @@ import {
   getUserByOrgid,
 } from '@/api/data.js';
 import { setBackExpansion } from '@/api/chat.js';
-import bus from '../libs/bus';
+import bus from '@/libs/bus';
+import { CalcTargetId } from '@/libs/tools';
 import testComponent from '../components/testComponent.vue';
 
 import Vue from 'vue';
@@ -201,6 +202,7 @@ export default {
       });
     },
     setRongExpansion(expansion, message, operate, cb) {
+      console.log('setRongExpansion', message.toContactId);
       let messageType = '';
       switch (message.type) {
         case 'text':
@@ -225,6 +227,7 @@ export default {
         messageType,
       };
 
+      console.log('RongIMLib  updateMessageExpansion', expansion, RongMsg);
       RongIMLib.updateMessageExpansion(expansion, RongMsg).then((res) => {
         cb && cb(res);
         if (res.code === 0 && this.$refs.imMainDom) {
@@ -251,13 +254,15 @@ export default {
     },
     // 融云消息类型 处理成lemon-ui的格式 并插入
     handleReceiveMessage(messages) {
+      console.log('接收到的融云推送', messages);
       messages.forEach((item) => {
+        // targetId: "12" conversationType: 3
         let userinfo = item.content.user || {};
         let messageData = {
           id: item.messageUId,
           status: 'succeed',
           sendTime: item.sentTime,
-          toContactId: item.targetId,
+          toContactId: item.conversationType === 3 ? `group_${item.targetId}` : item.targetId,
           fromUser: {
             id: userinfo.id,
             displayName: userinfo.name,
@@ -349,7 +354,17 @@ export default {
         .then(({ code, data: conversationList }) => {
           if (code === 0) {
             console.log('获取会话列表成功', conversationList);
-            this.firstConversationId = conversationList[0]?.targetId;
+            conversationList.forEach((item) => {
+              let { targetId, conversationType } = item;
+              let id = conversationType === 3 ? `group_${targetId}` : targetId;
+              item.targetId = id;
+            });
+
+            if (conversationList[0]) {
+              let { targetId } = conversationList[0];
+              this.firstConversationId = targetId;
+            }
+
             const { groupList, singleList, noticeList } = this.classifyConnectList(
               conversationList
             );
@@ -390,7 +405,7 @@ export default {
       return { groupList, singleList, noticeList };
     },
     handleConnectList(groupList, singleList, noticeList) {
-      let groupIds = groupList.map(({ targetId }) => targetId).join();
+      let groupIds = groupList.map(({ targetId }) => CalcTargetId(targetId)).join();
       let singleIds = singleList.map(({ targetId }) => targetId).join();
       this.loadStep = 0;
 
@@ -400,11 +415,11 @@ export default {
           let infos = res.data.data;
           Object.entries(infos).forEach(([id, { content, avatar }]) => {
             let userItem = {
-              ...this.conversationObj[id],
+              ...this.conversationObj[`group_${id}`],
               displayName: content || '选题群组',
               avatar,
             };
-            this.conversationObj[id] = this.handleChatInfo(userItem, true);
+            this.conversationObj[`group_${id}`] = this.handleChatInfo(userItem, true);
           });
         } else {
           Message.error(res.data.msg);
@@ -440,6 +455,7 @@ export default {
     handleChatInfo(item, isGroup = false) {
       let userItem = {
         id: item.targetId,
+        // id: isGroup ? `group_${item.targetId}` : item.targetId,
         displayName: item.displayName,
         avatar: item.avatar,
         index: isGroup ? '[1]群聊' : '[2]好友',
@@ -494,6 +510,8 @@ export default {
               avatar: avatar,
             };
             sessionStorage.setItem('current_user', JSON.stringify(user));
+            sessionStorage.setItem('current_userId', id);
+            console.log('current_user', user);
             bus.$emit('setUserInfo', user);
           }
         })
@@ -550,7 +568,7 @@ export default {
 
       // 指定消息发送的目标会话
       const conversation = {
-        targetId: target_id,
+        targetId: CalcTargetId(target_id),
         conversationType: isGroup
           ? RongIMLib.ConversationType.GROUP
           : RongIMLib.ConversationType.PRIVATE,
@@ -578,7 +596,10 @@ export default {
         // web端不会主动发送这种类型消息
       }
 
-      const options = { canIncludeExpansion: true };
+      const options = {
+        canIncludeExpansion: true,
+        expansion: { thumbedIds: [], markedIds: [], collectedIds: [] },
+      };
 
       // 发送消息
       RongIMLib.sendMessage(conversation, message, options).then(({ code, data }) => {
@@ -599,7 +620,9 @@ export default {
       this.saveMessageList = [];
     },
     handlePullMessages(args) {
-      const { id, isGroup, displayName, avatar } = args.contact;
+      console.log('handlePullMessages', args);
+      let { id, isGroup, displayName, avatar } = args.contact;
+      let targetId = CalcTargetId(id);
       // 首次进入聊天
       !this.concatId && (this.concatId = id);
       // 聊天对象被切换了
@@ -609,7 +632,7 @@ export default {
       }
 
       const conversation = {
-        targetId: id,
+        targetId, // 原本id 现在group_id
         conversationType: isGroup
           ? RongIMLib.ConversationType.GROUP
           : RongIMLib.ConversationType.PRIVATE,
@@ -621,7 +644,7 @@ export default {
         count: 20,
       };
       // 有时候这里卡住
-      id &&
+      targetId &&
         RongIMLib.getHistoryMessages(conversation, option)
           .then(({ code, data }) => {
             if (code === 0) {
@@ -629,7 +652,7 @@ export default {
               const hasMore = data.hasMore; // 是否还有历史消息可获取
               list[0] && (this.historyDate = list[0].sentTime);
 
-              let otheruser = { id, displayName, avatar };
+              let otheruser = { id: targetId, displayName, avatar };
               this.$refs.imMainDom.pullHistore(list, hasMore, args.next, otheruser);
             }
           })
@@ -690,14 +713,7 @@ export default {
           this.showComponent = true;
           // 目前不是本机构的渲染不出来 不知道如何过滤掉
           this.currentOrgUsers = curOrgUsers;
-          console.log('当前机构用户==currentOrgUsers', this.currentOrgUsers);
-          // let type10 = [];
-          // curOrgUsers.forEach((item) => {
-          //   if (item.id === '13') {
-          //     type10.push(item);
-          //   }
-          // });
-          // console.log('type10', type10);
+          // console.log('当前机构用户==currentOrgUsers', this.currentOrgUsers);
         })
         .catch((err) => {
           console.log(err);
