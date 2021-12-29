@@ -114,8 +114,8 @@
     <el-dialog title="创建群组" :visible.sync="createPop" append-to-body width="800px">
       <addGroup v-if="createPop" />
     </el-dialog>
-    <el-dialog title="历史记录" :visible.sync="historyPop" append-to-body width="800px">
-      历史记录
+    <el-dialog title="查看上下文" :visible.sync="historyPop" append-to-body width="600px">
+      <history-record v-if="historyPop" :contact="historyItem" />
     </el-dialog>
   </div>
 </template>
@@ -124,6 +124,7 @@
 import AddGroup from './AddGroup.vue';
 import CreateGroup from './CreateGroup';
 import groupTools from './GroupTools/tools';
+import HistoryRecord from './GroupTools/history';
 import addPending from './message/addPending.vue';
 import LemonIMUI from 'lemon-imui';
 import LemonPopover from 'lemon-imui';
@@ -132,6 +133,7 @@ import 'lemon-imui/dist/index.css';
 import { Dialog, Image, Message, Tag, Input } from 'element-ui';
 import { uploadFile } from '@/api/data';
 import bus from '@/libs/bus';
+import { dateFormat } from '@/libs/tools';
 
 export default {
   name: 'imMain',
@@ -167,6 +169,7 @@ export default {
     elTag: Tag,
     Message,
     groupTools,
+    'history-record': HistoryRecord,
     addPending,
     LemonIMUI,
     LemonPopover,
@@ -267,6 +270,7 @@ export default {
       curPendingItem: {},
       createPop: false,
       historyPop: false,
+      historyItem: {},
       directorList: [],
       pendGroupId: '',
     };
@@ -481,7 +485,7 @@ export default {
 
     //历史记录
     pullHistore(listInit, hasMore, next, otheruser) {
-      console.log('历史记录', listInit);
+      // console.log('历史记录', listInit);
       let list = [...listInit];
 
       let messages = list.map((item) => {
@@ -536,7 +540,6 @@ export default {
             messageItem.content = item.content.fileUrl;
             messageItem.fileSize = item.content.size;
             messageItem.fileName = item.content.name;
-            console.log(item);
             break;
           case 'RC:InfoNtf':
             messageItem.type = 'event';
@@ -546,6 +549,7 @@ export default {
 
         return messageItem;
       });
+
       next(messages, !hasMore);
     },
     handleMessageClick(e, key, message, instance) {
@@ -606,17 +610,71 @@ export default {
         IMUI.updateMessage(message);
       }
     },
+    // 发完消息之后 处理成lemon格式 传回lemon send方法回调
+    calcSendedMsg(messageUId, item) {
+      console.log('start', messageUId, item);
+      let messageItem = {
+        id: messageUId,
+        status: 'succeed',
+        type: 'text',
+        conversationType: item.isGroup ? 3 : 1,
+        sendTime: new Date().getTime(),
+        content: '',
+        toContactId: item.target_id,
+        fromUser: this.user,
+        canIncludeExpansion: true,
+        expansion: {},
+      };
+      switch (item.conversation_type) {
+        case 'RC:ReferenceMsg':
+          messageItem.type = 'text';
+          const { referMsg, referMsgUserId } = item; // objName
+          const { content } = item.content;
+          messageItem = { ...messageItem, content, referMsg, referMsgUserId };
+          break;
+        case 'RC:TxtMsg':
+          messageItem.type = 'text';
+          messageItem.content = item.content.content;
+          break;
+        case 'RC:ImgMsg':
+          messageItem.type = 'image';
+          messageItem.content = item.content.imageUri;
+          break;
+        case 'RC:FileMsg':
+          messageItem.type = 'file';
+          messageItem.content = item.content.fileUrl;
+          messageItem.fileSize = item.content.size;
+          messageItem.fileName = item.content.name;
+          break;
+        case 'RC:InfoNtf':
+          messageItem.type = 'event';
+          messageItem.content = item.content.message;
+          break;
+      }
+
+      console.log('end', messageItem);
+      return messageItem;
+    },
+    sendMessageCallback(data, msg, next) {
+      if (data.status !== 'failed' && !!this.replyObj.type) {
+        this.updateReplyMessage(data);
+        this.replyObj = {};
+      }
+      if (data.status === 'failed') {
+        next({ status: 'failed' });
+      }
+
+      let message = this.calcSendedMsg(data.messageUId, msg);
+      message.id = data.messageUId;
+      console.log('message---next', message);
+      next(message);
+    },
     handleSend(message, next, file) {
-      let msg = {
+      let rongMsg = {
         target_id: this.targetUser.id,
         isGroup: this.targetUser.isGroup ? this.targetUser.isGroup : false,
-        fun: (data) => {
-          if (data.status !== 'failed' && !!this.replyObj.type) {
-            this.updateReplyMessage(data);
-            this.replyObj = {};
-          }
-
-          next();
+        fun: (data, msg) => {
+          this.sendMessageCallback(data, msg, next);
         },
       };
 
@@ -626,24 +684,25 @@ export default {
           // 回复消息
           if (isReply) {
             const { id, type, content, fromUser, fileName = '' } = this.replyObj;
-            this.$emit('handleSendMessage', {
-              ...msg,
+            rongMsg = {
+              ...rongMsg,
               conversation_type: 'RC:ReferenceMsg',
               content: {
                 content: message.content,
               },
               referMsgUserId: fromUser.id,
               referMsg: { id, type, content, fileName, displayName: fromUser.displayName },
-            });
+            };
           } else {
-            this.$emit('handleSendMessage', {
-              ...msg,
+            rongMsg = {
+              ...rongMsg,
               conversation_type: 'RC:TxtMsg',
               content: {
                 content: message.content,
               },
-            });
+            };
           }
+          this.$emit('handleSendMessage', rongMsg);
 
           break;
         case 'image':
@@ -651,17 +710,16 @@ export default {
             .then((res) => {
               // 还有图片现在上传结束消息那展示的是blob类型的数据，为了方便回复，建议直接加一个修改该条消息内容改成url/
               if (res.status === 200) {
-                // require_thumb(base64) file(url)
-                const { file } = res.data.data;
-                this.$emit('handleSendMessage', {
-                  ...msg,
+                const { thumb, file } = res.data.data;
+                rongMsg = {
+                  ...rongMsg,
                   conversation_type: 'RC:ImgMsg',
-                  content: {
-                    imageUri: file,
-                  },
-                });
+                  content: { content: thumb, imageUri: file },
+                };
+                this.$emit('handleSendMessage', rongMsg);
               } else {
                 Message.error(res.data.msg);
+                next({ status: 'failed' });
               }
             })
             .catch((err) => {
@@ -673,13 +731,15 @@ export default {
           uploadFile(file)
             .then((res) => {
               if (res.status === 200) {
-                this.$emit('handleSendMessage', {
-                  ...msg,
+                rongMsg = {
+                  ...rongMsg,
                   conversation_type: 'RC:FileMsg',
                   content: { name, size, type, fileUrl: res.data.data.file },
-                });
+                };
+                this.$emit('handleSendMessage', rongMsg);
               } else {
                 Message.error(res.data.msg);
+                next({ status: 'failed' });
               }
             })
             .catch((err) => {
@@ -689,14 +749,10 @@ export default {
         case 'event':
           conversation_type = 'RC:InfoNtf';
           setTimeout(() => {
-            next();
+            next(rongMsg);
           }, 1000);
           break;
       }
-
-      // setTimeout(() => {
-      //   next();
-      // }, 500);
     },
     //打开右侧工具栏 contact, instance
     openRightTool() {
@@ -729,8 +785,8 @@ export default {
         this.firstConversationId && IMUI.changeContact(this.firstConversationId);
       }, 500);
     },
-    // 新增新机构
-    addNewContact(all_user) {
+    // 新增或删除会话 (建群、退群...)
+    refreshContact(all_user) {
       this.$refs.IMUI.initContacts(all_user);
     },
 
@@ -741,7 +797,9 @@ export default {
     },
     handleOpenHistory(item) {
       this.historyPop = true;
+      this.historyItem = item;
       console.log('打开历史记录弹窗', item);
+      // imId: 274  imRemoteId: "BTVB-6O6O-FPK4-01LT"
     },
   },
 };
@@ -782,7 +840,10 @@ export default {
     font-size: 24px;
   }
 }
-
+/deep/ .lemon-container__title {
+  padding: 15px 15px 0 15px;
+  border-bottom: 1px solid #ececec;
+}
 /deep/ .editorImg {
   height: 70px;
 }

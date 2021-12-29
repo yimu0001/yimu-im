@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-23 10:37:04
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2021-12-27 17:10:26
+ * @LastEditTime: 2021-12-28 16:25:27
  */
 import moment from 'moment';
 
@@ -34,4 +34,17 @@ export const CalcTargetId = (id) => {
   }
 
   return targetId || '';
+};
+
+//定义一个新数组，把老数组中的元素反向添加到新数组中
+export const reverseArray = (array) => {
+  if (!array || !(array instanceof Array)) {
+    return [];
+  }
+
+  var newArr = [];
+  for (var i = array.length - 1; i >= 0; i--) {
+    newArr[newArr.length] = array[i];
+  }
+  return newArr;
 };

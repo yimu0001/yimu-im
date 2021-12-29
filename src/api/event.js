@@ -1,6 +1,7 @@
 // 消息体的操作事件
 import { CustomUrl } from './constant';
 import commonAxios from 'ym-bridge-shandianyun';
+import { CalcTargetId } from '@/libs/tools';
 
 // 创建待办
 export const createPending = (imRemoteId, waitTaskContent, waitTaskUserIds, waitTaskEndTime) => {
@@ -25,7 +26,7 @@ export const fetchPendingList = (isGroup = false, id, page = 1, type, status = 0
   // 单聊userId 群聊groupId
   let params = { page, type, status, keyword, per_page: 20 };
   if (isGroup) {
-    params.groupId = id;
+    params.groupId = CalcTargetId(id);
   } else {
     params.userId = id;
   }
@@ -49,7 +50,7 @@ export const fetchMarkList = (isGroup = false, id, page = 1, type, keyword) => {
   // 单聊userId 群聊groupId
   let params = { page, type, keyword, per_page: 20 };
   if (isGroup) {
-    params.groupId = id;
+    params.groupId = CalcTargetId(id);
   } else {
     params.userId = id;
   }

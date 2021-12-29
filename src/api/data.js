@@ -90,6 +90,7 @@ export const addMemberToGroup = (groupId, userIds) => {
 export const uploadFile = (file) => {
   const fd = new FormData();
   fd.append('file', file);
+  fd.append('require_thumb', 1);
   return commonAxios.request({
     url: BaseUrl + '/notify/upload',
     method: 'post',

@@ -79,6 +79,7 @@ export default {
       console.log('回复', this.message);
     },
     handleMark(e) {
+      console.log('标记', this.message);
       e.stopPropagation();
       // 本消息体设置扩展 markedIds
       let markedIds = (this.message.expansion ? this.message.expansion.markedIds : []) || [];

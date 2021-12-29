@@ -4,9 +4,9 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-22 16:12:19
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2021-12-24 17:15:11
+ * @LastEditTime: 2021-12-29 15:45:22
  */
-import { BaseUrl, CustomUrl, BIG_PAGE_SIZE } from './constant';
+import { BaseUrl, CustomUrl, PAGE_SIZE, BIG_PAGE_SIZE } from './constant';
 import commonAxios from 'ym-bridge-shandianyun';
 
 // 数据统计
@@ -55,25 +55,68 @@ export const fetchMessageContext = (id, offset) => {
   return commonAxios.request({
     url: BaseUrl + '/message-history/message/' + id + '/around',
     method: 'get',
-    params: { offset },
+    params: { offset: 6 },
   });
 };
 
-// 消息历史滚动加载 offset 	默认5	前后分别多少条
-export const fetchMessageHistory = (id, offset) => {
+// 消息历史滚动加载 offset 	默认5	前后分别多少条 	> 0 向后 ；< 0 向前
+export const fetchMessageHistory = (id, page) => {
   return commonAxios.request({
     url: BaseUrl + '/message-history/message/' + id + '/after',
     method: 'get',
-    params: { offset },
+    params: { offset: page * BIG_PAGE_SIZE },
   });
 };
 
 // 消息标记扩展 module 模块名 (cs客服)  operate:{type 操作类型  checked}
-
 export const setBackExpansion = (module, msg_uid, extra_content, operate) => {
   return commonAxios.request({
     url: BaseUrl + '/message/expression',
     method: 'post',
     data: { module, msg_uid, extra_content, operate },
+  });
+};
+
+// 群组公告查看
+export const fetchGroupNoticeList = (id, page) => {
+  return commonAxios.request({
+    url: BaseUrl + '/group/' + id + '/notice-list',
+    method: 'get',
+    params: {
+      page,
+      per_page: PAGE_SIZE,
+    },
+  });
+};
+
+// 发布公告/group/ {ID} /notice
+export const createGroupNotice = (id, content) => {
+  return commonAxios.request({
+    url: BaseUrl + '/group/' + id + '/notice',
+    method: 'post',
+    data: { content },
+  });
+};
+
+// 自己退群 　/group/ID/quit
+export const userQuitGroup = (id) => {
+  return commonAxios.request({
+    url: BaseUrl + '/group/' + id + '/quit',
+    method: 'post',
+  });
+};
+// 判断自己是不是群主 　/group/ {ID} /owner
+export const checkGroupOwner = (id) => {
+  return commonAxios.request({
+    url: BaseUrl + '/group/' + id + '/owner',
+    method: 'get',
+  });
+};
+// 群主减人
+export const kickGroupMember = (id, members) => {
+  return commonAxios.request({
+    url: BaseUrl + '/group/' + id + '/member-dec',
+    method: 'post',
+    data: { members },
   });
 };

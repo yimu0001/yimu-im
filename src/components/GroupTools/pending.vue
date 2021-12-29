@@ -63,10 +63,10 @@
               </div>
             </div>
           </div>
-          <infinite-loading @infinite="infiniteHandler" :distance="200" :identifier="activePendKey">
+          <infinite-loading @infinite="infiniteHandler" :distance="200" :identifier="identifier">
             <span slot="no-more" class="gray-text">到底啦</span>
             <span slot="no-results" class="gray-text">
-              {{ finished ? '到底啦' : '暂无数据' }}
+              {{ finished && pendList.length > 0 ? '到底啦' : '暂无数据' }}
             </span>
           </infinite-loading>
         </div>
@@ -78,6 +78,7 @@
 <script>
 import InfiniteLoading from 'vue-infinite-loading';
 import { fetchPendingList, completePending } from '@/api/event';
+import bus from '@/libs/bus';
 import {
   Button,
   Select,
@@ -130,24 +131,38 @@ export default {
     },
   },
   watch: {
+    'contact.id'(id) {
+      this.activePendKey = 'my';
+      this.refreshParam();
+    },
     activePendKey(key) {
       if (key) {
-        console.log('watch activePendKey============');
         // this.filterForm = { status: null, keyword: '' };
         this.refreshParam();
       }
     },
     filterForm: {
       handler() {
-        console.log('watch filterForm============');
         this.refreshParam();
         this.$nextTick(this.getPendList);
       },
       deep: true,
     },
   },
+  computed: {
+    identifier() {
+      return this.activePendKey + this.contact.id;
+    },
+  },
   mounted() {
-    // this.getPendList();
+    bus.$on('refreshDrawerData_2', () => {
+      console.log('refreshDrawerData_2');
+      this.refreshParam();
+      this.$nextTick(this.getPendList);
+    });
+  },
+  beforeDestroy() {
+    bus.$off('refreshDrawerData_2');
   },
   methods: {
     closePop() {
@@ -159,11 +174,9 @@ export default {
       this.pendList = [];
     },
     getPendList(cb) {
-      console.log('getPendList============', this.page);
       let pageNow = this.page;
       let type = this.activePendKey === 'my' ? 'my' : '';
       const { status, keyword } = this.filterForm;
-      // console.log('getPendList接口获取', this.contact, this.page, type, status, keyword);
       fetchPendingList(
         this.contact.isGroup,
         this.contact.id,
@@ -189,11 +202,9 @@ export default {
           }
 
           if (pageNow >= pages) {
-            console.log('11111');
             this.page = pages;
             this.finished = true;
           } else {
-            console.log('2222');
             this.page = pageNow + 1;
           }
         } else {
@@ -204,7 +215,6 @@ export default {
       });
     },
     infiniteHandler($state) {
-      console.log('infiniteHandler============', this.page);
       if (this.finished) {
         return false;
       }

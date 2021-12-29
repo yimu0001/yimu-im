@@ -1,4 +1,5 @@
-@import url('https://at.alicdn.com/t/font_2986001_gh7mjzjrjht.css');
+@import url('https://at.alicdn.com/t/font_2986001_hf4mpnt0p3d.css');
+
 .iconfont {
   font-family: "iconfont" !important;
   font-size: inherit;
@@ -6,18 +7,46 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
 .over_hide_1 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .noselect {
-  -moz-user-select: none; /*火狐*/
-  -webkit-user-select: none; /*webkit浏览器*/
-  -ms-user-select: none; /*IE10*/
-  -khtml-user-select: none; /*早期浏览器*/
+  -moz-user-select: none;
+  /*火狐*/
+  -webkit-user-select: none;
+  /*webkit浏览器*/
+  -ms-user-select: none;
+  /*IE10*/
+  -khtml-user-select: none;
+  /*早期浏览器*/
   user-select: none;
 }
+
 .reply-text-pre.el-popover--plain {
   padding: 10px;
+}
+
+.narrow-scroll-bar::-webkit-scrollbar {
+  /*滚动条整体样式*/
+  width: 5px;
+  /*高宽分别对应横竖滚动条的尺寸*/
+  height: 1px;
+}
+
+.narrow-scroll-bar::-webkit-scrollbar-thumb {
+  /*滚动条里面小方块*/
+  /* border-radius: 6px; */
+  /* box-shadow: inset 0 0 5px rgba(55, 153, 245, 0.2); */
+  background: #aaa;
+}
+
+.narrow-scroll-bar::-webkit-scrollbar-track {
+  /*滚动条里面轨道*/
+  /* box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2); */
+  /* border-radius: 6px; */
+  background: #f2f2f2;
 }

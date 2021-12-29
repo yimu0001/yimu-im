@@ -36,4 +36,14 @@
 .normal-icon-color {
   color: #999;
 }
+div,
+p {
+  padding: 0;
+  margin: 0;
+}
+*,
+:after,
+:before {
+  box-sizing: border-box;
+}
 </style>

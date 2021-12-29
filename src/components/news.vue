@@ -173,10 +173,14 @@ export default {
     });
 
     bus.$on('setExpansion', this.setRongExpansion);
+    bus.$on('afterQuitGroup', (conversationType, targetId) => {
+      this.deleteConnect(conversationType, targetId);
+    });
   },
   beforeDestroy() {
     bus.$off('createGroupOk');
     bus.$off('setExpansion');
+    bus.$off('afterQuitGroup');
   },
   methods: {
     imWatcher() {
@@ -202,7 +206,7 @@ export default {
       });
     },
     setRongExpansion(expansion, message, operate, cb) {
-      console.log('setRongExpansion', message.toContactId);
+      console.log('setRongExpansion', message);
       let messageType = '';
       switch (message.type) {
         case 'text':
@@ -227,7 +231,6 @@ export default {
         messageType,
       };
 
-      console.log('RongIMLib  updateMessageExpansion', expansion, RongMsg);
       RongIMLib.updateMessageExpansion(expansion, RongMsg).then((res) => {
         cb && cb(res);
         if (res.code === 0 && this.$refs.imMainDom) {
@@ -525,14 +528,14 @@ export default {
         if (code === 0) {
           console.log('创建群组之后 获取会话列表', conversationList);
           let curConverse = conversationList.filter((item) => item.targetId == id)[0] || null;
-
-          groupInfos(id).then((res) => {
+          let targetId = `group_${id}`;
+          groupInfos(targetId).then((res) => {
             if (res.status === 200) {
               const { content: displayName, avatar } = res.data.data[id];
               let { messageType, content, sentTime } = curConverse.latestMessage;
               let obj = Type_Key_Obj[messageType] || Default_Content;
               let userItem = {
-                id: id,
+                id: targetId,
                 displayName,
                 avatar,
                 index: '[1]群聊',
@@ -546,7 +549,7 @@ export default {
               };
 
               this.currentOrgUsers.push(userItem);
-              this.$refs.imMain.addNewContact(this.currentOrgUsers);
+              this.$refs.imMain.refreshContact(this.currentOrgUsers);
             }
           });
         } else {
@@ -556,6 +559,7 @@ export default {
     },
     // 仅当发送消息时指定 canIncludeExpansion 值为 true，才可对消息进行拓展
     handleSendMessage(item) {
+      // TODO 如果当前用户已被移除群聊 消息发不出去
       let {
         target_id,
         conversation_type,
@@ -588,6 +592,7 @@ export default {
       } else if (conversation_type === 'RC:ImgMsg') {
         // Base64改为线上链接url
         message = new RongIMLib.ImageMessage({
+          content: content.content || '', // 图片缩略图，应为 Base64 字符串，且不可超过 80KB
           imageUri: content.imageUri || '', // 图片的远程访问地址
         });
       } else if (conversation_type === 'RC:FileMsg') {
@@ -604,8 +609,9 @@ export default {
       // 发送消息
       RongIMLib.sendMessage(conversation, message, options).then(({ code, data }) => {
         if (code === 0) {
-          // console.log('消息发送成功：', data);
-          fun(data);
+          // messageUId: "BU0J-LFCJ-1N24-01LT"
+          console.log('消息发送成功：', data);
+          fun(data, item);
         } else {
           console.log('消息发送失败：', code);
           fun({ status: 'failed' });
@@ -613,14 +619,12 @@ export default {
       });
     },
     handleOpenedDialog() {
-      console.log(this.saveMessageList);
       this.saveMessageList.forEach((res) => {
         this.$refs.imMainDom.appendMessage(res);
       });
       this.saveMessageList = [];
     },
     handlePullMessages(args) {
-      console.log('handlePullMessages', args);
       let { id, isGroup, displayName, avatar } = args.contact;
       let targetId = CalcTargetId(id);
       // 首次进入聊天
@@ -719,20 +723,26 @@ export default {
           console.log(err);
         });
     },
-    // 删除会话 暂时
+    // 删除会话
     deleteConnect(conversationType, targetId) {
       RongIMLib.removeConversation({
         conversationType, // 1个人 3群聊
         targetId,
       }).then((res) => {
         if (res.code === 0) {
-          console.log('删除会话成功');
+          console.log('删除会话成功', conversationType, targetId);
+
+          let delId = Number(conversationType) === 3 ? `group_${targetId}` : targetId;
+          this.currentOrgUsers = this.currentOrgUsers.filter(({ id }) => id !== delId);
+
+          this.$refs.imMainDom.closeRightDrawer();
+          this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
         } else {
           console.log(res.code, res.msg);
         }
       });
     },
-    // 删除会话中某一条消息 暂时
+    // 删除会话中某一条消息
     deleteConnectMessage(targetId, messageUId, sentTime) {
       const conversation = {
         conversationType: RongIMLib.ConversationType.PRIVATE,
@@ -815,6 +825,7 @@ export default {
     padding: 0;
   }
 }
+
 .close-line {
   z-index: 11;
   position: absolute;

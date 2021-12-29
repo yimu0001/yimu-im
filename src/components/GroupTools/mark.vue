@@ -23,20 +23,38 @@
           >
           </el-input>
         </div>
-        <div class="mark-list">
+        <div class="mark-list narrow-scroll-bar">
           <div class="mark-item" v-for="item in markList" :key="item.id">
             <div class="top-user">{{ item.markUserName }}</div>
-            <p class="msg-content">{{ item.newsContent }}</p>
+            <!-- <p class="msg-content">{{ item.newsContent }}</p> -->
+
+            <p v-if="item.type === 'text'" class="msg-content">{{ item.newsContent }}</p>
+            <img v-if="item.type === 'image'" class="content-img" :src="item.newsContent" alt="" />
+            <div
+              v-if="item.type === 'file'"
+              class="content-file"
+              title="点击下载"
+              @click="downloadFile(item.newsContent)"
+            >
+              <div class="content-file__inner">
+                <p class="content-file__name">{{ item.content.name }}</p>
+                <p class="content-file__byte">{{ computeFileSize(item.content.size) }}</p>
+              </div>
+              <div class="content-file__sfx">
+                <i class="lemon-icon-attah" />
+              </div>
+            </div>
+
             <div class="send-user">
               <p class="user">{{ item.newsUserName }}</p>
               <p class="time">{{ item.pushTime }}</p>
               <i class="iconfont icon-jinru" title="查看" @click="checkHistory(item)"></i>
             </div>
           </div>
-          <infinite-loading @infinite="infiniteHandler" :distance="200" :identifier="activeMarkKey">
+          <infinite-loading @infinite="infiniteHandler" :distance="200" :identifier="identifier">
             <span slot="no-more" class="gray-text">到底啦</span>
             <span slot="no-results" class="gray-text">
-              {{ finished ? '到底啦' : '暂无数据' }}
+              {{ finished && markList.length > 0 ? '到底啦' : '暂无数据' }}
             </span>
           </infinite-loading>
         </div>
@@ -49,6 +67,15 @@
 import InfiniteLoading from 'vue-infinite-loading';
 import { Button, Input, Message, Avatar, Checkbox, Tabs, TabPane } from 'element-ui';
 import { fetchMarkList } from '@/api/event';
+import bus from '@/libs/bus';
+
+const TYPE_MSG_OBJ = {
+  'RC:ReferenceMsg': 'text',
+  'RC:TxtMsg': 'text',
+  'RC:ImgMsg': 'image',
+  'RC:FileMsg': 'file',
+  'RC:InfoNtf': 'event',
+};
 
 export default {
   name: 'MarkDrawer',
@@ -67,15 +94,6 @@ export default {
       activeMarkKey: 'my',
       markKeyword: '',
       markList: [],
-      // [{
-      //   id: 1,
-      //   newsContent:
-      //     '这是一条消息，消息内容如下。这是一条消息，消息内容如下。这是一条消息，消息内容如下。这是一条消息，消息内容如下',
-      //   newsUserName: '张三',
-      //   pushTime: '2021-11-25 15:25',
-      //   markUserName: '刘金栋',
-      // }]
-      historyPop: false,
       page: 1,
       finished: false,
     };
@@ -94,6 +112,10 @@ export default {
     },
   },
   watch: {
+    'contact.id'(id) {
+      this.activeMarkKey = 'my';
+      this.refreshParam();
+    },
     activeMarkKey(key) {
       if (key) {
         this.markKeyword = '';
@@ -105,12 +127,45 @@ export default {
       this.$nextTick(this.getMarkList);
     },
   },
+  computed: {
+    identifier() {
+      return this.activeMarkKey + this.contact.id;
+    },
+  },
+
   mounted() {
-    // this.getMarkList();
+    bus.$on('refreshDrawerData_1', () => {
+      console.log('refreshDrawerData_1');
+      this.refreshParam();
+      this.$nextTick(this.getMarkList);
+    });
+  },
+  beforeDestroy() {
+    bus.$off('refreshDrawerData_1');
   },
   methods: {
     closePop() {
       this.closeMethod();
+    },
+    computeFileSize(byte) {
+      let str = byte;
+      let unit = 'B';
+      if (byte < 1024) {
+        str = byte;
+        unit = 'B';
+      } else if (byte >= 1024 && byte < 1024 * 1024) {
+        str = (byte / 1024).toFixed(2);
+        unit = 'K';
+      } else if (byte >= 1024 * 1024) {
+        str = (byte / (1024 * 1024)).toFixed(2);
+        unit = 'M';
+      }
+      str = str.replace('.00', '');
+
+      return str + unit;
+    },
+    downloadFile(url) {
+      window.open(url);
     },
     refreshParam() {
       this.finished = false;
@@ -125,10 +180,15 @@ export default {
           console.log('接口获取已标记列表', res.data);
           if (res.status === 200) {
             const { list, num, pages } = res.data.data;
+            let info = list.map((item) => ({
+              ...item,
+              type: TYPE_MSG_OBJ[item.imType] || 'text',
+            }));
+
             if (pageNow === 1) {
-              this.markList = list;
+              this.markList = info;
             } else {
-              this.markList = this.markList.concat(list);
+              this.markList = this.markList.concat(info);
             }
 
             if (pageNow >= pages) {
@@ -204,11 +264,46 @@ export default {
           text-align: right;
           color: #999;
         }
+        // 消息体样式
         .msg-content {
           padding: 4px 0;
           line-height: 20px;
           color: #333;
         }
+        .content-img {
+          width: 60px;
+          height: 60px;
+        }
+        .content-file {
+          display: flex;
+          cursor: pointer;
+          width: 200px;
+          background: #fff;
+          padding: 12px 18px;
+          color: #666;
+          border: 1px solid #ececec;
+          border-radius: 4px;
+          .content-file__inner {
+            -webkit-box-flex: 1;
+            -ms-flex: 1;
+            flex: 1;
+            .content-file__name {
+              font-size: 14px;
+            }
+            .content-file__byte {
+              font-size: 12px;
+              color: #aaa;
+            }
+          }
+          .content-file__sfx {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            color: #ccc;
+          }
+        }
+
         .send-user {
           display: flex;
           justify-content: space-between;
