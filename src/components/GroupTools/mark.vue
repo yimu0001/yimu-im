@@ -28,17 +28,22 @@
             <div class="top-user">{{ item.markUserName }}</div>
             <!-- <p class="msg-content">{{ item.newsContent }}</p> -->
 
-            <p v-if="item.type === 'text'" class="msg-content">{{ item.newsContent }}</p>
-            <img v-if="item.type === 'image'" class="content-img" :src="item.newsContent" alt="" />
+            <p v-if="item.type === 'text'" class="msg-content">{{ item.newsContent.content }}</p>
+            <img
+              v-if="item.type === 'image'"
+              class="content-img"
+              :src="item.newsContent.content"
+              alt=""
+            />
             <div
               v-if="item.type === 'file'"
               class="content-file"
               title="点击下载"
-              @click="downloadFile(item.newsContent)"
+              @click="downloadFile(item.newsContent.fileUrl)"
             >
               <div class="content-file__inner">
-                <p class="content-file__name">{{ item.content.name }}</p>
-                <p class="content-file__byte">{{ computeFileSize(item.content.size) }}</p>
+                <p class="content-file__name">{{ item.newsContent.name }}</p>
+                <p class="content-file__byte">{{ computeFileSize(item.newsContent.size) }}</p>
               </div>
               <div class="content-file__sfx">
                 <i class="lemon-icon-attah" />
@@ -46,7 +51,7 @@
             </div>
 
             <div class="send-user">
-              <p class="user">{{ item.newsUserName }}</p>
+              <p class="user">来自：{{ item.newsUserName }}</p>
               <p class="time">{{ item.pushTime }}</p>
               <i class="iconfont icon-jinru" title="查看" @click="checkHistory(item)"></i>
             </div>

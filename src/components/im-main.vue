@@ -117,6 +117,7 @@
     <el-dialog title="查看上下文" :visible.sync="historyPop" append-to-body width="600px">
       <history-record v-if="historyPop" :contact="historyItem" />
     </el-dialog>
+    <textarea id="input_copy"></textarea>
   </div>
 </template>
 
@@ -177,43 +178,54 @@ export default {
   data() {
     return {
       contextmenu: [
-        {
-          visible: (instance) => {
-            return instance.message.fromUser.id != this.user.id;
-          },
-          text: '举报',
-        },
-        {
-          text: '转发',
-        },
-        {
-          visible: (instance) => {
-            return instance.message.type == 'text';
-          },
-          text: '复制文字',
-        },
-        {
-          visible: (instance) => {
-            return instance.message.type == 'image';
-          },
-          text: '下载图片',
-        },
+        // {
+        //   visible: (instance) => {
+        //     return instance.message.fromUser.id != this.user.id;
+        //   },
+        //   text: '举报',
+        // },
+        // {
+        //   text: '转发',
+        // },
+        // {
+        //   visible: (instance) => {
+        //     return instance.message.type == 'text';
+        //   },
+        //   text: '复制文字',
+        //   click: this.onTextCopy,
+        // },
+        // {
+        //   visible: (instance) => {
+        //     return instance.message.type == 'image';
+        //   },
+        //   text: '下载图片',
+        //   click: (e, instance, hide) => {
+        //     const { message } = instance;
+        //     window.open(message.content);
+        //     hide();
+        //   },
+        // },
         {
           visible: (instance) => {
             return instance.message.type == 'file';
           },
           text: '下载文件',
-        },
-        {
           click: (e, instance, hide) => {
-            const { IMUI, message } = instance;
-            IMUI.removeMessage(message.id);
+            const { message } = instance;
+            window.open(message.content);
             hide();
           },
-          icon: 'lemon-icon-folder',
-          color: 'red',
-          text: '删除',
         },
+        // {
+        //   click: (e, instance, hide) => {
+        //     const { IMUI, message } = instance;
+        //     IMUI.removeMessage(message.id);
+        //     hide();
+        //   },
+        //   icon: 'lemon-icon-folder',
+        //   color: 'red',
+        //   text: '删除',
+        // },
       ],
       contactContextmenu: [
         {
@@ -343,6 +355,14 @@ export default {
     bus.$off('previewReplyImg');
   },
   methods: {
+    onTextCopy(e, instance, hide) {
+      const { message } = instance;
+      var input = document.getElementById('input_copy');
+      input.value = message.content; // 修改文本框的内容
+      input.select(); // 选中文本
+      document.execCommand('copy'); // 执行浏览器复制命令
+      hide();
+    },
     handleClosePending() {
       this.pendingPop = false;
       this.pendGroupId = '';
@@ -978,5 +998,12 @@ export default {
     font-size: 22px;
     color: #999;
   }
+}
+#input_copy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  z-index: -10;
 }
 </style>

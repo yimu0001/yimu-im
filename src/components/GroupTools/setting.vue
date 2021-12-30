@@ -685,13 +685,10 @@ p {
       overflow: hidden;
       width: 36px;
       height: 36px;
+      line-height: 36px;
       border: 1px solid #999;
-      padding-top: 5px;
       box-sizing: border-box;
-      // img {
-      //   width: 26px;
-      //   height: 26px;
-      // }
+
       .iconfont {
         font-size: 24px;
       }
