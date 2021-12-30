@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-22 16:42:03
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2021-12-23 17:29:39
+ * @LastEditTime: 2021-12-30 14:30:55
  */
 
 let IMUrl = '';
@@ -16,11 +16,11 @@ if (window.location.origin.includes('.iqilu.com')) {
 } else if (window.location.origin.includes('.shandian8.com')) {
   // 测试环境
   IMUrl = 'https://im.shandian8.com';
-  CSUrl = 'http://cs.shandian8.com';
+  CSUrl = 'https://cs.shandian8.com';
 } else {
   // 本地开发环境
   IMUrl = 'https://im.shandian8.com';
-  CSUrl = 'http://cs.shandian8.com';
+  CSUrl = 'https://cs.shandian8.com';
 }
 
 export const BaseUrl = IMUrl;
