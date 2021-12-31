@@ -22,6 +22,15 @@ export default {
   },
   mounted() {
     setTimeout(() => {
+      // this.setMenu();
+      console.log(this.$refs.yimuNews.im);
+    }, 500);
+  },
+  destroyed() {
+    console.log('销毁');
+  },
+  methods: {
+    setMenu() {
       this.customMenu = [
         {
           name: 'collect',
@@ -78,11 +87,7 @@ export default {
           component: testComponent,
         },
       ];
-      console.log(this.$refs.yimuNews.im);
-    }, 500);
-  },
-  destroyed() {
-    console.log('销毁');
+    },
   },
 };
 </script>

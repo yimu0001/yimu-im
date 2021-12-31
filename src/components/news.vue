@@ -1,9 +1,10 @@
 <template>
   <div>
     <div class="tipDom" v-if="!showList && showComponent" @click="showList = !showList">
-      <Avatar :size="38" fit="cover" src="https://i.loli.net/2017/08/21/599a521472424.jpg"></Avatar>
+      <Avatar :size="38" fit="cover" :src="currentUser.avatar"></Avatar>
       &nbsp;&nbsp;
-      <span>我的IM</span>
+      <!-- <span>我的IM</span> -->
+      <span>{{ currentUser.nickname || '通讯' }}</span>
     </div>
     <!-- :destroy-on-close="true" -->
     <el-dialog
