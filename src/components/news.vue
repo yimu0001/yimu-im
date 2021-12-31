@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="tipDom" v-if="!showList && showComponent" @click="showList = !showList">
+    <div class="tipDom" v-if="!showList && showComponent" @click="openChatDialog">
       <Avatar :size="38" fit="cover" :src="currentUser.avatar"></Avatar>
       &nbsp;&nbsp;
       <!-- <span>我的IM</span> -->
@@ -44,7 +44,7 @@
 <script>
 import 'element-ui/lib/theme-chalk/index.css';
 import imMain from './im-main';
-import { Avatar, Dialog, Message } from 'element-ui';
+import { Avatar, Dialog, Message, Notification } from 'element-ui';
 import * as RongIMLib from '@rongcloud/imlib-next';
 import {
   registerUser,
@@ -127,6 +127,7 @@ export default {
     imMain,
     elDialog: Dialog,
     Message,
+    Notification,
   },
   watch: {
     customMenu: {
@@ -184,6 +185,10 @@ export default {
     bus.$off('afterQuitGroup');
   },
   methods: {
+    openChatDialog() {
+      this.showList = true;
+      Notification.closeAll();
+    },
     imWatcher() {
       let that = this;
       // 添加事件监听
@@ -195,15 +200,14 @@ export default {
         console.log('已经链接到服务器');
       });
       RongIMLib.addEventListener(Events.MESSAGES, function({ messages }) {
-        console.log('新接收到的消息内容', messages);
+        // console.log('新接收到的消息内容', messages);
         if (messages && messages.length > 0) {
           that.handleReceiveMessage(messages);
         }
       });
       // 监听消息扩展通知
       RongIMLib.addEventListener(RongIMLib.Events.EXPANSION, (evt) => {
-        console.log('监听消息扩展通知');
-        console.log(evt);
+        // console.log('监听消息扩展通知', evt);
       });
     },
     setRongExpansion(expansion, message, operate, cb) {
@@ -312,15 +316,18 @@ export default {
               },
             };
         }
-
-        !this.showList &&
-          ['text', 'image'].includes(messageData.type) &&
-          Message({
-            // message: `${item.content.user.name}给您发了条消息`,
-            message: '收到新消息',
-            center: true,
-            offset: 1000,
+        if (!this.showList) {
+          Notification.info({
+            title: '新消息',
+            message: '收到新消息，点击查看',
+            duration: 0,
+            onClick: () => {
+              this.showList = true;
+              Notification.closeAll();
+            },
           });
+        }
+
         if (this.$refs.imMainDom) {
           this.$refs.imMainDom.appendMessage(messageData);
         } else if (messageData.id) {

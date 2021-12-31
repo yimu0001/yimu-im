@@ -1,5 +1,6 @@
 <template>
   <div class="home">
+    <!-- <div @click="open">打开</div> -->
     <news ref="yimuNews" :customMenu="customMenu" :fromSystem="fromSystem"></news>
   </div>
 </template>
@@ -30,6 +31,9 @@ export default {
     console.log('销毁');
   },
   methods: {
+    open() {
+      this.$refs.yimuNews.openChatDialog();
+    },
     setMenu() {
       this.customMenu = [
         {
