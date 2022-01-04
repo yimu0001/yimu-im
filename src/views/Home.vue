@@ -1,7 +1,12 @@
 <template>
   <div class="home">
     <!-- <div @click="open">打开</div> -->
-    <news ref="yimuNews" :customMenu="customMenu" :fromSystem="fromSystem"></news>
+    <news
+      ref="yimuNews"
+      :customMenu="customMenu"
+      :fromSystem="fromSystem"
+      @change-menu="handleChangeMenu"
+    ></news>
   </div>
 </template>
 
@@ -16,6 +21,7 @@ export default {
     return {
       customMenu: [],
       fromSystem: 'cs',
+      curMenuName: 'messages',
     };
   },
   components: {
@@ -33,6 +39,10 @@ export default {
   methods: {
     open() {
       this.$refs.yimuNews.openChatDialog();
+    },
+    handleChangeMenu(menuName) {
+      this.curMenuName = menuName;
+      console.log('home', menuName);
     },
     setMenu() {
       this.customMenu = [

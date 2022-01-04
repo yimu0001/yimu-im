@@ -469,6 +469,7 @@ export default {
       return e.keyCode == 13 && e.ctrlKey;
     },
     handleChangeMenu(menuName) {
+      this.$emit('change-menu', menuName);
       this.closeRightDrawer();
 
       console.log('Event:change-menu', menuName);

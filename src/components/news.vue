@@ -29,6 +29,7 @@
         @handlePullMessages="handlePullMessages"
         @changeMenuMessage="getConnetList"
         @closeModal="handleClose"
+        @change-menu="changeMenu"
       ></im-main>
       <span slot="footer" class="dialog-footer"> </span>
     </el-dialog>
@@ -99,6 +100,7 @@ export default {
       loadStep: 0,
       conversationObj: {},
       orgUserList: [], // 创建待办 负责人下拉列表
+      waitingOpen: false,
     };
   },
   props: {
@@ -148,6 +150,11 @@ export default {
         this.getCurrentOrgUsers();
       }
     },
+    showComponent(bool) {
+      if (bool && this.waitingOpen) {
+        this.openChatDialog();
+      }
+    },
   },
   mounted() {
     this.getCurrentChatUser();
@@ -176,8 +183,17 @@ export default {
   },
   methods: {
     openChatDialog() {
-      this.showList = true;
-      Notification.closeAll();
+      if (this.showComponent) {
+        this.showList = true;
+        Notification.closeAll();
+        this.waitingOpen = false;
+      } else {
+        this.waitingOpen = true;
+      }
+    },
+    // 为了切换菜单的时候 重新获取接口
+    changeMenu(menuName) {
+      this.$emit('change-menu', menuName);
     },
     imWatcher() {
       let that = this;
