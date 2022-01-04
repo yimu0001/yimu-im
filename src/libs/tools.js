@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-23 10:37:04
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2021-12-28 16:25:27
+ * @LastEditTime: 2022-01-04 09:55:25
  */
 import moment from 'moment';
 
@@ -47,4 +47,28 @@ export const reverseArray = (array) => {
     newArr[newArr.length] = array[i];
   }
   return newArr;
+};
+
+const Type_Key_Obj = {
+  'RC:ReferenceMsg': { type: 'text', key: 'content' },
+  'RC:ImgMsg': { type: 'image', key: 'imageUri' },
+  'RC:TxtMsg': { type: 'text', key: 'content' },
+  'RC:VcMsg': { type: 'text', key: null, content: '视频通话' },
+  'RC:InfoNtf': { type: 'event', key: 'message' },
+  'RC:FileMsg': { type: 'file', key: 'name' },
+};
+const Default_Content = { type: 'text', key: null, content: '未知消息' };
+// 最新一条信息 融云 ==> IM
+export const CalcLastCentent = (messageType, content) => {
+  let obj = Type_Key_Obj[messageType] || Default_Content;
+  let lastContent = {
+    type: obj.type,
+    content: obj.key ? content[obj.key] : obj.content,
+  };
+
+  if (lastContent.type === 'event') {
+    lastContent.content = '[通知]';
+  }
+
+  return lastContent;
 };

@@ -55,7 +55,7 @@ import {
 } from '@/api/data.js';
 import { setBackExpansion } from '@/api/chat.js';
 import bus from '@/libs/bus';
-import { CalcTargetId } from '@/libs/tools';
+import { CalcTargetId, CalcLastCentent } from '@/libs/tools';
 import testComponent from '../components/testComponent.vue';
 
 import Vue from 'vue';
@@ -67,16 +67,6 @@ setTimeout(() => {
   Vue.component(LemonMessageText.name, LemonMessageText);
   Vue.component(LemonMessageFile.name, LemonMessageFile);
 }, 0);
-
-const Type_Key_Obj = {
-  'RC:ReferenceMsg': { type: 'text', key: 'content' },
-  'RC:ImgMsg': { type: 'image', key: 'imageUri' },
-  'RC:TxtMsg': { type: 'text', key: 'content' },
-  'RC:VcMsg': { type: 'text', key: null, content: '视频通话' },
-  'RC:InfoNtf': { type: 'event', key: 'message' },
-  'RC:FileMsg': { type: 'file', key: 'name' },
-};
-const Default_Content = { type: 'text', key: null, content: '未知消息' };
 
 export default {
   name: 'yimuIm',
@@ -171,7 +161,7 @@ export default {
       setTimeout(() => {
         // 获取会话列表
         this.getNewConnectList(id);
-      }, 500);
+      }, 1000);
     });
 
     bus.$on('setExpansion', this.setRongExpansion);
@@ -211,7 +201,6 @@ export default {
       });
     },
     setRongExpansion(expansion, message, operate, cb) {
-      console.log('setRongExpansion', message);
       let messageType = '';
       switch (message.type) {
         case 'text':
@@ -476,11 +465,7 @@ export default {
         isGroup,
       };
       let { messageType, content } = item.latestMessage || {};
-      let obj = Type_Key_Obj[messageType] || Default_Content;
-      userItem.lastContent = {
-        type: obj.type,
-        content: obj.key ? content[obj.key] : obj.content,
-      };
+      userItem.lastContent = CalcLastCentent(messageType, content);
 
       return userItem;
     },
@@ -522,7 +507,6 @@ export default {
             };
             sessionStorage.setItem('current_user', JSON.stringify(user));
             sessionStorage.setItem('current_userId', id);
-            console.log('current_user', user);
             bus.$emit('setUserInfo', user);
           }
         })
@@ -535,13 +519,18 @@ export default {
       RongIMLib.getConversationList().then(({ code, data: conversationList }) => {
         if (code === 0) {
           console.log('创建群组之后 获取会话列表', conversationList);
-          let curConverse = conversationList.filter((item) => item.targetId == id)[0] || null;
-          let targetId = `group_${id}`;
-          groupInfos(targetId).then((res) => {
+          let curConverse = conversationList.filter((item) => item.targetId == id)[0] || {};
+          let targetId = `group_${id}`; // 17
+          if (curConverse) {
+            this.firstConversationId = targetId;
+          }
+
+          groupInfos(id).then((res) => {
             if (res.status === 200) {
               const { content: displayName, avatar } = res.data.data[id];
               let { messageType, content, sentTime } = curConverse.latestMessage;
-              let obj = Type_Key_Obj[messageType] || Default_Content;
+              let lastContent = CalcLastCentent(messageType, content);
+
               let userItem = {
                 id: targetId,
                 displayName,
@@ -549,15 +538,13 @@ export default {
                 index: '[1]群聊',
                 unread: curConverse.unreadMessageCount,
                 lastSendTime: sentTime,
-                lastContent: {
-                  type: obj.type,
-                  content: obj.key ? content[obj.key] : obj.content,
-                },
+                lastContent,
                 isGroup: true,
+                isNew: true, // for render lastContent
               };
 
               this.currentOrgUsers.push(userItem);
-              this.$refs.imMain.refreshContact(this.currentOrgUsers);
+              this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
             }
           });
         } else {

@@ -632,7 +632,6 @@ export default {
     },
     // 发完消息之后 处理成lemon格式 传回lemon send方法回调
     calcSendedMsg(messageUId, item) {
-      console.log('start', messageUId, item);
       let messageItem = {
         id: messageUId,
         status: 'succeed',
@@ -672,7 +671,6 @@ export default {
           break;
       }
 
-      console.log('end', messageItem);
       return messageItem;
     },
     sendMessageCallback(data, msg, next) {
@@ -686,7 +684,6 @@ export default {
 
       let message = this.calcSendedMsg(data.messageUId, msg);
       message.id = data.messageUId;
-      console.log('message---next', message);
       next(message);
     },
     handleSend(message, next, file) {
@@ -787,7 +784,6 @@ export default {
 
     //接受新消息
     appendMessage(data) {
-      console.log('appendMessage', data);
       this.$refs.IMUI.appendMessage(data);
     },
     // 获取当前机构用户
@@ -807,19 +803,27 @@ export default {
     },
     // 新增或删除会话 (建群、退群...)
     refreshContact(all_user) {
-      this.$refs.IMUI.initContacts(all_user);
+      let IMUI = this.$refs.IMUI;
+      let users = all_user;
+      users.forEach((item) => {
+        if (item.isNew && item.lastContent) {
+          item.lastContent = IMUI.lastContentRender(item.lastContent);
+        }
+      });
+
+      IMUI.initContacts(users);
+      setTimeout(() => {
+        this.firstConversationId && IMUI.changeContact(this.firstConversationId);
+      }, 500);
     },
 
     //切换联系人
     changeIMContact(contact) {
-      // console.log('切换联系人', contact);
       this.$refs.IMUI.changeContact(contact.id);
     },
     handleOpenHistory(item) {
       this.historyPop = true;
       this.historyItem = item;
-      console.log('打开历史记录弹窗', item);
-      // imId: 274  imRemoteId: "BTVB-6O6O-FPK4-01LT"
     },
   },
 };

@@ -8,7 +8,12 @@
         style="width: 400px"
         clearable
       ></el-input>
-      <el-button class="con-btn" type="primary" size="small" @click="confirmCreate"
+      <el-button
+        class="con-btn"
+        type="primary"
+        size="small"
+        :loading="createLoading"
+        @click="confirmCreate"
         >确认创建</el-button
       >
     </div>
@@ -79,6 +84,7 @@ export default {
       currentOrgUsers: [],
       checkUser: [],
       selecedUser: [],
+      createLoading: false,
     };
   },
   mounted() {
@@ -148,6 +154,7 @@ export default {
       });
     },
     confirmCreate() {
+      this.createLoading = true;
       let userIds = this.selecedUser.map((user) => {
         return Number(user.id);
       });
@@ -162,6 +169,9 @@ export default {
         })
         .catch((err) => {
           console.log(err);
+        })
+        .finally(() => {
+          this.createLoading = false;
         });
     },
   },
