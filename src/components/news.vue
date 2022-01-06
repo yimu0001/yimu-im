@@ -175,13 +175,45 @@ export default {
     bus.$on('afterQuitGroup', (conversationType, targetId) => {
       this.deleteConnect(conversationType, targetId);
     });
+
+    const Events = RongIMLib.Events;
+    // 监听响应
+    RongIMLib.addEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
+    RongIMLib.addEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
   },
   beforeDestroy() {
     bus.$off('createGroupOk');
     bus.$off('setExpansion');
     bus.$off('afterQuitGroup');
+
+    const Events = RongIMLib.Events;
+    RongIMLib.removeEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
+    RongIMLib.removeEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
   },
   methods: {
+    onReadReceiptReceived({ conversation, messageUId, sentTime }) {
+      console.log('单聊已读回执', conversation, messageUId, sentTime);
+      // {conversationType: 1, targetId: '1000053', channelId: ''}  undefined 1641350108871
+      let responseUserIdList = {};
+      responseUserIdList[conversation.targetId] = sentTime;
+      console.log('修改消息体', responseUserIdList);
+      if (this.concatId === conversation.targetId) {
+        this.$refs.imMainDom.updateReadState(responseUserIdList, messageUId);
+      }
+    },
+
+    onMessageReceiptResponse({ conversation, messageUId, responseUserIdList }) {
+      // responseUserIdList 为已查看发送消息用户的列表
+      console.log('群聊已读回执', conversation, messageUId, responseUserIdList);
+      // {conversationType: 3, targetId: '12', channelId: ''}  BU51-48QJ-9TKC-01H1 {1000053: 1641353350477}
+      // console.log('同一个', CalcTargetId(this.concatId), conversation.targetId);
+
+      console.log('修改消息体', responseUserIdList);
+      if (CalcTargetId(this.concatId) === conversation.targetId) {
+        this.$refs.imMainDom.updateReadState(responseUserIdList);
+      }
+    },
+
     openChatDialog() {
       if (this.showComponent) {
         this.showList = true;
@@ -265,9 +297,37 @@ export default {
         }
       });
     },
+    noticeSender(messages) {
+      const messageObj = {};
+      messages.forEach(({ targetId, messageUId }) => {
+        if (messageObj[targetId]) {
+          messageObj[targetId] = [...messageObj[targetId], messageUId];
+        } else {
+          messageObj[targetId] = [messageUId];
+        }
+      });
+      // ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
+      console.log('发送响应回执', messageObj);
+      messageObj &&
+        Object.entries(messageObj).forEach(([targetId, messageList]) => {
+          RongIMLib.sendReadReceiptResponse(targetId, messageList)
+            .then((res) => {
+              if (res.code === 0) {
+                console.log('响应回执请求成功', res.code, res.data);
+              } else {
+                console.log('响应回执请求成功', res.code, res.msg);
+              }
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        });
+    },
     // 融云消息类型 处理成lemon-ui的格式 并插入
     handleReceiveMessage(messages) {
       console.log('接收到的融云推送', messages);
+      this.noticeSender(messages);
+
       messages.forEach((item) => {
         // targetId: "12" conversationType: 3
         let userinfo = item.content.user || {};
@@ -352,6 +412,7 @@ export default {
               if (res.code === RongIMLib.ErrorCode.SUCCESS) {
                 console.log('链接成功, 链接用户 id 为: ', res.data.userId);
                 this.getConnetList();
+                // this.getUnreadNumber();
               } else {
                 console.warn('链接失败, code:', res.code);
               }
@@ -362,6 +423,19 @@ export default {
         })
         .catch((err) => {
           console.log(err);
+        });
+    },
+    getUnreadNumber() {
+      RongIMLib.getTotalUnreadCount()
+        .then((res) => {
+          if (res.code === 0) {
+            console.log('获取所有会话未读数ok', res.code, res.data);
+          } else {
+            console.log('获取所有会话未读数no', res.code, res.msg);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
         });
     },
     getConnetList() {
@@ -617,12 +691,28 @@ export default {
         expansion: { thumbedIds: [], markedIds: [], collectedIds: [] },
       };
 
-      // 发送消息
+      this.sendMessageToRongyun(conversation, message, options, item);
+    },
+    // 发送消息
+    sendMessageToRongyun(conversation, message, options, item) {
+      const { fun, isGroup } = item;
       RongIMLib.sendMessage(conversation, message, options).then(({ code, data }) => {
         if (code === 0) {
-          // messageUId: "BU0J-LFCJ-1N24-01LT"
-          console.log('消息发送成功：', data);
+          console.log('消息发送成功回调：', data.messageUId, data);
           fun(data, item);
+
+          isGroup &&
+            RongIMLib.sendReadReceiptRequest(conversation.targetId, data.messageUId)
+              .then((res) => {
+                if (res.code === 0) {
+                  console.log('群聊-发起已读回执请求成功', res.code, res.data);
+                } else {
+                  console.log('群聊-发起已读回执请求失败', res.code, res.msg);
+                }
+              })
+              .catch((error) => {
+                console.log(error);
+              });
         } else {
           console.log('消息发送失败：', code);
           fun({ status: 'failed' });
@@ -637,7 +727,7 @@ export default {
     },
     handlePullMessages(args) {
       let { id, isGroup, displayName, avatar } = args.contact;
-      let targetId = CalcTargetId(id);
+      let targetId = CalcTargetId(id); // 原本id 现在group_id
       // 首次进入聊天
       !this.concatId && (this.concatId = id);
       // 聊天对象被切换了
@@ -647,7 +737,7 @@ export default {
       }
 
       const conversation = {
-        targetId, // 原本id 现在group_id
+        targetId,
         conversationType: isGroup
           ? RongIMLib.ConversationType.GROUP
           : RongIMLib.ConversationType.PRIVATE,
@@ -666,9 +756,9 @@ export default {
               const list = data.list; // 获取到的消息列表
               const hasMore = data.hasMore; // 是否还有历史消息可获取
               list[0] && (this.historyDate = list[0].sentTime);
-
+              console.log('历史记录', list);
               let otheruser = { id: targetId, displayName, avatar };
-              this.$refs.imMainDom.pullHistore(list, hasMore, args.next, otheruser);
+              this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
             }
           })
           .catch((error) => {

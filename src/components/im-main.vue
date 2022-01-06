@@ -10,7 +10,7 @@
       :hide-menu-avatar="hideMenuAvatar"
       :hide-message-name="hideMessageName"
       :hide-message-time="hideMessageTime"
-      :sendKey="setSendKey"
+      :sendKey="beforeSend"
       @change-menu="handleChangeMenu"
       @change-contact="handleChangeContact"
       @pull-messages="handlePullMessages"
@@ -92,7 +92,7 @@
             </el-tag>
           </div>
 
-          <p class="tips">使用 ctrl + enter 快捷发送消息</p>
+          <p class="tips">使用 enter 快捷发送消息</p>
         </div>
       </template>
     </lemon-imui>
@@ -134,7 +134,6 @@ import 'lemon-imui/dist/index.css';
 import { Dialog, Image, Message, Tag, Input } from 'element-ui';
 import { uploadFile } from '@/api/data';
 import bus from '@/libs/bus';
-import { dateFormat } from '@/libs/tools';
 
 export default {
   name: 'imMain',
@@ -464,10 +463,34 @@ export default {
         this.drawerVisibleShow = false;
       }
     },
-    setSendKey(e) {
-      // return e.keyCode == 13;
-      return e.keyCode == 13 && e.ctrlKey;
+    // enter发送消息  ctrl+enter换行
+    beforeSend(e) {
+      const IMUI = this.$refs.IMUI;
+
+      if (e.keyCode == 13 && !e.ctrlKey) {
+        return true;
+      } else if (e.keyCode == 13 && e.ctrlKey) {
+        let message = IMUI.getEditorValue();
+        message = message + '\n\n';
+        IMUI.setEditorValue(message);
+        this.keepLastIndex(e.target);
+        return false;
+      }
     },
+    keepLastIndex(obj) {
+      if (window.getSelection) {
+        obj.focus();
+        var range = window.getSelection();
+        range.selectAllChildren(obj);
+        range.collapseToEnd();
+      } else if (document.selection) {
+        var range = document.selection.createRange();
+        range.moveToElementText(obj);
+        range.collapse(false);
+        range.select();
+      }
+    },
+
     handleChangeMenu(menuName) {
       this.$emit('change-menu', menuName);
       this.closeRightDrawer();
@@ -505,7 +528,7 @@ export default {
     },
 
     //历史记录
-    pullHistore(listInit, hasMore, next, otheruser) {
+    pullHistory(listInit, hasMore, next, otheruser) {
       // console.log('历史记录', listInit);
       let list = [...listInit];
 
@@ -570,7 +593,7 @@ export default {
 
         return messageItem;
       });
-
+      console.log('处理好的历史记录', messages);
       next(messages, !hasMore);
     },
     handleMessageClick(e, key, message, instance) {
@@ -631,6 +654,29 @@ export default {
         IMUI.updateMessage(message);
       }
     },
+    // 测试
+    updateReadState(newReadList, messageUId) {
+      const { IMUI } = this.$refs;
+      const messages = IMUI.getCurrentMessages();
+      console.log('updateReadState', newReadList, messages);
+      // 群聊
+      if (messageUId) {
+        let msg = messages.filter(({ id }) => id === messageUId);
+        !msg.readList && (msg.readList = {});
+        msg.readList = { ...msg.readList, ...newReadList };
+        IMUI.updateMessage(msg);
+        bus.$emit('updateReadNum', newReadList, msg.toContactId);
+        return;
+      }
+
+      // 单聊
+      messages.forEach((msg) => {
+        !msg.readList && (msg.readList = {});
+        msg.readList = { ...msg.readList, ...newReadList };
+        IMUI.updateMessage(msg);
+        bus.$emit('updateReadNum', newReadList, msg.toContactId);
+      });
+    },
     // 发完消息之后 处理成lemon格式 传回lemon send方法回调
     calcSendedMsg(messageUId, item) {
       let messageItem = {
@@ -688,6 +734,9 @@ export default {
       next(message);
     },
     handleSend(message, next, file) {
+      // 文字的最前或者最后有换行就去掉
+      message.content = message.content.replace(/^\s+|\s+$/g, '');
+
       let rongMsg = {
         target_id: this.targetUser.id,
         isGroup: this.targetUser.isGroup ? this.targetUser.isGroup : false,

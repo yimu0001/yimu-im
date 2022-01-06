@@ -13,6 +13,7 @@ export default {
       debounceThumb: {},
       debounceMark: {},
       debounceCollect: {},
+      isSender: false,
     };
   },
   props: { msgContent: { default: {} } },
@@ -40,6 +41,9 @@ export default {
     this.debounceThumb = debounce(this.handleThumb, 400, false);
     this.debounceMark = debounce(this.handleMark, 400, false);
     this.debounceCollect = debounce(this.handleCollect, 400, false);
+
+    const { fromUser = {} } = this.message;
+    this.isSender = fromUser.id === sessionStorage.getItem('current_userId');
   },
   beforeDestroy() {
     bus.$off('setUserInfo');
@@ -149,7 +153,10 @@ export default {
     }
 
     return (
-      <div class='tool-bar'>
+      <div
+        class='tool-bar'
+        style={this.isSender ? 'justify-content: flex-end' : 'justify-content: flex-start'}
+      >
         <i class='iconfont icon-liaotian' title='回复' onClick={this.handleReply}></i>
         <i
           class={[
@@ -183,6 +190,9 @@ export default {
 <style lang="less" scoped>
 .tool-bar {
   padding: 5px 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
   visibility: hidden;
   .iconfont {
     cursor: pointer;
