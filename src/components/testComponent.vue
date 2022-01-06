@@ -1,17 +1,20 @@
 <template>
-  <div>
-    这里四点六进萨迪克垃圾啊十分激烈对抗
+  <div class="tips-text">
+    暂无内容
   </div>
 </template>
 
 <script>
-  export default {
-    mounted () {
-      console.log('新组建');
-    },
-  }
+export default {
+  mounted() {
+    console.log('空组件');
+  },
+};
 </script>
 
 <style lang="less" scoped>
-
+.tips-text {
+  padding: 30px;
+  text-align: center;
+}
 </style>
