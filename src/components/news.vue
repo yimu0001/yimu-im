@@ -305,6 +305,7 @@ export default {
     handleNoticeGroupSender(targetId, msgIds) {
       // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
       this.contactId = CalcTargetId(targetId);
+      this.clearUnread(true, this.contactId);
       console.log('发送响应回执', this.contactId, msgIds);
       RongIMLib.sendReadReceiptResponse(this.contactId, msgIds)
         .then((res) => {
@@ -320,6 +321,7 @@ export default {
     },
     handleNoticeSingleSender(targetId, msgId, sendTime) {
       this.contactId = targetId;
+      this.clearUnread(false, this.contactId);
       console.log('发送响应回执', this.contactId, msgId, sendTime);
       RongIMLib.sendReadReceiptMessage(this.contactId, msgId, sendTime)
         .then((res) => {
@@ -332,6 +334,19 @@ export default {
         .catch((error) => {
           console.log(error);
         });
+    },
+    clearUnread(isGroup, targetId) {
+      const conversationType = isGroup
+        ? RongIMLib.ConversationType.GROUP
+        : RongIMLib.ConversationType.PRIVATE;
+
+      RongIMLib.clearMessagesUnreadStatus({ conversationType, targetId }).then((res) => {
+        if (res.code === 0) {
+          console.log('清空未读ok', res.code);
+        } else {
+          console.log('清空未读err', res.code, res.msg);
+        }
+      });
     },
     // 融云消息类型 处理成lemon-ui的格式 并插入
     handleReceiveMessage(messages) {
