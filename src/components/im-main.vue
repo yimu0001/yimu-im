@@ -134,6 +134,7 @@ import 'lemon-imui/dist/index.css';
 import { Dialog, Image, Message, Tag, Input } from 'element-ui';
 import { uploadFile } from '@/api/data';
 import bus from '@/libs/bus';
+import { reverseArray } from '@/libs/tools';
 
 export default {
   name: 'imMain',
@@ -284,6 +285,7 @@ export default {
       historyItem: {},
       directorList: [],
       pendGroupId: '',
+      noticeCount: 0, // 当前会话内的最新n条消息 通知发送方已读
     };
   },
   watch: {
@@ -510,6 +512,7 @@ export default {
       this.closeRightDrawer();
 
       console.log('Event:change-contact', contact);
+      // contact.unread: 3   id: "group_12"
       // this.mailKeyword && this.changeIMContact(contact);
       this.targetUser = contact;
       instance.updateContact({
@@ -517,19 +520,48 @@ export default {
         unread: 0,
       });
       instance.closeDrawer();
+
+      if (contact.unread > 0) {
+        //  {399: Array(9), 4575: Array(20), group_12: Array(20)}
+        let allLocalMessage = instance.getMessages();
+        let curMessage = allLocalMessage[contact.id]; // undefined 说明是没有本地 需要 handlePullMessages
+        if (curMessage) {
+          this.calcReadNotice(curMessage, contact.unread);
+        } else {
+          this.noticeCount = contact.unread;
+        }
+      }
+    },
+    // 单聊/群聊已读回执
+    calcReadNotice(list, unreadCount) {
+      let newMsgs = reverseArray(list);
+
+      if (this.targetUser.isGroup) {
+        let msgIds = [];
+        newMsgs.forEach((item, index) => {
+          if (index < unreadCount) {
+            msgIds.push(item.id);
+          }
+        });
+        this.$emit('notice-group-sender', this.targetUser.id, msgIds);
+        this.noticeCount = 0;
+      } else {
+        const { id: msgId, sendTime } = newMsgs[0];
+        this.$emit('notice-single-sender', this.targetUser.id, msgId, sendTime);
+        this.noticeCount = 0;
+      }
     },
 
     handlePullMessages(contact, next, instance) {
+      console.log('unread-count', contact.unread);
       let args = {
         contact,
         next,
       };
       this.$emit('handlePullMessages', args);
     },
-
     //历史记录
     pullHistory(listInit, hasMore, next, otheruser) {
-      // console.log('历史记录', listInit);
       let list = [...listInit];
 
       let messages = list.map((item) => {
@@ -593,7 +625,14 @@ export default {
 
         return messageItem;
       });
+
       console.log('处理好的历史记录', messages);
+      if (this.noticeCount > 0) {
+        // 通知
+        console.log('需要已读通知', this.noticeCount, messages);
+        this.calcReadNotice(messages, this.noticeCount);
+      }
+
       next(messages, !hasMore);
     },
     handleMessageClick(e, key, message, instance) {

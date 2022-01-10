@@ -1,5 +1,6 @@
 <script>
 import Toolbar from './toolbar.vue';
+import bus from '@/libs/bus';
 function formatByte(value) {
   if (null == value || value == '') {
     return '0 Bytes';
@@ -15,9 +16,23 @@ function formatByte(value) {
 
 export default {
   name: 'lemonMessageFile',
+  data() {
+    return { readNum: 0, userId: null };
+  },
   inheritAttrs: false,
   components: { Toolbar },
+  mounted() {
+    this.userId = sessionStorage.getItem('current_userId');
+
+    bus.$on('updateReadNum', (readList, targetId) => {
+      if (this.$attrs.message.toContactId === targetId) {
+        this.readNum = readList ? Object.keys(readList).length : 0;
+      }
+    });
+  },
   render() {
+    const { fromUser } = this.$attrs.message;
+
     return (
       <lemon-message-basic
         class='lemon-message-file'
@@ -25,6 +40,9 @@ export default {
         scopedSlots={{
           content: (props) => [
             // <div class='tool-bar-wrapper'>
+            <div class='read-num-abs'>
+              {fromUser.id === this.userId && <p>{this.readNum}人已读</p>}
+            </div>,
             <div class='lemon-message-file__inner'>
               <p class='lemon-message-file__name'>{props.fileName}</p>
               <p class='lemon-message-file__byte'>{formatByte(props.fileSize)}</p>
@@ -64,6 +82,16 @@ export default {
     }
     &:hover .tool-bar {
       visibility: visible;
+    }
+
+    .read-num-abs {
+      position: absolute;
+      left: -90px;
+      bottom: 0;
+      width: 85px;
+      text-align: right;
+      color: #999;
+      font-size: 12px;
     }
   }
 }

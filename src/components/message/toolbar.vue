@@ -13,7 +13,6 @@ export default {
       debounceThumb: {},
       debounceMark: {},
       debounceCollect: {},
-      isSender: false,
     };
   },
   props: { msgContent: { default: {} } },
@@ -42,8 +41,7 @@ export default {
     this.debounceMark = debounce(this.handleMark, 400, false);
     this.debounceCollect = debounce(this.handleCollect, 400, false);
 
-    const { fromUser = {} } = this.message;
-    this.isSender = fromUser.id === sessionStorage.getItem('current_userId');
+    this.userId = sessionStorage.getItem('current_userId');
   },
   beforeDestroy() {
     bus.$off('setUserInfo');
@@ -152,10 +150,14 @@ export default {
       collected = collectedIds.includes(this.userId);
     }
 
+    const { fromUser = {} } = this.message;
+
     return (
       <div
         class='tool-bar'
-        style={this.isSender ? 'justify-content: flex-end' : 'justify-content: flex-start'}
+        style={
+          fromUser.id !== this.userId ? 'justify-content: flex-start' : 'justify-content: flex-end'
+        }
       >
         <i class='iconfont icon-liaotian' title='回复' onClick={this.handleReply}></i>
         <i

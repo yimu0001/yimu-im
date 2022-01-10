@@ -30,6 +30,8 @@
         @changeMenuMessage="getConnetList"
         @closeModal="handleClose"
         @change-menu="changeMenu"
+        @notice-group-sender="handleNoticeGroupSender"
+        @notice-single-sender="handleNoticeSingleSender"
       ></im-main>
       <span slot="footer" class="dialog-footer"> </span>
     </el-dialog>
@@ -74,7 +76,7 @@ export default {
   data() {
     return {
       historyDate: +new Date(),
-      concatId: null,
+      contactId: null,
       showList: false,
       im: undefined,
       user_token: '',
@@ -166,15 +168,11 @@ export default {
     bus.$on('createGroupOk', (id) => {
       this.$refs.imMainDom.createPop = false;
       setTimeout(() => {
-        // 获取会话列表
-        this.getNewConnectList(id);
+        this.getNewConnectList(id); // 获取会话列表
       }, 1000);
     });
-
     bus.$on('setExpansion', this.setRongExpansion);
-    bus.$on('afterQuitGroup', (conversationType, targetId) => {
-      this.deleteConnect(conversationType, targetId);
-    });
+    bus.$on('afterQuitGroup', this.deleteConnect);
 
     const Events = RongIMLib.Events;
     // 监听响应
@@ -191,29 +189,36 @@ export default {
     RongIMLib.removeEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
   },
   methods: {
+    onMessageReceiptResponse({ conversation, messageUId, responseUserIdList }) {
+      // responseUserIdList 为已查看发送消息用户的列表
+      console.log('群聊已读回执', conversation, messageUId, responseUserIdList);
+      // {conversationType: 3, targetId: '12', channelId: ''}  BU51-48QJ-9TKC-01H1 {1000053: 1641353350477}
+
+      console.log('修改消息体', responseUserIdList);
+      if (CalcTargetId(this.contactId) === conversation.targetId) {
+        this.$refs.imMainDom.updateReadState(responseUserIdList);
+      } else {
+        // 后端自己存起来 更新已读的参数
+      }
+    },
     onReadReceiptReceived({ conversation, messageUId, sentTime }) {
       console.log('单聊已读回执', conversation, messageUId, sentTime);
       // {conversationType: 1, targetId: '1000053', channelId: ''}  undefined 1641350108871
       let responseUserIdList = {};
       responseUserIdList[conversation.targetId] = sentTime;
       console.log('修改消息体', responseUserIdList);
-      if (this.concatId === conversation.targetId) {
+      if (this.contactId === conversation.targetId) {
+        // 跟之前接口获取已读人数拼接起来 更新
         this.$refs.imMainDom.updateReadState(responseUserIdList, messageUId);
+      } else {
+        // 后端自己存起来 更新已读的参数
+        // 每次切换会话框的时候 this.$refs.IMUI.getCurrentMessages 返回当前聊天窗口的所有消息 用来调接口获取已读人数
       }
     },
 
-    onMessageReceiptResponse({ conversation, messageUId, responseUserIdList }) {
-      // responseUserIdList 为已查看发送消息用户的列表
-      console.log('群聊已读回执', conversation, messageUId, responseUserIdList);
-      // {conversationType: 3, targetId: '12', channelId: ''}  BU51-48QJ-9TKC-01H1 {1000053: 1641353350477}
-      // console.log('同一个', CalcTargetId(this.concatId), conversation.targetId);
-
-      console.log('修改消息体', responseUserIdList);
-      if (CalcTargetId(this.concatId) === conversation.targetId) {
-        this.$refs.imMainDom.updateReadState(responseUserIdList);
-      }
+    handleChangeConcat(id) {
+      this.contactId = CalcTargetId(id);
     },
-
     openChatDialog() {
       if (this.showComponent) {
         this.showList = true;
@@ -297,36 +302,40 @@ export default {
         }
       });
     },
-    noticeSender(messages) {
-      const messageObj = {};
-      messages.forEach(({ targetId, messageUId }) => {
-        if (messageObj[targetId]) {
-          messageObj[targetId] = [...messageObj[targetId], messageUId];
-        } else {
-          messageObj[targetId] = [messageUId];
-        }
-      });
-      // ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
-      console.log('发送响应回执', messageObj);
-      messageObj &&
-        Object.entries(messageObj).forEach(([targetId, messageList]) => {
-          RongIMLib.sendReadReceiptResponse(targetId, messageList)
-            .then((res) => {
-              if (res.code === 0) {
-                console.log('响应回执请求成功', res.code, res.data);
-              } else {
-                console.log('响应回执请求成功', res.code, res.msg);
-              }
-            })
-            .catch((error) => {
-              console.log(error);
-            });
+    handleNoticeGroupSender(targetId, msgIds) {
+      // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
+      this.contactId = CalcTargetId(targetId);
+      console.log('发送响应回执', this.contactId, msgIds);
+      RongIMLib.sendReadReceiptResponse(this.contactId, msgIds)
+        .then((res) => {
+          if (res.code === 0) {
+            console.log('响应回执请求成功', res.code, res.data);
+          } else {
+            console.log('响应回执请求成功', res.code, res.msg);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    handleNoticeSingleSender(targetId, msgId, sendTime) {
+      this.contactId = targetId;
+      console.log('发送响应回执', this.contactId, msgId, sendTime);
+      RongIMLib.sendReadReceiptMessage(this.contactId, msgId, sendTime)
+        .then((res) => {
+          if (res.code === 0) {
+            console.log('响应回执成功', res.code, res.data);
+          } else {
+            console.log('响应回执成功', res.code, res.msg);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
         });
     },
     // 融云消息类型 处理成lemon-ui的格式 并插入
     handleReceiveMessage(messages) {
       console.log('接收到的融云推送', messages);
-      this.noticeSender(messages);
 
       messages.forEach((item) => {
         // targetId: "12" conversationType: 3
@@ -425,19 +434,6 @@ export default {
           console.log(err);
         });
     },
-    getUnreadNumber() {
-      RongIMLib.getTotalUnreadCount()
-        .then((res) => {
-          if (res.code === 0) {
-            console.log('获取所有会话未读数ok', res.code, res.data);
-          } else {
-            console.log('获取所有会话未读数no', res.code, res.msg);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
     getConnetList() {
       // 获取会话列表
       RongIMLib.getConversationList()
@@ -469,7 +465,19 @@ export default {
           console.log('获取会话列表失败err', err);
         });
     },
-
+    getUnreadNumber() {
+      RongIMLib.getTotalUnreadCount()
+        .then((res) => {
+          if (res.code === 0) {
+            console.log('获取所有会话未读数ok', res.code, res.data);
+          } else {
+            console.log('获取所有会话未读数no', res.code, res.msg);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
     classifyConnectList(conversationList) {
       this.conversationObj = {};
       conversationList.forEach((it) => {
@@ -729,11 +737,11 @@ export default {
       let { id, isGroup, displayName, avatar } = args.contact;
       let targetId = CalcTargetId(id); // 原本id 现在group_id
       // 首次进入聊天
-      !this.concatId && (this.concatId = id);
+      !this.contactId && (this.contactId = id);
       // 聊天对象被切换了
-      if (this.concatId !== id) {
+      if (this.contactId !== id) {
         this.historyDate = +new Date();
-        this.concatId = id;
+        this.contactId = id;
       }
 
       const conversation = {

@@ -16,17 +16,16 @@ import { Popover } from 'element-ui';
 export default {
   name: 'lemonMessageText',
   data() {
-    return { isSender: false, readNum: 0 };
+    return { readNum: 0, userId: null };
   },
   inheritAttrs: false,
   inject: ['IMUI'],
   components: { Toolbar, elPopover: Popover },
   mounted() {
-    const { fromUser, toContactId } = this.$attrs.message;
-    this.isSender = fromUser.id === sessionStorage.getItem('current_userId');
+    this.userId = sessionStorage.getItem('current_userId');
 
     bus.$on('updateReadNum', (readList, targetId) => {
-      if (toContactId === targetId) {
+      if (this.$attrs.message.toContactId === targetId) {
         this.readNum = readList ? Object.keys(readList).length : 0;
       }
     });
@@ -49,16 +48,28 @@ export default {
           content: (props) => {
             const content = this.IMUI.emojiNameToImage(props.content);
             const replyObj = this.$attrs.message.referMsg;
+            const { fromUser } = this.$attrs.message;
 
             return (
               <div class='tool-bar-wrapper'>
-                {this.isSender ? (
-                  <div class='all-infos'>
-                    <div class='read-num'>{<p>{this.readNum}人已读</p>}</div>
+                {fromUser.id !== this.userId ? (
+                  <div
+                    class='only-content'
+                    style={
+                      fromUser.id === this.userId
+                        ? 'justify-content: flex-end'
+                        : 'justify-content: flex-start'
+                    }
+                  >
                     <div class='content-show' domProps={{ innerHTML: content }} />
                   </div>
                 ) : (
-                  <div class='only-content'>
+                  <div class='all-infos'>
+                    {fromUser.id === this.userId && (
+                      <div class='read-num'>
+                        <p>{this.readNum}人已读</p>
+                      </div>
+                    )}
                     <div class='content-show' domProps={{ innerHTML: content }} />
                   </div>
                 )}
@@ -109,7 +120,7 @@ export default {
     justify-content: flex-end;
     align-items: flex-end;
     .read-num {
-      margin: 2px 3px;
+      margin: 2px 4px;
       min-width: 1px;
       max-width: 100px;
       color: #999;
