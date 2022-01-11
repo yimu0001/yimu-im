@@ -50,6 +50,20 @@ module.exports = {
   //             return options
   //         })
   // },
+  chainWebpack: (config) => {
+    config.module
+      .rule('js')
+      .include.add(resolve('src'))
+      .end()
+      .use('babel')
+      .loader('babel-loader')
+      .tap((options) => {
+        return options;
+      });
+    config.resolve.alias
+      .set('@', resolve('src')) // key,value自行定义，比如.set('@@', resolve('src/components'))
+      .set('_c', resolve('src/components'));
+  },
   css: {
     extract: false,
   },

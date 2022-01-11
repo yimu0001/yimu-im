@@ -9,6 +9,9 @@ import 'lemon-imui/dist/index.css';
 import './components/style.css';
 import { Message } from 'view-design';
 
+import 'element-ui/lib/theme-chalk/index.css';
+import 'view-design/dist/styles/iview.css';
+
 Vue.use(LemonIMUI);
 
 Vue.config.productionTip = false;

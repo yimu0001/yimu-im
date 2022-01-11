@@ -134,7 +134,6 @@ import 'lemon-imui/dist/index.css';
 import { Image, Tag, Input } from 'element-ui';
 import { uploadFile } from '@/api/data';
 import { Modal } from 'view-design';
-import 'view-design/dist/styles/iview.css';
 import bus from '@/libs/bus';
 import { reverseArray } from '@/libs/tools';
 

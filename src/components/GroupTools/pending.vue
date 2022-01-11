@@ -81,7 +81,6 @@ import { fetchPendingList, completePending } from '@/api/event';
 import bus from '@/libs/bus';
 import { Button, Tabs, TabPane } from 'element-ui';
 import { Modal, Select, Option, Input } from 'view-design';
-import 'view-design/dist/styles/iview.css';
 
 export default {
   name: 'PendingDrawer',

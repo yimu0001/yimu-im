@@ -70,7 +70,6 @@
 import InfiniteLoading from 'vue-infinite-loading';
 import { Button, Checkbox, Tabs, TabPane } from 'element-ui';
 import { Input } from 'view-design';
-import 'view-design/dist/styles/iview.css';
 import { fetchMarkList } from '@/api/event';
 
 import bus from '@/libs/bus';

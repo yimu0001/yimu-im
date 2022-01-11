@@ -49,7 +49,6 @@
 import { fetchPendingDirectorList, createPending } from '@/api/event';
 import { dateFormat } from '@/libs/tools';
 import { Form, FormItem, Input, Select, Option, DatePicker, Button } from 'view-design';
-import 'view-design/dist/styles/iview.css';
 
 export default {
   name: 'add-pending',

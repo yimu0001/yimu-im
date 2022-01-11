@@ -45,12 +45,9 @@
 </template>
 
 <script>
-import 'element-ui/lib/theme-chalk/index.css';
 import imMain from './im-main';
 import { Avatar, Dialog, Notification } from 'element-ui';
-
 import { Notice } from 'view-design';
-import 'view-design/dist/styles/iview.css';
 
 import * as RongIMLib from '@rongcloud/imlib-next';
 import {

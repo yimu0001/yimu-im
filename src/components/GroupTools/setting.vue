@@ -275,7 +275,6 @@ import {
   Switch,
 } from 'element-ui';
 import { Modal, Row, Col, Tag } from 'view-design';
-import 'view-design/dist/styles/iview.css';
 import bus from '@/libs/bus';
 
 export default {
