@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-24 15:26:54
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2021-12-30 09:29:23
+ * @LastEditTime: 2022-01-11 09:29:05
 -->
 
 <template>
@@ -65,7 +65,6 @@
 
 <script>
 import InfiniteLoading from 'vue-infinite-loading';
-import { Button, Input, Message, Avatar } from 'element-ui';
 import { fetchMessageContext, fetchMessageHistory } from '@/api/chat';
 import { reverseArray } from '@/libs/tools';
 
@@ -80,10 +79,6 @@ const TYPE_MSG_OBJ = {
 export default {
   name: 'HistoryRecord',
   components: {
-    elButton: Button,
-    elInput: Input,
-    Message,
-    elAvatar: Avatar,
     'infinite-loading': InfiniteLoading,
   },
   data() {
@@ -157,7 +152,7 @@ export default {
           setTimeout(this.setPosition, 0);
           // this.setScrollInit();
         } else {
-          Message.error(res.data.msg);
+          this.$Message.error(res.data.msg);
         }
         this.msgLoading = false;
       });
@@ -193,7 +188,7 @@ export default {
               this.historyList.unshift(item);
             });
           } else {
-            Message.error(res.data.msg);
+            this.$Message.error(res.data.msg);
           }
         })
         .finally(() => {
@@ -231,7 +226,7 @@ export default {
           end && (this.afterId = end.id);
           this.historyList = this.historyList.concat(list);
         } else {
-          Message.error(res.data.msg);
+          this.$Message.error(res.data.msg);
         }
 
         cb && cb();

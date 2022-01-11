@@ -13,15 +13,13 @@
       </el-tabs>
       <div class="list-block">
         <div class="filter">
-          <el-input
-            size="small"
-            style="width:300px"
-            placeholder="请输入内容"
-            prefix-icon="el-icon-search"
+          <Input
             v-model="markKeyword"
+            placeholder="请输入内容"
+            style="width: 300px"
+            search
             clearable
-          >
-          </el-input>
+          />
         </div>
         <div class="mark-list narrow-scroll-bar">
           <div class="mark-item" v-for="item in markList" :key="item.id">
@@ -70,8 +68,11 @@
 
 <script>
 import InfiniteLoading from 'vue-infinite-loading';
-import { Button, Input, Message, Avatar, Checkbox, Tabs, TabPane } from 'element-ui';
+import { Button, Checkbox, Tabs, TabPane } from 'element-ui';
+import { Input } from 'view-design';
+import 'view-design/dist/styles/iview.css';
 import { fetchMarkList } from '@/api/event';
+
 import bus from '@/libs/bus';
 
 const TYPE_MSG_OBJ = {
@@ -86,13 +87,11 @@ export default {
   name: 'MarkDrawer',
   components: {
     elButton: Button,
-    elInput: Input,
-    Message,
-    elAvatar: Avatar,
     elCheckbox: Checkbox,
     elTabs: Tabs,
     elTabPane: TabPane,
     'infinite-loading': InfiniteLoading,
+    Input,
   },
   data() {
     return {
@@ -203,7 +202,7 @@ export default {
               this.page = pageNow + 1;
             }
           } else {
-            Message.error(res.data.msg);
+            this.$Message.error(res.data.msg);
           }
 
           cb && cb();

@@ -35,15 +35,12 @@ import PendingDrawer from './pending';
 import NoticeDrawer from './notice.vue';
 import SettingDrawer from './setting.vue';
 import {
-  Dialog,
   Table,
   TableColumn,
   Row,
   Col,
   Button,
   Input,
-  Message,
-  Avatar,
   Checkbox,
   Tag,
   Tabs,
@@ -67,15 +64,12 @@ export default {
     },
   },
   components: {
-    elDialog: Dialog,
     elTable: Table,
     elTableColumn: TableColumn,
     elRow: Row,
     elCol: Col,
     elButton: Button,
     elInput: Input,
-    Message,
-    elAvatar: Avatar,
     elCheckbox: Checkbox,
     elTag: Tag,
     elTabs: Tabs,
@@ -220,7 +214,7 @@ export default {
         if (res.status === 200) {
           this.groupMemberList = res.data.data;
         } else {
-          Message.error(res.data.msg);
+          this.$Message.error(res.data.msg);
         }
       });
     },

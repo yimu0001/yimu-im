@@ -47,7 +47,11 @@
 <script>
 import 'element-ui/lib/theme-chalk/index.css';
 import imMain from './im-main';
-import { Avatar, Dialog, Message, Notification } from 'element-ui';
+import { Avatar, Dialog, Notification } from 'element-ui';
+
+import { Notice } from 'view-design';
+import 'view-design/dist/styles/iview.css';
+
 import * as RongIMLib from '@rongcloud/imlib-next';
 import {
   registerUser,
@@ -103,6 +107,7 @@ export default {
       conversationObj: {},
       orgUserList: [], // 创建待办 负责人下拉列表
       waitingOpen: false,
+      noticeCount: 0,
     };
   },
   props: {
@@ -120,7 +125,6 @@ export default {
     Avatar,
     imMain,
     elDialog: Dialog,
-    Message,
     Notification,
   },
   watch: {
@@ -222,7 +226,8 @@ export default {
     openChatDialog() {
       if (this.showComponent) {
         this.showList = true;
-        Notification.closeAll();
+        this.closeAllNotice();
+        // Notification.closeAll();
         this.waitingOpen = false;
       } else {
         this.waitingOpen = true;
@@ -335,6 +340,17 @@ export default {
           console.log(error);
         });
     },
+    closeAllNotice() {
+      if (this.noticeCount > 0) {
+        let count = this.noticeCount;
+        for (let num = 1; num <= count; num++) {
+          console.log(num);
+          Notice.close(`nth_${num}`);
+        }
+
+        this.noticeCount = 0;
+      }
+    },
     clearUnread(isGroup, targetId) {
       const conversationType = isGroup
         ? RongIMLib.ConversationType.GROUP
@@ -406,15 +422,40 @@ export default {
             };
         }
         if (!this.showList) {
-          Notification.info({
-            title: '新消息',
-            message: '收到新消息，点击查看',
+          Notice.info({
+            title: '消息提醒',
+            desc: '',
+            name: `nth_${++this.noticeCount}`,
             duration: 0,
-            onClick: () => {
-              this.showList = true;
-              Notification.closeAll();
+            render: (h) => {
+              return h(
+                'span',
+                {
+                  style: {
+                    color: '#2d8cf0',
+                    cursor: 'pointer',
+                  },
+                  on: {
+                    click: () => {
+                      this.showList = true;
+                      this.closeAllNotice();
+                    },
+                  },
+                },
+                '收到新消息，点击查看'
+              );
             },
           });
+
+          // Notification.info({
+          //   title: '新消息',
+          //   message: '收到新消息，点击查看',
+          //   duration: 0,
+          //   onClick: () => {
+          //     this.showList = true;
+          //     Notification.closeAll();
+          //   },
+          // });
         }
 
         if (this.$refs.imMainDom) {
@@ -442,7 +483,7 @@ export default {
               }
             });
           } else {
-            Message.error(res.data.msg);
+            this.$Message.error(res.data.msg);
           }
         })
         .catch((err) => {
@@ -535,7 +576,7 @@ export default {
             this.conversationObj[`group_${id}`] = this.handleChatInfo(userItem, true);
           });
         } else {
-          Message.error(res.data.msg);
+          this.$Message.error(res.data.msg);
         }
         this.loadStep += 1;
       });
@@ -804,7 +845,7 @@ export default {
       getUserByOrgid(this.currentUser.orgid)
         .then((res) => {
           if (res.status !== 200) {
-            Message.error(res.data.msg);
+            this.$Message.error(res.data.msg);
             return;
           }
 

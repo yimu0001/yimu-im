@@ -61,7 +61,7 @@
 </template>
 
 <script>
-import { Button, Input, Row, Col, Message, CheckboxGroup, Checkbox, Tag } from 'element-ui';
+import { Button, Input, Row, Col, CheckboxGroup, Checkbox, Tag } from 'element-ui';
 import { getOrgList, getUserByOrgid, createGroup } from '../api/data';
 import Bus from '../libs/bus';
 export default {
@@ -71,7 +71,6 @@ export default {
     elInput: Input,
     elRow: Row,
     elCol: Col,
-    Message,
     elCheckboxGroup: CheckboxGroup,
     elCheckbox: Checkbox,
     elTag: Tag,
@@ -98,7 +97,7 @@ export default {
           if (res.status === 200) {
             this.orgList = res.data.data;
           } else {
-            Message.error(res.data.msg);
+            this.$Message.error(res.data.msg);
           }
         })
         .catch((err) => {
@@ -127,7 +126,7 @@ export default {
               return item;
             });
           } else {
-            Message.error(res.data.msg);
+            this.$Message.error(res.data.msg);
           }
         })
         .catch((err) => {
@@ -161,10 +160,10 @@ export default {
       createGroup(this.groupName, userIds)
         .then((res) => {
           if (res.status === 200) {
-            Message.success('创建成功！');
+            this.$Message.success('创建成功！');
             Bus.$emit('createGroupOk', res.data.data.id);
           } else {
-            Message.error(res.data.msg);
+            this.$Message.error(res.data.msg);
           }
         })
         .catch((err) => {

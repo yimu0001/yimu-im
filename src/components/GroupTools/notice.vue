@@ -46,14 +46,12 @@ import InfiniteLoading from 'vue-infinite-loading';
 import { fetchGroupNoticeList, createGroupNotice } from '@/api/chat';
 import { CalcTargetId } from '@/libs/tools';
 import bus from '@/libs/bus';
-import { Button, Input, Message, Avatar } from 'element-ui';
+import { Button, Input } from 'element-ui';
 export default {
   name: 'NoticeDrawer',
   components: {
     elButton: Button,
     elInput: Input,
-    Message,
-    elAvatar: Avatar,
     'infinite-loading': InfiniteLoading,
   },
   data() {
@@ -116,7 +114,7 @@ export default {
             this.page = pageNow + 1;
           }
         } else {
-          Message.error(res.data.msg);
+          this.$Message.error(res.data.msg);
         }
 
         cb && cb();
@@ -137,11 +135,11 @@ export default {
       createGroupNotice(CalcTargetId(this.contact.id), this.noticeContent).then((res) => {
         console.log('发布', res);
         if (res.status === 200) {
-          Message.success(res.data.msg);
+          this.$Message.success(res.data.msg);
           this.getNoticeList();
           this.noticeContent = '';
         } else {
-          Message.error(res.data.msg);
+          this.$Message.error(res.data.msg);
         }
         this.pushLoading = false;
       });

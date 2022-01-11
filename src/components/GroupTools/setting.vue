@@ -8,13 +8,13 @@
     </div>
 
     <!-- 如果是个人用户 -->
-    <el-row v-if="vContact && !vContact.isGroup">
-      <el-col :span="24">
+    <Row v-if="vContact && !vContact.isGroup">
+      <Col :span="24">
         <div style="text-align: center">
           <el-avatar :src="vContact.avatar"></el-avatar>
         </div>
-      </el-col>
-      <el-col :span="24">
+      </Col>
+      <Col :span="24">
         <ul class="list-group list-group-striped">
           <li class="list-group-item">
             <i class="el-icon-user-solid"></i>
@@ -27,13 +27,13 @@
             <div class="pull-right">{{ vContact.displayName }}</div>
           </li>
         </ul>
-      </el-col>
-    </el-row>
+      </Col>
+    </Row>
     <!-- 如果是群组 -->
     <div v-if="vContact && vContact.isGroup">
       <!-- 群成员展示 -->
-      <el-row class="memberList" :gutter="4">
-        <el-col :span="4" class="memberItem">
+      <Row class="memberList" :gutter="4">
+        <Col :span="4" class="memberItem">
           <div class="memberItemImg addMemberImg" @click="handleAddMember">
             <!-- <img src="../../assets/add.png" /> -->
             <i class="iconfont icon-zengjia" title="添加"></i>
@@ -41,8 +41,8 @@
           <div class="memberItemName" @click="handleAddMember">
             <span>添加</span>
           </div>
-        </el-col>
-        <el-col :span="4" class="memberItem" v-if="isOwner">
+        </Col>
+        <Col :span="4" class="memberItem" v-if="isOwner">
           <div class="memberItemImg addMemberImg" @click="handleRemoveMember">
             <!-- <img src="../../assets/add.png" /> -->
             <i class="iconfont icon-jianshao" title="删除"></i>
@@ -50,19 +50,19 @@
           <div class="memberItemName" @click="handleRemoveMember">
             <span>删除</span>
           </div>
-        </el-col>
-        <el-col :span="4" class="memberItem" v-for="(item, index) of groupMemberList" :key="index">
+        </Col>
+        <Col :span="4" class="memberItem" v-for="(item, index) of groupMemberList" :key="index">
           <div class="memberItemImg">
             <img :src="item.avatar" />
           </div>
           <div class="memberItemName">
             <span :title="item.nickname">{{ item.nickname }}</span>
           </div>
-        </el-col>
-      </el-row>
+        </Col>
+      </Row>
       <!-- 群聊信息展示 -->
-      <el-row>
-        <el-col :span="24">
+      <Row>
+        <Col :span="24">
           <ul class="list-group list-group-striped">
             <li class="list-group-item">
               <p class="item-label">群账号</p>
@@ -116,22 +116,18 @@
               </el-switch>
             </li> -->
           </ul>
-        </el-col>
-      </el-row>
+        </Col>
+      </Row>
 
       <div class="quit-btn">
         <el-button type="danger" size="mini" @click="handleQuitGroup">退出群聊</el-button>
       </div>
     </div>
 
-    <el-dialog title="修改群" :visible.sync="addGroupOpen" :modal="false" width="500px">
-      <EditGroup @grouprMethod="gbAddGroupOpen" :group="vContact" />
-    </el-dialog>
-
-    <!-- 邀请用户 -->
-    <el-dialog :visible.sync="addUserOpen" :modal="false" width="800px" class="addUserDialog">
-      <el-row class="addUserDom">
-        <el-col :span="8" class="orgListDom">
+    <!-- 邀请用户 transfer -->
+    <Modal v-model="addUserOpen" :z-index="2002" width="800" class="addUserDialog" footer-hide>
+      <Row class="addUserDom">
+        <Col :span="8" class="orgListDom">
           <div
             v-for="(orgItem, orgIndex) of orgList"
             :key="`orgItem-${orgIndex}`"
@@ -140,8 +136,8 @@
           >
             {{ orgItem.name }}
           </div>
-        </el-col>
-        <el-col :span="8" class="userListDom">
+        </Col>
+        <Col :span="8" class="userListDom">
           <div v-for="item of selectOrgUsers" :key="`currentOrgUser${item.id}`" class="userItem">
             <el-checkbox
               :label="item.id"
@@ -152,35 +148,40 @@
               {{ item.name }}-{{ item.dpt_name }}</el-checkbox
             >
           </div>
-        </el-col>
-        <el-col :span="8" class="userListDom">
-          <div v-for="item of originalMember" :key="item.id" class="userItem">
-            <el-tag :closable="false"> {{ item.name }}-{{ item.dpt_name }} </el-tag>
+        </Col>
+        <Col :span="8" class="userListDom">
+          <div v-for="item of originalMember" :key="item.id" class="tagItem">
+            <Tag>{{ item.name }}-{{ item.dpt_name }}</Tag>
           </div>
           <div
             v-for="(item, index) of selecedUser"
             :key="`currentOrgUser${item.id}`"
-            class="userItem"
+            class="tagItem"
           >
-            <!-- <el-checkbox :label="item.id" border @change='handleChangeUser($event, item)'> {{item.name}}-{{item.dpt_name}}</el-checkbox> -->
-            <el-tag
+            <Tag
+              color="blue"
               :closable="item.noclose ? false : true"
-              @close="handleDelSelectUser(item.id, index)"
+              @on-close="handleDelSelectUser(item.id, index)"
+              >{{ item.name }}-{{ item.dpt_name }}</Tag
             >
-              {{ item.name }}-{{ item.dpt_name }}
-            </el-tag>
           </div>
-        </el-col>
-      </el-row>
+        </Col>
+      </Row>
       <div class="controlDom">
         <el-button type="primary" size="small" @click="confirmAddMember">确认添加</el-button>
       </div>
-    </el-dialog>
+    </Modal>
 
     <!-- 移除用户 -->
-    <el-dialog :visible.sync="removeUserOpen" :modal="false" width="600px" class="removeUserDialog">
-      <el-row class="removeUserDom">
-        <el-col :span="12" class="one-col">
+    <Modal
+      v-model="removeUserOpen"
+      :z-index="2002"
+      width="600"
+      class="removeUserDialog"
+      footer-hide
+    >
+      <Row class="removeUserDom">
+        <Col :span="12" class="one-col">
           <el-checkbox-group v-model="checkedRemoveUser" size="small">
             <el-checkbox :label="ownerInfo" class="checkItem" disabled>
               <img class="user-avatar" :src="ownerInfo.avatar" alt="" />
@@ -198,9 +199,9 @@
               <span>{{ item.name }}-{{ item.dpt_name }}</span>
             </el-checkbox>
           </el-checkbox-group>
-        </el-col>
+        </Col>
 
-        <el-col :span="12" class="one-col">
+        <Col :span="12" class="one-col">
           <p class="member-tips" v-if="checkedRemoveUser && checkedRemoveUser.length > 0">
             已选择{{ checkedRemoveUser.length }}个群成员
           </p>
@@ -208,24 +209,47 @@
           <div
             v-for="(item, index) of checkedRemoveUser"
             :key="`currentOrgUser${item.id}`"
-            class="userItem"
+            class="tagItem"
           >
-            <el-tag @close="handleChangeCheckUser(index)" closable>
-              {{ item.name }}-{{ item.dpt_name }}
-            </el-tag>
+            <Tag color="blue" closable @on-close="handleChangeCheckUser(index)"
+              >{{ item.name }}-{{ item.dpt_name }}</Tag
+            >
           </div>
-        </el-col>
-      </el-row>
+        </Col>
+      </Row>
       <div class="controlDom">
         <el-button
           type="primary"
           :disabled="!checkedRemoveUser || checkedRemoveUser.length === 0"
           size="small"
-          @click="confirmRemoveMember"
+          @click="onRemove"
           >确认删除</el-button
         >
       </div>
-    </el-dialog>
+    </Modal>
+
+    <Modal
+      v-model="quitPop"
+      class="modal-his"
+      title="提示"
+      width="400"
+      :z-index="2002"
+      @on-ok="confirmQuitGroup"
+      transfer
+    >
+      <p class="tips">确定要退出当前群聊吗？</p>
+    </Modal>
+    <Modal
+      v-model="removePop"
+      class="modal-his"
+      title="提示"
+      width="400"
+      :z-index="2002"
+      @on-ok="confirmRemoveMember"
+      transfer
+    >
+      <p class="tips">确定要将{{ memberNames }}移除群聊吗？</p>
+    </Modal>
   </div>
 </template>
 
@@ -239,23 +263,19 @@ import NoticeDrawer from './notice.vue';
 import SettingDrawer from './setting.vue';
 import EditGroup from '../EditGroup';
 import {
-  Dialog,
   Table,
   TableColumn,
-  Row,
-  Col,
   Button,
   Input,
-  Message,
   Avatar,
   CheckboxGroup,
   Checkbox,
-  Tag,
   Tabs,
   TabPane,
   Switch,
-  MessageBox,
 } from 'element-ui';
+import { Modal, Row, Col, Tag } from 'view-design';
+import 'view-design/dist/styles/iview.css';
 import bus from '@/libs/bus';
 
 export default {
@@ -265,7 +285,6 @@ export default {
       searchValue: '',
       all: false,
       list: [],
-      addGroupOpen: false,
       addUserOpen: false,
       removeUserOpen: false,
       checkedRemoveUser: [], // 勾选的要移除的用户列表
@@ -288,6 +307,10 @@ export default {
       isTop: false,
       isNoPrompt: false,
       userId: '',
+      quitPop: false,
+      removePop: false,
+      memberIds: [],
+      memberNames: '',
     };
   },
   props: {
@@ -301,18 +324,13 @@ export default {
   },
   components: {
     EditGroup,
-    elDialog: Dialog,
     elTable: Table,
     elTableColumn: TableColumn,
-    elRow: Row,
-    elCol: Col,
     elButton: Button,
     elInput: Input,
-    Message,
     elAvatar: Avatar,
     elCheckboxGroup: CheckboxGroup,
     elCheckbox: Checkbox,
-    elTag: Tag,
     elTabs: Tabs,
     elTabPane: TabPane,
     elSwitch: Switch,
@@ -320,6 +338,10 @@ export default {
     'pending-drawer': PendingDrawer,
     'notice-drawer': NoticeDrawer,
     'setting-drawer': SettingDrawer,
+    Modal,
+    Row,
+    Col,
+    Tag,
   },
   watch: {
     contact: {
@@ -371,34 +393,32 @@ export default {
     handleSaveName() {
       console.log('保存', this.vContact.displayName);
       this.vContact.displayName = this.initDisplayName;
-      Message.success('修改成功');
+      this.$Message.success('修改成功');
       this.editNameShow = false;
     },
     cancelSaveName() {
       console.log('取消保存', this.vContact.displayName);
       this.editNameShow = false;
     },
-    handleQuitGroup() {
-      MessageBox.confirm('确定要退出当前群聊吗？', '提示', { type: 'warning' })
-        .then((_) => {
-          // 从当前群聊中去除该用户 并且关闭当前聊天
-          userQuitGroup(CalcTargetId(this.vContact.id))
-            .then((res) => {
-              if (res.status === 200) {
-                Message.success(res.data.msg || '退群成功');
-                // 关闭并删除当前会话
-                bus.$emit('afterQuitGroup', 3, CalcTargetId(this.vContact.id));
-              } else {
-                Message.error(res.data.msg);
-              }
-            })
-            .catch((err) => {
-              console.log(err);
-            });
-
-          done();
+    confirmQuitGroup() {
+      // 从当前群聊中去除该用户 并且关闭当前聊天
+      userQuitGroup(CalcTargetId(this.vContact.id))
+        .then((res) => {
+          if (res.status === 200) {
+            this.quitPop = false;
+            this.$Message.success(res.data.msg || '退群成功');
+            // 关闭并删除当前会话
+            bus.$emit('afterQuitGroup', 3, CalcTargetId(this.vContact.id));
+          } else {
+            this.$Message.warning(res.data.msg);
+          }
         })
-        .catch((_) => {});
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    handleQuitGroup() {
+      this.quitPop = true;
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -416,7 +436,7 @@ export default {
           this.isOwner = res.data.data.id === this.userId;
           console.log('own', this.isOwner);
         } else {
-          Message.error(res.data.msg);
+          this.$Message.error(res.data.msg);
         }
       });
     },
@@ -425,7 +445,7 @@ export default {
         if (res.status === 200) {
           this.groupMemberList = res.data.data;
         } else {
-          Message.error(res.data.msg);
+          this.$Message.error(res.data.msg);
         }
       });
     },
@@ -438,12 +458,6 @@ export default {
       this.searchValue = '';
       this.getList();
     },
-    edit() {
-      this.addGroupOpen = true;
-    },
-    gbAddGroupOpen() {
-      this.addGroupOpen = false;
-    },
     //获取机构列表
     getAllOrgList() {
       getOrgList()
@@ -451,7 +465,7 @@ export default {
           if (res.status === 200) {
             this.orgList = res.data.data;
           } else {
-            Message.error(res.data.msg);
+            this.$Message.error(res.data.msg);
           }
         })
         .catch((err) => {
@@ -485,7 +499,7 @@ export default {
               return item;
             });
           } else {
-            Message.error(res.data.msg);
+            this.$Message.error(res.data.msg);
           }
         })
         .catch((err) => {
@@ -546,12 +560,12 @@ export default {
       addMemberToGroup(CalcTargetId(this.vContact.id), selectUserIds)
         .then((res) => {
           if (res.status === 200) {
-            Message.success(res.data.data || '邀请成功');
+            this.$Message.success(res.data.data || '邀请成功');
             this.addUserOpen = false;
             this.originalMember = [];
             this.getList();
           } else {
-            Message.error(res.data.msg);
+            this.$Message.error(res.data.msg);
           }
         })
         .catch((err) => {
@@ -559,31 +573,30 @@ export default {
         });
     },
 
+    onRemove() {
+      this.memberIds = this.checkedRemoveUser.map(({ id }) => Number(id));
+      this.memberNames = this.checkedRemoveUser.map(({ name }) => name).join('，');
+      console.log('移除人员', this.checkedRemoveUser, this.memberIds, this.memberNames);
+      this.removePop = true;
+    },
     confirmRemoveMember() {
-      let memberIds = this.checkedRemoveUser.map(({ id }) => Number(id));
-      let memberNames = this.checkedRemoveUser.map(({ name }) => name).join('，');
-      console.log('移除人员', this.checkedRemoveUser, memberIds, memberNames);
-      MessageBox.confirm(`确定要将${memberNames}移除群聊吗？`, '提示', { type: 'warning' })
-        .then((_) => {
-          // 群主踢人
-          kickGroupMember(CalcTargetId(this.vContact.id), memberIds)
-            .then((res) => {
-              if (res.status === 200) {
-                Message.success(res.data.data || '移除成功');
-                this.removeUserOpen = false;
-                this.canRemoveMember = [];
-                this.getList();
-              } else {
-                Message.error(res.data.msg);
-              }
-            })
-            .catch((err) => {
-              console.log(err);
-            });
-
-          done();
+      // 群主踢人
+      kickGroupMember(CalcTargetId(this.vContact.id), this.memberIds)
+        .then((res) => {
+          if (res.status === 200) {
+            this.$Message.success(res.data.data || '移除成功');
+            this.removeUserOpen = false;
+            this.canRemoveMember = [];
+            this.getList();
+            this.memberIds = [];
+            this.memberNames = '';
+          } else {
+            this.$Message.error(res.data.msg);
+          }
         })
-        .catch((_) => {});
+        .catch((err) => {
+          console.log(err);
+        });
     },
   },
 };
@@ -706,11 +719,8 @@ p {
 //群组添加用户
 
 .addUserDialog {
-  /deep/ .el-dialog__body {
-    padding-top: 50px !important;
-  }
   .addUserDom {
-    height: 450px;
+    padding-top: 30px;
     .orgListDom {
       padding: 0 20px;
       height: 450px;
@@ -730,9 +740,8 @@ p {
       height: 450px;
       overflow-y: auto;
       overflow-x: hidden;
-      border-right: 1px solid #ececec;
+      border-left: 1px solid #ececec;
       .userItem {
-        // background-color: #eee;
         margin-top: 10px;
         height: 38px;
         line-height: 38px;
@@ -743,20 +752,17 @@ p {
   }
   .controlDom {
     text-align: center;
-    padding: 30px 0 20px;
+    padding-top: 30px;
   }
 }
 .removeUserDialog {
-  /deep/ .el-dialog__body {
-    padding-top: 50px !important;
-  }
   .removeUserDom {
     height: 450px;
+    padding: 10px;
 
     .one-col {
       width: 280px;
-      margin-left: 10px;
-      padding: 0 20px;
+      padding: 0 10px;
       height: 450px;
       overflow-y: auto;
       overflow-x: hidden;
@@ -765,19 +771,18 @@ p {
       }
       .checkItem {
         margin-top: 15px;
-        .user-avatar {
-          width: 30px;
-          height: 30px;
-          margin-right: 10px;
+        display: flex;
+        align-items: center;
+
+        ::v-deep .el-checkbox__label {
+          display: flex;
+          align-items: center;
+          .user-avatar {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+          }
         }
-      }
-      .userItem {
-        // background-color: #eee;
-        margin-top: 10px;
-        height: 38px;
-        line-height: 38px;
-        border-radius: 5px;
-        cursor: pointer;
       }
     }
   }
@@ -794,5 +799,16 @@ p {
 .quit-btn {
   margin-top: 30px;
   text-align: center;
+}
+.tagItem {
+  margin-top: 10px;
+
+  .ivu-tag {
+    height: 28px;
+    padding: 3px 8px;
+  }
+  ::v-deep .ivu-icon-ios-close:before {
+    color: #1890ff;
+  }
 }
 </style>

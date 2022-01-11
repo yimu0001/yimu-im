@@ -1,78 +1,59 @@
 <template>
   <div class="pending-column">
-    <el-form
+    <Form
       ref="pendform"
-      :model="formItem"
-      :rules="ruleValidate"
+      :label-width="120"
       label-position="right"
-      label-width="120px"
+      :rules="ruleValidate"
+      :model="formItem"
     >
-      <el-form-item label="待办描述" prop="waitTaskContent">
-        <el-input
+      <FormItem label="待办描述" prop="waitTaskContent">
+        <Input
           v-model="formItem.waitTaskContent"
           class="all-width"
           type="textarea"
-          size="small"
           placeholder="请输入"
-        ></el-input>
-      </el-form-item>
-      <el-form-item label="待办负责人" prop="waitTaskUserIds">
-        <el-select
+        />
+      </FormItem>
+      <FormItem label="待办负责人" prop="waitTaskUserIds">
+        <Select
           v-model="formItem.waitTaskUserIds"
           class="all-width"
-          size="small"
-          placeholder="请选择"
+          placeholder="选择负责人"
           filterable
           clearable
           multiple
         >
-          <el-option
-            v-for="item in userList"
-            :key="item.id"
-            :label="item.nickname"
-            :value="item.id"
-          ></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item label="截止时间" prop="waitTaskEndTime">
-        <el-date-picker
+          <Option v-for="item in userList" :key="item.id" :value="item.id">{{
+            item.nickname
+          }}</Option>
+        </Select>
+      </FormItem>
+      <FormItem label="截止时间" prop="waitTaskEndTime">
+        <DatePicker
           v-model="formItem.waitTaskEndTime"
-          size="small"
           type="datetime"
-          format="yyyy-MM-dd HH:mm:ss"
+          format="yyyy-MM-dd HH:mm"
           placeholder="选择日期时间"
-          default-time="16:00:00"
-        >
-        </el-date-picker>
-      </el-form-item>
-
-      <el-form-item>
-        <el-button type="primary" size="small" @click="confirmCreate">立即创建</el-button>
-        <el-button size="small">取消</el-button>
-      </el-form-item>
-    </el-form>
+          style="width: 200px"
+        ></DatePicker>
+      </FormItem>
+      <FormItem>
+        <Button @click="confirmCreate" type="primary" :loading="createLoading">立即创建</Button>
+      </FormItem>
+    </Form>
   </div>
 </template>
 
 <script>
-import { Form, FormItem, Select, Option, Button, Input, DatePicker, Message } from 'element-ui';
 import { fetchPendingDirectorList, createPending } from '@/api/event';
 import { dateFormat } from '@/libs/tools';
-import { LogLevel } from '@rongcloud/imlib-next';
-console.log('DatePicker', DatePicker);
+import { Form, FormItem, Input, Select, Option, DatePicker, Button } from 'view-design';
+import 'view-design/dist/styles/iview.css';
 
 export default {
   name: 'add-pending',
-  components: {
-    elForm: Form,
-    elFormItem: FormItem,
-    elSelect: Select,
-    elOption: Option,
-    elButton: Button,
-    elInput: Input,
-    elDatePicker: DatePicker,
-    Message,
-  },
+  components: { Form, FormItem, Input, Select, Option, DatePicker, Button },
   props: {
     // 消息id messageUId
     msgInfo: {
@@ -95,7 +76,7 @@ export default {
         imRemoteId: '',
         waitTaskContent: '',
         waitTaskUserIds: [], // "63,67"
-        waitTaskEndTime: '', // "2021-12-15 09:11:13"
+        waitTaskEndTime: '', // "2021-12-15 09:11"
       },
       ruleValidate: {
         waitTaskContent: [
@@ -116,6 +97,7 @@ export default {
           { required: true, type: 'date', message: '请选择截止时间', trigger: 'change' },
         ],
       },
+      createLoading: false,
     };
   },
   watch: {
@@ -141,7 +123,6 @@ export default {
         .then((res) => {
           if (res.status === 200) {
             this.userList = res.data.data;
-            console.log('群聊', this.userList);
           } else {
             this.userList = [];
           }
@@ -155,19 +136,22 @@ export default {
         if (valid) {
           const { waitTaskContent, waitTaskUserIds, waitTaskEndTime } = this.formItem;
           let formatDate = dateFormat(waitTaskEndTime.getTime());
-          console.log('valid', this.msgInfo.id, waitTaskContent, waitTaskUserIds, formatDate);
+
+          this.createLoading = true;
           createPending(this.msgInfo.id, waitTaskContent, waitTaskUserIds.join(), formatDate)
             .then((res) => {
-              console.log('res', res);
               if (res.status === 200) {
-                Message.success(res.data.msg || '创建待办成功！');
+                this.$Message.success(res.data.msg || '创建待办成功！');
                 this.$emit('close');
               } else {
-                Message.error(res.data.msg);
+                this.$Message.error(res.data.msg);
               }
             })
             .catch((err) => {
               console.log(err);
+            })
+            .finally(() => {
+              this.createLoading = false;
             });
         } else {
           console.log('验证未通过');

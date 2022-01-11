@@ -7,6 +7,7 @@ import LemonIMUI from 'lemon-imui';
 import 'lemon-imui/dist/index.css';
 // import './assets/iconfont/iconfont.css';
 import './components/style.css';
+import { Message } from 'view-design';
 
 Vue.use(LemonIMUI);
 
@@ -17,6 +18,8 @@ Vue.filter('dateformat', function(date, pattern = 'YYYY-MM-DD HH:mm:ss') {
 
   return moment(date * 1000).format(pattern);
 });
+
+Vue.prototype.$Message = Message;
 
 new Vue({
   router,

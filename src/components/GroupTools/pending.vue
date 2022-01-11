@@ -13,30 +13,19 @@
       </el-tabs>
       <div class="list-block">
         <div class="filter-line">
-          <el-select
-            size="small"
-            style="width:160px"
-            v-model="filterForm.status"
-            placeholder="选择状态"
-            clearable
-          >
-            <el-option
-              v-for="{ value, label } in statusOptions"
-              :key="value"
-              :label="label"
-              :value="value"
-            >
-            </el-option>
-          </el-select>
-          <el-input
-            size="small"
-            style="width:200px"
-            placeholder="请输入"
-            prefix-icon="el-icon-search"
+          <Select v-model="filterForm.status" style="width:160px" placeholder="选择状态" clearable>
+            <Option v-for="{ value, label } in statusOptions" :value="value" :key="value">{{
+              label
+            }}</Option>
+          </Select>
+
+          <Input
             v-model="filterForm.keyword"
+            placeholder="请输入"
+            style="width: 200px"
+            search
             clearable
-          >
-          </el-input>
+          />
         </div>
         <div class="pend-list">
           <div class="pend-item" v-for="item in pendList" :key="item.taskId">
@@ -72,6 +61,17 @@
         </div>
       </div>
     </div>
+    <Modal
+      v-model="completePop"
+      class="modal-his"
+      title="提示"
+      width="400"
+      :z-index="2002"
+      @on-ok="confirmComplete"
+      transfer
+    >
+      <p class="tips">确定已完成当前待办事项吗？</p>
+    </Modal>
   </div>
 </template>
 
@@ -79,33 +79,21 @@
 import InfiniteLoading from 'vue-infinite-loading';
 import { fetchPendingList, completePending } from '@/api/event';
 import bus from '@/libs/bus';
-import {
-  Button,
-  Select,
-  Option,
-  Input,
-  Message,
-  Avatar,
-  Checkbox,
-  Tabs,
-  TabPane,
-  Radio,
-  MessageBox,
-} from 'element-ui';
+import { Button, Tabs, TabPane } from 'element-ui';
+import { Modal, Select, Option, Input } from 'view-design';
+import 'view-design/dist/styles/iview.css';
+
 export default {
   name: 'PendingDrawer',
   components: {
     elButton: Button,
-    elInput: Input,
-    elSelect: Select,
-    elOption: Option,
-    Message,
-    elAvatar: Avatar,
-    elCheckbox: Checkbox,
     elTabs: Tabs,
     elTabPane: TabPane,
-    elRadio: Radio,
     'infinite-loading': InfiniteLoading,
+    Modal,
+    Select,
+    Option,
+    Input,
   },
   data() {
     return {
@@ -119,6 +107,7 @@ export default {
       pendList: [],
       page: 1,
       finished: false,
+      completePop: false,
     };
   },
   props: {
@@ -208,7 +197,7 @@ export default {
             this.page = pageNow + 1;
           }
         } else {
-          Message.error(res.data.msg);
+          this.$Message.error(res.data.msg);
         }
 
         cb && cb();
@@ -224,22 +213,24 @@ export default {
       });
     },
     handleComplete(waitTaskId) {
-      MessageBox.confirm('确定已完成当前待办事项吗？', '提示', { type: 'info' })
-        .then((_) => {
-          completePending(waitTaskId)
-            .then((res) => {
-              if (res.status === 200) {
-                Message.success(res.data.msg);
-                this.getPendList();
-              } else {
-                Message.error(res.data.msg);
-              }
-            })
-            .catch((err) => {
-              console.log(err);
-            });
+      this.waitTaskId = waitTaskId;
+      this.completePop = true;
+    },
+    confirmComplete() {
+      completePending(this.waitTaskId)
+        .then((res) => {
+          if (res.status === 200) {
+            this.$Message.success(res.data.msg);
+            this.getPendList();
+            this.completePop = false;
+            this.waitTaskId = '';
+          } else {
+            this.$Message.warning(res.data.msg);
+          }
         })
-        .catch((_) => {});
+        .catch((err) => {
+          console.log(err);
+        });
     },
   },
 };
@@ -323,14 +314,6 @@ export default {
             border-radius: 100%;
             background-color: #fff;
             box-sizing: border-box;
-          }
-          /deep/ .el-radio__inner {
-            width: 18px;
-            height: 18px;
-            &::after {
-              width: 6px;
-              height: 6px;
-            }
           }
         }
         .main-item {

@@ -97,11 +97,11 @@
       </template>
     </lemon-imui>
 
-    <el-dialog title="图片预览" :visible.sync="outerVisible" append-to-body width="600px">
+    <Modal title="图片预览" v-model="outerVisible" :z-index="2003" width="600" transfer footer-hide>
       <el-image :src="imgUrl" :preview-src-list="srcList" title="查看大图"> </el-image>
-    </el-dialog>
+    </Modal>
 
-    <el-dialog title="创建待办" :visible.sync="pendingPop" append-to-body width="600px">
+    <Modal title="创建待办" v-model="pendingPop" :z-index="2002" width="600" transfer footer-hide>
       <!-- :orgUserList="orgUserList" -->
       <add-pending
         v-if="pendingPop"
@@ -110,13 +110,13 @@
         :directorList="directorList"
         @close="handleClosePending"
       />
-    </el-dialog>
-    <el-dialog title="创建群组" :visible.sync="createPop" append-to-body width="800px">
+    </Modal>
+    <Modal title="创建群组" v-model="createPop" :z-index="2002" width="800" transfer footer-hide>
       <addGroup v-if="createPop" />
-    </el-dialog>
-    <el-dialog title="查看上下文" :visible.sync="historyPop" append-to-body width="600px">
+    </Modal>
+    <Modal title="查看上下文" v-model="historyPop" :z-index="2002" width="600" transfer footer-hide>
       <history-record v-if="historyPop" :contact="historyItem" />
-    </el-dialog>
+    </Modal>
     <textarea id="input_copy"></textarea>
   </div>
 </template>
@@ -131,8 +131,10 @@ import LemonIMUI from 'lemon-imui';
 import LemonPopover from 'lemon-imui';
 import 'lemon-imui/dist/index.css';
 
-import { Dialog, Image, Message, Tag, Input } from 'element-ui';
+import { Image, Tag, Input } from 'element-ui';
 import { uploadFile } from '@/api/data';
+import { Modal } from 'view-design';
+import 'view-design/dist/styles/iview.css';
 import bus from '@/libs/bus';
 import { reverseArray } from '@/libs/tools';
 
@@ -164,16 +166,15 @@ export default {
   components: {
     AddGroup,
     CreateGroup,
-    elDialog: Dialog,
     elInput: Input,
     elImage: Image,
     elTag: Tag,
-    Message,
     groupTools,
     'history-record': HistoryRecord,
     addPending,
     LemonIMUI,
     LemonPopover,
+    Modal,
   },
   data() {
     return {
@@ -824,7 +825,7 @@ export default {
                 };
                 this.$emit('handleSendMessage', rongMsg);
               } else {
-                Message.error(res.data.msg);
+                this.$Message.error(res.data.msg);
                 next({ status: 'failed' });
               }
             })
@@ -844,7 +845,7 @@ export default {
                 };
                 this.$emit('handleSendMessage', rongMsg);
               } else {
-                Message.error(res.data.msg);
+                this.$Message.error(res.data.msg);
                 next({ status: 'failed' });
               }
             })

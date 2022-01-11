@@ -1,6 +1,5 @@
 <script>
 import bus from '@/libs/bus';
-import { Message } from 'element-ui';
 import { debounce } from 'lodash';
 
 export default {
@@ -16,7 +15,6 @@ export default {
     };
   },
   props: { msgContent: { default: {} } },
-  components: { Message },
   watch: {
     msgContent: {
       immediate: true,
@@ -65,11 +63,11 @@ export default {
       bus.$emit('setExpansion', { thumbedIds }, this.message, operate, (res) => {
         let optTip = unchecked ? '点赞' : '取消点赞';
         if (res.code === 0) {
-          Message.success(optTip + '成功');
+          this.$Message.success(optTip + '成功');
           let expansion = { ...this.message.expansion, thumbedIds };
           this.$set(this.message, 'expansion', expansion);
         } else {
-          Message.error(res.msg || optTip + '失败');
+          this.$Message.error(res.msg || optTip + '失败');
         }
       });
     },
@@ -98,11 +96,11 @@ export default {
       bus.$emit('setExpansion', { markedIds }, this.message, operate, (res) => {
         let optTip = unchecked ? '标记' : '取消标记';
         if (res.code === 0) {
-          Message.success(optTip + '成功');
+          this.$Message.success(optTip + '成功');
           let expansion = { ...this.message.expansion, markedIds };
           this.$set(this.message, 'expansion', expansion);
         } else {
-          Message.error(res.msg || optTip + '失败');
+          this.$Message.error(res.msg || optTip + '失败');
         }
       });
     },
@@ -128,11 +126,11 @@ export default {
       bus.$emit('setExpansion', { collectedIds }, this.message, operate, (res) => {
         let optTip = unchecked ? '收藏' : '取消收藏';
         if (res.code === 0) {
-          Message.success(optTip + '成功');
+          this.$Message.success(optTip + '成功');
           let expansion = { ...this.message.expansion, collectedIds };
           this.$set(this.message, 'expansion', expansion);
         } else {
-          Message.error(res.msg || optTip + '失败');
+          this.$Message.error(res.msg || optTip + '失败');
         }
       });
     },
