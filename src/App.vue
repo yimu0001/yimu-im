@@ -34,7 +34,7 @@
   z-index: 2002;
 }
 .ivu-message {
-  z-index: 2003 !important;
+  z-index: 2006 !important;
 }
 
 .selected-icon-color {

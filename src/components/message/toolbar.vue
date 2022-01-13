@@ -1,6 +1,7 @@
 <script>
 import bus from '@/libs/bus';
 import { debounce } from 'lodash';
+import { Popover } from 'element-ui';
 
 export default {
   name: 'toolbar',
@@ -12,9 +13,11 @@ export default {
       debounceThumb: {},
       debounceMark: {},
       debounceCollect: {},
+      emojiType: 0,
     };
   },
   props: { msgContent: { default: {} } },
+  components: { elPopover: Popover },
   watch: {
     msgContent: {
       immediate: true,
@@ -26,11 +29,17 @@ export default {
   },
   created() {
     this.userId = sessionStorage.getItem('current_userId');
+    let str = sessionStorage.getItem('current_user');
+    if (str) {
+      let info = JSON.parse(str);
+      this.userName = info.displayName;
+    }
 
     bus.$on('setUserInfo', (userinfo) => {
       if (userinfo) {
         // id, displayName, orgid, avatar,
         this.userId = userinfo.id;
+        this.userName = userinfo.displayName;
       }
     });
   },
@@ -45,29 +54,32 @@ export default {
     bus.$off('setUserInfo');
   },
   methods: {
-    handleThumb(e) {
-      e.stopPropagation();
-      // 本消息体设置扩展 thumbedIds
-      let thumbedIds = (this.message.expansion ? this.message.expansion.thumbedIds : []) || [];
-      // 未点赞
-      let unchecked = !thumbedIds.includes(this.userId);
-      if (unchecked) {
-        thumbedIds.push(String(this.userId));
-      } else {
-        thumbedIds = thumbedIds.filter((id) => id !== this.userId);
-      }
+    onThumbType(type) {
+      this.emojiType = type;
+      this.debounceThumb();
+    },
+    handleThumb() {
+      let commentObj = {
+        name: this.userName,
+        type: this.emojiType,
+      };
+      console.log('handleThumb', commentObj);
 
-      thumbedIds = thumbedIds.filter((id) => !!id);
-      // type  点赞 isThumbed  标记 isMarked  收藏 isCollected
-      let operate = { type: 'isThumbed', checked: unchecked };
-      bus.$emit('setExpansion', { thumbedIds }, this.message, operate, (res) => {
-        let optTip = unchecked ? '点赞' : '取消点赞';
+      let thumbedInfo = (this.message.expansion ? this.message.expansion.thumbedInfo : {}) || {};
+      // let thumbedIds = (this.message.expansion ? this.message.expansion.thumbedIds : []) || [];
+
+      // 没有取消点赞这一说，所以只要是点击了都是true 第一次点赞就通知后端 否则不通知
+      let firstOperate = !thumbedInfo[this.userId];
+      thumbedInfo[this.userId] = commentObj;
+      let operate = firstOperate ? { type: 'isThumbed', checked: true } : null;
+
+      bus.$emit('setExpansion', { thumbedInfo }, this.message, operate, (res) => {
         if (res.code === 0) {
-          this.$Message.success(optTip + '成功');
-          let expansion = { ...this.message.expansion, thumbedIds };
+          this.$Message.success('评论成功');
+          let expansion = { ...this.message.expansion, thumbedInfo };
           this.$set(this.message, 'expansion', expansion);
         } else {
-          this.$Message.error(res.msg || optTip + '失败');
+          this.$Message.error(res.msg || '评论失败');
         }
       });
     },
@@ -82,22 +94,26 @@ export default {
       console.log('标记', this.message);
       e.stopPropagation();
       // 本消息体设置扩展 markedIds
-      let markedIds = (this.message.expansion ? this.message.expansion.markedIds : []) || [];
+      let markedObj = (this.message.expansion ? this.message.expansion.markedObj : {}) || {};
+      // let markedIds = (this.message.expansion ? this.message.expansion.markedIds : []) || [];
+      console.log('markedObj', markedObj);
 
-      let unchecked = !markedIds.includes(this.userId);
+      let unchecked = !markedObj[this.userId];
       if (unchecked) {
-        markedIds.push(String(this.userId));
+        markedObj[this.userId] = this.userName;
       } else {
-        markedIds = markedIds.filter((id) => id !== this.userId);
+        // 在遍历中使用会有性能问题
+        delete markedObj[this.userId];
       }
-      markedIds = markedIds.filter((id) => !!id);
 
       let operate = { type: 'isMarked', checked: unchecked };
-      bus.$emit('setExpansion', { markedIds }, this.message, operate, (res) => {
+      console.log('before setExpansion', { markedObj }, this.message, operate);
+
+      bus.$emit('setExpansion', { markedObj }, this.message, operate, (res) => {
         let optTip = unchecked ? '标记' : '取消标记';
         if (res.code === 0) {
           this.$Message.success(optTip + '成功');
-          let expansion = { ...this.message.expansion, markedIds };
+          let expansion = { ...this.message.expansion, markedObj };
           this.$set(this.message, 'expansion', expansion);
         } else {
           this.$Message.error(res.msg || optTip + '失败');
@@ -149,6 +165,7 @@ export default {
     }
 
     const { fromUser = {} } = this.message;
+    // <img class='emoji-icon icon-img' src={require('@/assets/heart.png')} />
 
     return (
       <div
@@ -159,19 +176,61 @@ export default {
       >
         <i class='iconfont icon-liaotian' title='回复' onClick={this.handleReply}></i>
         <i
-          class={[
-            'iconfont',
-            'icon-dianzan',
-            thumbed ? 'selected-icon-color' : 'normal-icon-color',
-          ]}
-          title={thumbed ? '取消点赞' : '点赞'}
-          onClick={this.debounceThumb}
-        ></i>
-        <i
           class={['iconfont', 'icon-icon-', marked ? 'selected-icon-color' : 'normal-icon-color']}
           title={marked ? '取消标记' : '标记'}
           onClick={this.debounceMark}
         ></i>
+
+        <el-popover popper-class='reply-emoji-pop' placement='top' width='160' trigger='hover'>
+          <div class='emoji-list'>
+            <i
+              class='emoji-icon'
+              title='爱心'
+              onClick={() => {
+                this.onThumbType('1');
+              }}
+            >
+              ❤️
+            </i>
+            <i
+              class='emoji-icon'
+              title='OK'
+              onClick={() => {
+                this.onThumbType('2');
+              }}
+            >
+              👌
+            </i>
+            <i
+              class='emoji-icon'
+              title='赞'
+              onClick={() => {
+                this.onThumbType('3');
+              }}
+            >
+              👍
+            </i>
+            <i
+              class='emoji-icon'
+              title='鼓掌'
+              onClick={() => {
+                this.onThumbType('4');
+              }}
+            >
+              👏
+            </i>
+          </div>
+          <div slot='reference'>
+            <i
+              class={[
+                'iconfont',
+                'icon-dianzan',
+                thumbed ? 'selected-icon-color' : 'normal-icon-color',
+              ]}
+              title={thumbed ? '取消点赞' : '点赞'}
+            ></i>
+          </div>
+        </el-popover>
         <i
           class={[
             'iconfont',
@@ -189,7 +248,6 @@ export default {
 </script>
 <style lang="less" scoped>
 .tool-bar {
-  padding: 5px 0;
   width: 100%;
   box-sizing: border-box;
   display: flex;

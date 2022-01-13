@@ -77,6 +77,7 @@ export default {
   data() {
     return {
       historyDate: +new Date(),
+      historyList: [], // 设置扩展必须要用到融云返回的历史记录格式
       contactId: null,
       showList: false,
       im: undefined,
@@ -163,7 +164,6 @@ export default {
     this.getCurrentChatUser();
     this.im = RongIMLib.init({ appkey: 'cpj2xarlctfmn', connectType: 'comet' });
     this.imWatcher();
-
     this.connectRongyun();
 
     bus.$on('createGroupOk', (id) => {
@@ -245,119 +245,17 @@ export default {
         console.log('已经链接到服务器');
       });
       RongIMLib.addEventListener(Events.MESSAGES, function({ messages }) {
-        // console.log('新接收到的消息内容', messages);
         if (messages && messages.length > 0) {
+          that.historyList = that.historyList.concat(messages);
           that.handleReceiveMessage(messages);
         }
       });
       // 监听消息扩展通知
       RongIMLib.addEventListener(RongIMLib.Events.EXPANSION, (evt) => {
-        // console.log('监听消息扩展通知', evt);
-      });
-    },
-    setRongExpansion(expansion, message, operate, cb) {
-      let messageType = '';
-      switch (message.type) {
-        case 'text':
-          if (message.referMsg && message.referMsgUserId) {
-            messageType = 'RC:ReferenceMsg';
-          } else {
-            messageType = 'RC:TxtMsg';
-          }
-          break;
-        case 'image':
-          messageType = 'RC:ImgMsg';
-          break;
-        case 'file':
-          messageType = 'RC:FileMsg';
-      }
-
-      let RongMsg = {
-        canIncludeExpansion: true,
-        messageUId: message.id,
-        senderUserId: message.fromUser ? message.fromUser.id : '',
-        targetId: message.toContactId,
-        messageType,
-      };
-
-      RongIMLib.updateMessageExpansion(expansion, RongMsg).then((res) => {
-        cb && cb(res);
-        if (res.code === 0 && this.$refs.imMainDom) {
-          let newExpansion = { ...message.expansion, ...expansion };
-          this.$refs.imMainDom.updateExpansion(newExpansion, message);
-
-          // 为了统计数据 调接口通知IM后端 所设置扩展的情况
-          if (this.fromSystem === 'cs') {
-            console.log('通知IM后端扩展的情况', this.fromSystem, message.id, expansion, operate);
-            setBackExpansion(this.fromSystem, message.id, expansion, operate)
-              .then((res) => {
-                if (res.status === 200) {
-                  console.log('通知后端扩展OK', res);
-                }
-              })
-              .catch((err) => {
-                console.log(err);
-              });
-          }
-        } else {
-          console.log(res.code, res.msg, '设置扩展-更新失败');
-        }
-      });
-    },
-    handleNoticeGroupSender(targetId, msgIds) {
-      // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
-      this.contactId = CalcTargetId(targetId);
-      this.clearUnread(true, this.contactId);
-      console.log('发送响应回执', this.contactId, msgIds);
-      RongIMLib.sendReadReceiptResponse(this.contactId, msgIds)
-        .then((res) => {
-          if (res.code === 0) {
-            console.log('响应回执请求成功', res.code, res.data);
-          } else {
-            console.log('响应回执请求成功', res.code, res.msg);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    handleNoticeSingleSender(targetId, msgId, sendTime) {
-      this.contactId = targetId;
-      this.clearUnread(false, this.contactId);
-      console.log('发送响应回执', this.contactId, msgId, sendTime);
-      RongIMLib.sendReadReceiptMessage(this.contactId, msgId, sendTime)
-        .then((res) => {
-          if (res.code === 0) {
-            console.log('响应回执成功', res.code, res.data);
-          } else {
-            console.log('响应回执成功', res.code, res.msg);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    closeAllNotice() {
-      if (this.noticeCount > 0) {
-        let count = this.noticeCount;
-        for (let num = 1; num <= count; num++) {
-          console.log(num);
-          Notice.close(`nth_${num}`);
-        }
-
-        this.noticeCount = 0;
-      }
-    },
-    clearUnread(isGroup, targetId) {
-      const conversationType = isGroup
-        ? RongIMLib.ConversationType.GROUP
-        : RongIMLib.ConversationType.PRIVATE;
-
-      RongIMLib.clearMessagesUnreadStatus({ conversationType, targetId }).then((res) => {
-        if (res.code === 0) {
-          console.log('清空未读ok', res.code);
-        } else {
-          console.log('清空未读err', res.code, res.msg);
+        console.log('监听消息扩展通知', evt);
+        if (evt.updatedExpansion) {
+          const { expansion, messageUId } = evt.updatedExpansion;
+          this.$refs.imMainDom.updateExpansion(expansion, messageUId);
         }
       });
     },
@@ -459,6 +357,92 @@ export default {
           this.$refs.imMainDom.appendMessage(messageData);
         } else if (messageData.id) {
           this.saveMessageList.push(messageData);
+        }
+      });
+    },
+    setRongExpansion(expansion, message, operate, cb) {
+      expansion.target_id = message.toContactId;
+      let RongMsg = this.historyList.filter(({ messageUId }) => messageUId === message.id)[0];
+      console.log('扩展', expansion, RongMsg);
+
+      RongMsg &&
+        RongIMLib.updateMessageExpansion(expansion, RongMsg).then((res) => {
+          console.log('扩展返回值', res);
+
+          cb && cb(res);
+          if (res.code === 0 && this.$refs.imMainDom) {
+            this.$refs.imMainDom.updateExpansion(expansion, message.id);
+
+            // 为了统计数据 调接口通知IM后端 所设置扩展的情况
+            if (this.fromSystem === 'cs' && operate) {
+              console.log('通知IM后端扩展的情况', this.fromSystem, message.id, expansion, operate);
+              setBackExpansion(this.fromSystem, message.id, expansion, operate)
+                .then((res) => {
+                  if (res.status === 200) {
+                    console.log('通知后端扩展OK', res);
+                  }
+                })
+                .catch((err) => {
+                  console.log(err);
+                });
+            }
+          } else {
+            console.log(res.code, res.msg, '设置扩展-更新失败');
+          }
+        });
+    },
+    handleNoticeGroupSender(targetId, msgIds) {
+      // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
+      this.contactId = CalcTargetId(targetId);
+      this.clearUnread(true, this.contactId);
+      console.log('发送响应回执', this.contactId, msgIds);
+      RongIMLib.sendReadReceiptResponse(this.contactId, msgIds)
+        .then((res) => {
+          if (res.code === 0) {
+            console.log('响应回执请求成功', res.code, res.data);
+          } else {
+            console.log('响应回执请求成功', res.code, res.msg);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    handleNoticeSingleSender(targetId, msgId, sendTime) {
+      this.contactId = targetId;
+      this.clearUnread(false, this.contactId);
+      console.log('发送响应回执', this.contactId, msgId, sendTime);
+      RongIMLib.sendReadReceiptMessage(this.contactId, msgId, sendTime)
+        .then((res) => {
+          if (res.code === 0) {
+            console.log('响应回执成功', res.code, res.data);
+          } else {
+            console.log('响应回执成功', res.code, res.msg);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    // 逐个清空新消息通知框
+    closeAllNotice() {
+      if (this.noticeCount > 0) {
+        let count = this.noticeCount;
+        for (let num = 1; num <= count; num++) {
+          Notice.close(`nth_${num}`);
+        }
+
+        this.noticeCount = 0;
+      }
+    },
+    clearUnread(isGroup, targetId) {
+      const conversationType = isGroup
+        ? RongIMLib.ConversationType.GROUP
+        : RongIMLib.ConversationType.PRIVATE;
+
+      RongIMLib.clearMessagesUnreadStatus({ conversationType, targetId }).then((res) => {
+        if (res.code !== 0) {
+          console.log('清空未读err', res.code, res.msg);
         }
       });
     },
@@ -710,7 +694,6 @@ export default {
         target_id,
         conversation_type,
         content, //  object
-        fun,
         isGroup,
         referMsgUserId,
         referMsg,
@@ -730,7 +713,8 @@ export default {
         message = new RongIMLib.ReferenceMessage({
           referMsgUserId,
           referMsg,
-          content: content.content,
+          // content: content.content,
+          content, // 加上的
           objName: RongIMLib.MessageType.TEXT,
         });
       } else if (conversation_type === 'RC:TxtMsg') {
@@ -740,6 +724,7 @@ export default {
         message = new RongIMLib.ImageMessage({
           content: content.content || '', // 图片缩略图，应为 Base64 字符串，且不可超过 80KB
           imageUri: content.imageUri || '', // 图片的远程访问地址
+          user: content.user || {}, // 加上的
         });
       } else if (conversation_type === 'RC:FileMsg') {
         message = new RongIMLib.FileMessage(content);
@@ -749,7 +734,12 @@ export default {
 
       const options = {
         canIncludeExpansion: true,
-        expansion: { thumbedIds: [], markedIds: [], collectedIds: [] },
+        expansion: {
+          thumbedInfo: {}, // {id: {name, type}}
+          markedObj: {}, // {id: name}
+          collectedIds: [],
+          target_id: null, // 为了收到扩展通知的时候能够找到属于哪个会话
+        },
       };
 
       this.sendMessageToRongyun(conversation, message, options, item);
@@ -760,6 +750,7 @@ export default {
       RongIMLib.sendMessage(conversation, message, options).then(({ code, data }) => {
         if (code === 0) {
           console.log('消息发送成功回调：', data.messageUId, data);
+          this.historyList.push(data);
           fun(data, item);
 
           isGroup &&
@@ -789,6 +780,8 @@ export default {
     handlePullMessages(args) {
       let { id, isGroup, displayName, avatar } = args.contact;
       let targetId = CalcTargetId(id); // 原本id 现在group_id
+
+      let firstPage = !this.contactId || this.contactId !== id;
       // 首次进入聊天
       !this.contactId && (this.contactId = id);
       // 聊天对象被切换了
@@ -817,9 +810,14 @@ export default {
               const list = data.list; // 获取到的消息列表
               const hasMore = data.hasMore; // 是否还有历史消息可获取
               list[0] && (this.historyDate = list[0].sentTime);
-              console.log('历史记录', list);
               let otheruser = { id: targetId, displayName, avatar };
               this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
+
+              if (firstPage) {
+                this.historyList = list;
+              } else {
+                this.historyList = this.historyList.concat(list);
+              }
             }
           })
           .catch((error) => {

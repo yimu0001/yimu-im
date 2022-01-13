@@ -40,6 +40,8 @@ export default {
     },
   },
   render() {
+    // 原本在最后一个</div>前面
+    // <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
     return (
       <lemon-message-basic
         class='lemon-message-text'
@@ -48,31 +50,36 @@ export default {
           content: (props) => {
             const content = this.IMUI.emojiNameToImage(props.content);
             const replyObj = this.$attrs.message.referMsg;
-            const { fromUser } = this.$attrs.message;
+            const { fromUser, expansion } = this.$attrs.message;
+
+            let markNames = '';
+            let thumbList = [];
+            if (expansion) {
+              let { markedObj = {}, thumbedInfo = {} } = expansion;
+              markNames = Object.values(markedObj).join('，');
+              thumbList = Object.values(thumbedInfo);
+            }
 
             return (
-              <div class='tool-bar-wrapper'>
-                {fromUser.id !== this.userId ? (
-                  <div
-                    class='only-content'
-                    style={
-                      fromUser.id === this.userId
-                        ? 'justify-content: flex-end'
-                        : 'justify-content: flex-start'
-                    }
-                  >
-                    <div class='content-show' domProps={{ innerHTML: content }} />
-                  </div>
-                ) : (
-                  <div class='all-infos'>
-                    {fromUser.id === this.userId && (
-                      <div class='read-num'>
-                        <p>{this.readNum}人已读</p>
-                      </div>
-                    )}
-                    <div class='content-show' domProps={{ innerHTML: content }} />
-                  </div>
-                )}
+              <div
+                class='tool-bar-wrapper'
+                style={fromUser.id === this.userId && 'text-align:right'}
+              >
+                <div class='relate-box'>
+                  <div class='content-show' domProps={{ innerHTML: content }} />
+
+                  {fromUser.id !== this.userId ? (
+                    <div class='abs-right-pos'>
+                      <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
+                    </div>
+                  ) : (
+                    <div class='abs-left-pos'>
+                      <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
+                      <div class='read-num'>{this.readNum}人已读</div>
+                    </div>
+                  )}
+                </div>
+
                 {replyObj && (
                   <div>
                     {replyObj.type === 'text' && (
@@ -102,7 +109,41 @@ export default {
                     )}
                   </div>
                 )}
-                <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
+
+                {markNames && (
+                  <div class='mark-text' style={fromUser.id === this.userId && 'text-align:right'}>
+                    <i class='iconfont icon-icon- marked-color'></i>
+                    {markNames}已标记了该消息，群内所有成员可见
+                  </div>
+                )}
+                <div class='thumb-text' style={fromUser.id === this.userId && 'text-align:right'}>
+                  {thumbList &&
+                    thumbList.map(({ name, type }) => (
+                      <div class='per-thumb'>
+                        {type === '1' && (
+                          <i class='thumb-icon' title='爱心'>
+                            ❤️
+                          </i>
+                        )}
+                        {type === '2' && (
+                          <i class='thumb-icon' title='OK'>
+                            👌
+                          </i>
+                        )}
+                        {type === '3' && (
+                          <i class='thumb-icon' title='赞'>
+                            👍
+                          </i>
+                        )}
+                        {type === '4' && (
+                          <i class='thumb-icon' title='鼓掌'>
+                            👏
+                          </i>
+                        )}
+                        <span class='thumb-name'>{name}</span>
+                      </div>
+                    ))}
+                </div>
               </div>
             );
           },
@@ -115,23 +156,35 @@ export default {
 
 <style lang="less" scoped>
 .tool-bar-wrapper {
-  .all-infos {
-    display: flex;
-    justify-content: flex-end;
-    align-items: flex-end;
-    .read-num {
-      margin: 2px 4px;
-      min-width: 1px;
-      max-width: 100px;
-      color: #999;
-      font-size: 12px;
+  .relate-box {
+    display: inline-block;
+    position: relative;
+    .abs-right-pos {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      transform: translateX(100%);
+    }
+    .abs-left-pos {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      transform: translateX(-100%);
+      display: flex;
+      align-items: flex-end;
+      .read-num {
+        margin: 2px 4px;
+        width: auto;
+        white-space: nowrap;
+        text-align: right;
+        color: #999;
+        font-size: 12px;
+      }
     }
   }
-  .only-content {
-    display: flex;
-  }
   .content-show {
-    max-width: 400px;
+    text-align: left;
+    max-width: 360px;
     min-width: 60px;
     border-radius: 2px;
     box-shadow: 0 0 6px rgba(0, 0, 0, 0.04);
@@ -160,7 +213,6 @@ export default {
     }
   }
   .tool-bar {
-    padding: 3px 0 0 0;
     visibility: hidden;
     .iconfont {
       margin: 5px 5px 0;
@@ -172,6 +224,36 @@ export default {
   }
   &:hover .tool-bar {
     visibility: visible;
+  }
+}
+.thumb-text {
+  max-width: 330px;
+}
+.mark-text {
+  margin: 3px 0;
+  max-width: 330px;
+  color: #999;
+  font-size: 12px;
+  line-height: 18px;
+  .marked-color {
+    margin: 0 2px;
+    font-size: 12px;
+    color: #999;
+  }
+}
+.per-thumb {
+  display: inline-block;
+  margin-right: 3px;
+  .thumb-icon {
+    line-height: 18px;
+    text-align: center;
+    font-style: normal;
+    font-size: 16px;
+  }
+  .thumb-name {
+    color: #999;
+    font-size: 12px;
+    line-height: 18px;
   }
 }
 </style>

@@ -19,7 +19,16 @@ export default {
     });
   },
   render() {
-    const { fromUser } = this.$attrs.message;
+    const { fromUser, expansion } = this.$attrs.message;
+
+    let markNames = '';
+    let thumbList = [];
+    if (expansion) {
+      let { markedObj = {}, thumbedInfo = {} } = expansion;
+      markNames = Object.values(markedObj).join('，');
+      thumbList = Object.values(thumbedInfo);
+    }
+
     // <img class='content-show img-show' src={props.content} />
     return (
       <lemon-message-basic
@@ -30,28 +39,53 @@ export default {
             return (
               <div class='tool-bar-wrapper'>
                 {fromUser.id !== this.userId ? (
-                  <div
-                    class='only-content'
-                    style={
-                      fromUser.id === this.userId
-                        ? 'justify-content: flex-end'
-                        : 'justify-content: flex-start'
-                    }
-                  >
+                  <div class='only-content'>
                     <img class='content-show img-show' src={props.content} />
+                    <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
                   </div>
                 ) : (
                   <div class='all-infos'>
-                    {fromUser.id === this.userId && (
-                      <div class='read-num'>
-                        <p>{this.readNum}人已读</p>
-                      </div>
-                    )}
+                    <div class='two-line'>
+                      <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
+                      <div class='read-num'>{this.readNum}人已读</div>
+                    </div>
                     <img class='content-show img-show' src={props.content} />
                   </div>
                 )}
-
-                <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
+                {markNames && (
+                  <div class='mark-text' style={fromUser.id === this.userId && 'text-align:right'}>
+                    <i class='iconfont icon-icon- marked-color'></i>
+                    {markNames}已标记了该消息，群内所有成员可见
+                  </div>
+                )}
+                <div class='thumb-text' style={fromUser.id === this.userId && 'text-align:right'}>
+                  {thumbList &&
+                    thumbList.map(({ name, type }) => (
+                      <div class='per-thumb'>
+                        {type === '1' && (
+                          <i class='thumb-icon' title='爱心'>
+                            ❤️
+                          </i>
+                        )}
+                        {type === '2' && (
+                          <i class='thumb-icon' title='OK'>
+                            👌
+                          </i>
+                        )}
+                        {type === '3' && (
+                          <i class='thumb-icon' title='赞'>
+                            👍
+                          </i>
+                        )}
+                        {type === '4' && (
+                          <i class='thumb-icon' title='鼓掌'>
+                            👏
+                          </i>
+                        )}
+                        <span class='thumb-name'>{name}</span>
+                      </div>
+                    ))}
+                </div>
               </div>
             );
           },
@@ -84,7 +118,6 @@ export default {
       box-shadow: 0 0 6px rgba(0, 0, 0, 0.04);
     }
     .tool-bar {
-      padding: 3px 0 0 0;
       visibility: hidden;
       .iconfont {
         margin: 0 5px;
@@ -108,14 +141,47 @@ export default {
   justify-content: flex-end;
   align-items: flex-end;
   .read-num {
-    margin: 2px 5px;
-    min-width: 1px;
-    max-width: 100px;
+    margin: 0 5px;
+    min-width: 50px;
+    text-align: right;
     color: #999;
     font-size: 12px;
   }
 }
 .only-content {
   display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+.thumb-text {
+  max-width: 330px;
+}
+.mark-text {
+  margin: 3px 0;
+  max-width: 330px;
+  color: #999;
+  font-size: 12px;
+  line-height: 18px;
+  .marked-color {
+    margin: 0 2px;
+    font-size: 12px;
+    color: #999;
+  }
+}
+.per-thumb {
+  display: inline-block;
+  margin-right: 3px;
+  .thumb-icon {
+    line-height: 18px;
+    text-align: center;
+    font-style: normal;
+    font-size: 16px;
+  }
+  .thumb-name {
+    color: #999;
+    font-size: 12px;
+    line-height: 18px;
+  }
 }
 </style>

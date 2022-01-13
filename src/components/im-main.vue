@@ -77,7 +77,7 @@
       <template #editor-footer>
         <div class="bottom-line">
           <div class="reply-box" v-if="replyObj.type">
-            <el-tag closable type="info" @close="cancelReply">
+            <Tag title="回复内容" closable @on-close="cancelReply">
               <div v-if="replyObj.type === 'text'" class="rep-text">
                 {{ replyObj.fromUser.displayName }}：{{ replyObj.content }}
               </div>
@@ -89,9 +89,8 @@
                   replyObj.fileName
                 }}
               </div>
-            </el-tag>
+            </Tag>
           </div>
-
           <p class="tips">使用 enter 快捷发送消息</p>
         </div>
       </template>
@@ -131,9 +130,9 @@ import LemonIMUI from 'lemon-imui';
 import LemonPopover from 'lemon-imui';
 import 'lemon-imui/dist/index.css';
 
-import { Image, Tag, Input } from 'element-ui';
+import { Image, Input } from 'element-ui';
 import { uploadFile } from '@/api/data';
-import { Modal } from 'view-design';
+import { Modal, Tag } from 'view-design';
 import bus from '@/libs/bus';
 import { reverseArray } from '@/libs/tools';
 
@@ -167,13 +166,13 @@ export default {
     CreateGroup,
     elInput: Input,
     elImage: Image,
-    elTag: Tag,
     groupTools,
     'history-record': HistoryRecord,
     addPending,
     LemonIMUI,
     LemonPopover,
     Modal,
+    Tag,
   },
   data() {
     return {
@@ -553,7 +552,6 @@ export default {
     },
 
     handlePullMessages(contact, next, instance) {
-      console.log('unread-count', contact.unread);
       let args = {
         contact,
         next,
@@ -683,12 +681,13 @@ export default {
         }
       }
     },
-    updateExpansion(expansion, obj) {
+    updateExpansion(expandNew, messageUId) {
       const { IMUI } = this.$refs;
       const messages = IMUI.getCurrentMessages();
-      if (expansion && messages.length > 0) {
-        let message = messages.filter(({ id }) => id === obj.id)[0];
-        message.expansion = expansion;
+      let message = messages.length > 0 ? messages.filter(({ id }) => id === messageUId)[0] : null;
+      // 如果接收到的不是当前会话 就没有message 无法修改扩展
+      if (expandNew && message) {
+        message.expansion = { ...message.expansion, ...expandNew };
         console.log('修改消息扩展展示', message);
         IMUI.updateMessage(message);
       }
@@ -773,6 +772,13 @@ export default {
       next(message);
     },
     handleSend(message, next, file) {
+      let user = {
+        id: this.currentUser.id,
+        name: this.currentUser.nickname,
+        portrait: this.currentUser.avatar,
+        portraitUri: this.currentUser.avatar,
+      };
+
       // 文字的最前或者最后有换行就去掉
       message.content = message.content.replace(/^\s+|\s+$/g, '');
 
@@ -795,6 +801,7 @@ export default {
               conversation_type: 'RC:ReferenceMsg',
               content: {
                 content: message.content,
+                user,
               },
               referMsgUserId: fromUser.id,
               referMsg: { id, type, content, fileName, displayName: fromUser.displayName },
@@ -805,6 +812,7 @@ export default {
               conversation_type: 'RC:TxtMsg',
               content: {
                 content: message.content,
+                user,
               },
             };
           }
@@ -820,7 +828,7 @@ export default {
                 rongMsg = {
                   ...rongMsg,
                   conversation_type: 'RC:ImgMsg',
-                  content: { content: thumb, imageUri: file },
+                  content: { content: thumb, imageUri: file, user },
                 };
                 this.$emit('handleSendMessage', rongMsg);
               } else {
@@ -840,7 +848,7 @@ export default {
                 rongMsg = {
                   ...rongMsg,
                   conversation_type: 'RC:FileMsg',
-                  content: { name, size, type, fileUrl: res.data.data.file },
+                  content: { name, size, type, fileUrl: res.data.data.file, user },
                 };
                 this.$emit('handleSendMessage', rongMsg);
               } else {
@@ -989,7 +997,7 @@ export default {
 /deep/ .lemon-message-text {
   padding: 0;
   .lemon-message__content {
-    padding: 0;
+    padding: 0 0 10px;
     background: none;
     border-radius: 0;
     &:before {
@@ -1006,19 +1014,6 @@ export default {
       margin: 0;
     }
   }
-}
-
-/deep/ .lemon-message--reverse.lemon-message-file .lemon-message__content:before {
-  content: ' ';
-  position: absolute;
-  top: 6px;
-  width: 0;
-  height: 0;
-  border: 4px solid transparent;
-  left: auto;
-  right: -4px;
-  border-right: none;
-  border-left-color: #fff;
 }
 
 /deep/ .lemon-message--reverse.lemon-message-text {
@@ -1053,19 +1048,29 @@ export default {
   align-items: center;
 }
 .reply-box {
-  width: 300px;
+  max-width: 300px;
   margin-right: 20px;
-  line-height: 24px;
   box-sizing: border-box;
   .rep-text {
     display: inline-block;
-    max-width: 240px;
+    max-width: 262px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  /deep/ .el-tag__close {
-    margin-top: -18px;
+  ::v-deep .ivu-tag {
+    height: 28px;
+    line-height: 28px;
+    display: flex;
+    align-items: center;
+    .ivu-tag-text {
+      height: 28px;
+      line-height: 28px;
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 }
 
