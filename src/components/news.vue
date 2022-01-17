@@ -32,6 +32,7 @@
         @change-menu="changeMenu"
         @notice-group-sender="handleNoticeGroupSender"
         @notice-single-sender="handleNoticeSingleSender"
+        @notice-change-contact="handleChangeConcat"
       ></im-main>
       <span slot="footer" class="dialog-footer"> </span>
     </el-dialog>
@@ -46,7 +47,7 @@
 
 <script>
 import imMain from './im-main';
-import { Avatar, Dialog, Notification } from 'element-ui';
+import { Avatar, Dialog } from 'element-ui';
 import { Notice } from 'view-design';
 
 import * as RongIMLib from '@rongcloud/imlib-next';
@@ -57,7 +58,7 @@ import {
   groupInfos,
   getUserByOrgid,
 } from '@/api/data.js';
-import { setBackExpansion } from '@/api/chat.js';
+import { setBackExpansion, checkGroupReadStatus, checkSingleReadStatus } from '@/api/chat.js';
 import bus from '@/libs/bus';
 import { CalcTargetId, CalcLastCentent } from '@/libs/tools';
 import testComponent from '../components/testComponent.vue';
@@ -77,6 +78,7 @@ export default {
   data() {
     return {
       historyDate: +new Date(),
+      lastHistoryId: null, // 获取历史记录时用到的contactId
       historyList: [], // 设置扩展必须要用到融云返回的历史记录格式
       contactId: null,
       showList: false,
@@ -123,7 +125,6 @@ export default {
     Avatar,
     imMain,
     elDialog: Dialog,
-    Notification,
   },
   watch: {
     customMenu: {
@@ -161,6 +162,10 @@ export default {
     },
   },
   mounted() {
+    // setTimeout(() => {
+    //   this.deleteConnectMessage(1, '27', 'BUCQ-JP7L-SE84-01I5', 1642399765463);
+    //   this.deleteConnect(1, '27');
+    // }, 3000);
     this.getCurrentChatUser();
     this.im = RongIMLib.init({ appkey: 'cpj2xarlctfmn', connectType: 'comet' });
     this.imWatcher();
@@ -192,23 +197,20 @@ export default {
   methods: {
     onMessageReceiptResponse({ conversation, messageUId, responseUserIdList }) {
       // responseUserIdList 为已查看发送消息用户的列表
-      console.log('群聊已读回执', conversation, messageUId, responseUserIdList);
       // {conversationType: 3, targetId: '12', channelId: ''}  BU51-48QJ-9TKC-01H1 {1000053: 1641353350477}
-
-      console.log('修改消息体', responseUserIdList);
       if (CalcTargetId(this.contactId) === conversation.targetId) {
-        this.$refs.imMainDom.updateReadState(responseUserIdList);
+        console.log('群聊已读回执', conversation, messageUId, responseUserIdList);
+        this.$refs.imMainDom.updateReadState(responseUserIdList, messageUId);
       } else {
         // 后端自己存起来 更新已读的参数
       }
     },
     onReadReceiptReceived({ conversation, messageUId, sentTime }) {
-      console.log('单聊已读回执', conversation, messageUId, sentTime);
       // {conversationType: 1, targetId: '1000053', channelId: ''}  undefined 1641350108871
-      let responseUserIdList = {};
-      responseUserIdList[conversation.targetId] = sentTime;
-      console.log('修改消息体', responseUserIdList);
       if (this.contactId === conversation.targetId) {
+        let responseUserIdList = {};
+        responseUserIdList[conversation.targetId] = sentTime;
+        console.log('单聊已读回执', conversation, messageUId, sentTime, responseUserIdList);
         // 跟之前接口获取已读人数拼接起来 更新
         this.$refs.imMainDom.updateReadState(responseUserIdList, messageUId);
       } else {
@@ -217,14 +219,32 @@ export default {
       }
     },
 
-    handleChangeConcat(id) {
+    handleChangeConcat(id, msg_uids) {
       this.contactId = CalcTargetId(id);
+      // TODO api获取消息已读人数 当前用户是sendUserId
+      // console.log('api获取消息已读', this.contactId, msg_uids);
+      // if (msg_uids) {
+      //   checkGroupReadStatus(this.contactId, msg_uids).then((res) => {
+      //     console.log('群聊已读人数', res);
+      //     if (res.status === 200) {
+      //       // const { list } = res.data.data;
+      //       // bus.$emit('setGroupReadStatus', list);
+      //     }
+      //   });
+      // } else {
+      //   checkSingleReadStatus(this.contactId).then((res) => {
+      //     console.log('单聊已读人数', res);
+      //     if (res.status === 200) {
+      //       const { last_message_send_time } = res.data.data;
+      //       bus.$emit('setSingleReadStatus', last_message_send_time);
+      //     }
+      //   });
+      // }
     },
     openChatDialog() {
       if (this.showComponent) {
         this.showList = true;
         this.closeAllNotice();
-        // Notification.closeAll();
         this.waitingOpen = false;
       } else {
         this.waitingOpen = true;
@@ -246,15 +266,20 @@ export default {
       });
       RongIMLib.addEventListener(Events.MESSAGES, function({ messages }) {
         if (messages && messages.length > 0) {
-          that.historyList = that.historyList.concat(messages);
+          // that.historyList = that.historyList.concat(messages);
           that.handleReceiveMessage(messages);
         }
       });
       // 监听消息扩展通知
       RongIMLib.addEventListener(RongIMLib.Events.EXPANSION, (evt) => {
-        console.log('监听消息扩展通知', evt);
-        if (evt.updatedExpansion) {
+        console.log('监听消息扩展通知', evt, evt && evt.updatedExpansion);
+        if (evt && evt.updatedExpansion) {
           const { expansion, messageUId } = evt.updatedExpansion;
+
+          // 有用户收藏不需要其他用户更新消息
+          if (!expansion.thumbedInfo && !expansion.markedObj && expansion.collectedIds) return;
+
+          // 其他用户操作了标记或者点赞 更新消息体
           this.$refs.imMainDom.updateExpansion(expansion, messageUId);
         }
       });
@@ -262,20 +287,23 @@ export default {
     // 融云消息类型 处理成lemon-ui的格式 并插入
     handleReceiveMessage(messages) {
       console.log('接收到的融云推送', messages);
-
+      let curContactMsgs = [];
       messages.forEach((item) => {
         // targetId: "12" conversationType: 3
         let userinfo = item.content.user || {};
         let messageData = {
           id: item.messageUId,
+          conversationType: item.conversationType,
           status: 'succeed',
           sendTime: item.sentTime,
+          // 注意：toContactId必须包含group 否则lemon-ui无法区分是单聊还是群聊
           toContactId: item.conversationType === 3 ? `group_${item.targetId}` : item.targetId,
           fromUser: {
             id: userinfo.id,
             displayName: userinfo.name,
             avatar: userinfo.portrait,
           },
+          // todo 来自客户端的消息不可设置扩展
           canIncludeExpansion: item.canIncludeExpansion || false,
           expansion: item.expansion || {},
         };
@@ -316,6 +344,7 @@ export default {
               },
             };
         }
+        console.log('收到新消息', this.showList);
         if (!this.showList) {
           Notice.info({
             title: '消息提醒',
@@ -341,55 +370,56 @@ export default {
               );
             },
           });
-
-          // Notification.info({
-          //   title: '新消息',
-          //   message: '收到新消息，点击查看',
-          //   duration: 0,
-          //   onClick: () => {
-          //     this.showList = true;
-          //     Notification.closeAll();
-          //   },
-          // });
         }
 
         if (this.$refs.imMainDom) {
-          this.$refs.imMainDom.appendMessage(messageData);
+          this.$refs.imMainDom.appendMessage(messageData, true); // Message, scrollToBottom
         } else if (messageData.id) {
           this.saveMessageList.push(messageData);
         }
+
+        // 如果是当前聊天框的已读通知 立即回执响应
+        if (this.contactId && this.contactId === item.targetId) {
+          curContactMsgs.push(messageData);
+        }
       });
+
+      // 消息体已读回执
+      let noticeCount = curContactMsgs.length;
+      if (noticeCount > 0) {
+        this.$refs.imMainDom?.calcReadNotice(curContactMsgs, noticeCount);
+      }
     },
     setRongExpansion(expansion, message, operate, cb) {
       expansion.target_id = message.toContactId;
-      let RongMsg = this.historyList.filter(({ messageUId }) => messageUId === message.id)[0];
-      console.log('扩展', expansion, RongMsg);
+      let RongMsg = message;
+      if (!RongMsg || !RongMsg.canIncludeExpansion) {
+        this.$Message.warning('当前消息不支持该操作');
+        return;
+      }
 
-      RongMsg &&
-        RongIMLib.updateMessageExpansion(expansion, RongMsg).then((res) => {
-          console.log('扩展返回值', res);
+      RongIMLib.updateMessageExpansion(expansion, RongMsg).then((res) => {
+        cb && cb(res);
+        if (res.code === 0 && this.$refs.imMainDom) {
+          this.$refs.imMainDom.updateExpansion(expansion, message.id);
 
-          cb && cb(res);
-          if (res.code === 0 && this.$refs.imMainDom) {
-            this.$refs.imMainDom.updateExpansion(expansion, message.id);
-
-            // 为了统计数据 调接口通知IM后端 所设置扩展的情况
-            if (this.fromSystem === 'cs' && operate) {
-              console.log('通知IM后端扩展的情况', this.fromSystem, message.id, expansion, operate);
-              setBackExpansion(this.fromSystem, message.id, expansion, operate)
-                .then((res) => {
-                  if (res.status === 200) {
-                    console.log('通知后端扩展OK', res);
-                  }
-                })
-                .catch((err) => {
-                  console.log(err);
-                });
-            }
-          } else {
-            console.log(res.code, res.msg, '设置扩展-更新失败');
+          // 为了统计数据 调接口通知IM后端 所设置扩展的情况
+          if (this.fromSystem === 'cs' && operate) {
+            console.log('通知IM后端扩展的情况', this.fromSystem, message.id, expansion, operate);
+            setBackExpansion(this.fromSystem, message.id, expansion, operate)
+              .then((res) => {
+                if (res.status === 200) {
+                  console.log('通知扩展OK', res);
+                }
+              })
+              .catch((err) => {
+                console.log(err);
+              });
           }
-        });
+        } else {
+          console.log(res.code, res.msg, '设置扩展-更新失败');
+        }
+      });
     },
     handleNoticeGroupSender(targetId, msgIds) {
       // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
@@ -713,8 +743,8 @@ export default {
         message = new RongIMLib.ReferenceMessage({
           referMsgUserId,
           referMsg,
-          // content: content.content,
-          content, // 加上的
+          content: content.content,
+          user: content.user || {}, // 加上的
           objName: RongIMLib.MessageType.TEXT,
         });
       } else if (conversation_type === 'RC:TxtMsg') {
@@ -750,7 +780,6 @@ export default {
       RongIMLib.sendMessage(conversation, message, options).then(({ code, data }) => {
         if (code === 0) {
           console.log('消息发送成功回调：', data.messageUId, data);
-          this.historyList.push(data);
           fun(data, item);
 
           isGroup &&
@@ -780,14 +809,13 @@ export default {
     handlePullMessages(args) {
       let { id, isGroup, displayName, avatar } = args.contact;
       let targetId = CalcTargetId(id); // 原本id 现在group_id
-
-      let firstPage = !this.contactId || this.contactId !== id;
+      let firstPage = !this.lastHistoryId || this.lastHistoryId !== targetId;
       // 首次进入聊天
-      !this.contactId && (this.contactId = id);
+      !this.lastHistoryId && (this.lastHistoryId = targetId);
       // 聊天对象被切换了
-      if (this.contactId !== id) {
+      if (this.lastHistoryId !== targetId) {
         this.historyDate = +new Date();
-        this.contactId = id;
+        this.lastHistoryId = targetId;
       }
 
       const conversation = {
@@ -802,6 +830,7 @@ export default {
         // 获取条数，有效值 1-20，默认为 20
         count: 20,
       };
+
       // 有时候这里卡住
       targetId &&
         RongIMLib.getHistoryMessages(conversation, option)
@@ -810,18 +839,22 @@ export default {
               const list = data.list; // 获取到的消息列表
               const hasMore = data.hasMore; // 是否还有历史消息可获取
               list[0] && (this.historyDate = list[0].sentTime);
-              let otheruser = { id: targetId, displayName, avatar };
+              let otheruser = { id: targetId, displayName, avatar }; // 给单聊用的
+              console.log('融云历史记录', list);
               this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
 
-              if (firstPage) {
-                this.historyList = list;
-              } else {
-                this.historyList = this.historyList.concat(list);
-              }
+              // if (firstPage) {
+              //   this.historyList = list;
+              // } else {
+              //   this.historyList = this.historyList.concat(list);
+              // }
+            } else {
+              args.next([], true);
+              this.$Message.error('获取聊天记录失败，请刷新重试');
             }
           })
           .catch((error) => {
-            console.log('获取历史消息失败', error.code, error.msg);
+            console.log('获取聊天记录失败', error.code, error.msg);
           });
     },
     // 从聊天界面点击关闭会话
@@ -894,18 +927,20 @@ export default {
 
           let delId = Number(conversationType) === 3 ? `group_${targetId}` : targetId;
           this.currentOrgUsers = this.currentOrgUsers.filter(({ id }) => id !== delId);
-
-          this.$refs.imMainDom.closeRightDrawer();
-          this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
+          if (this.$refs.imMainDom) {
+            this.$refs.imMainDom.closeRightDrawer();
+            this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
+          }
         } else {
           console.log(res.code, res.msg);
         }
       });
     },
     // 删除会话中某一条消息
-    deleteConnectMessage(targetId, messageUId, sentTime) {
+    deleteConnectMessage(conversationType, targetId, messageUId, sentTime) {
+      console.log('删除', targetId, messageUId, sentTime);
       const conversation = {
-        conversationType: RongIMLib.ConversationType.PRIVATE,
+        conversationType,
         targetId, // "<目标用户ID>"
       };
       RongIMLib.deleteMessages(conversation, [

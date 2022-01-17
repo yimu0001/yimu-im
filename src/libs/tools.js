@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-23 10:37:04
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-01-06 15:02:39
+ * @LastEditTime: 2022-01-17 14:32:56
  */
 import moment from 'moment';
 
@@ -62,10 +62,12 @@ const Type_Key_Obj = {
 const Default_Content = { type: 'text', key: null, content: '未知消息' };
 // 最新一条信息 融云 ==> IM
 export const CalcLastCentent = (messageType, content) => {
+  let contentObj = content.content instanceof Object ? content.content : content;
+
   let obj = Type_Key_Obj[messageType] || Default_Content;
   let lastContent = {
     type: obj.type,
-    content: obj.key ? content[obj.key] : obj.content,
+    content: obj.key ? contentObj[obj.key] : obj.contentObj,
   };
 
   if (lastContent.type === 'event') {

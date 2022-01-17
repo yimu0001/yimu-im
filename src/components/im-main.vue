@@ -530,23 +530,33 @@ export default {
           this.noticeCount = contact.unread;
         }
       }
+
+      const nowList = this.$refs.IMUI.getCurrentMessages();
+      let ids = nowList.map(({ id }) => id);
+      this.$emit('notice-change-contact', contact.id, contact.isGroup ? ids : null);
     },
-    // 单聊/群聊已读回执
+    // 单聊/群聊已读回执 计算时效2min
     calcReadNotice(list, unreadCount) {
+      let earlyTime = new Date().getTime() - 2 * 60 * 1000;
+      console.log('两分钟前', earlyTime);
       let newMsgs = reverseArray(list);
 
       if (this.targetUser.isGroup) {
         let msgIds = [];
         newMsgs.forEach((item, index) => {
-          if (index < unreadCount) {
+          if (index < unreadCount && item.sendTime > earlyTime) {
             msgIds.push(item.id);
           }
         });
-        this.$emit('notice-group-sender', this.targetUser.id, msgIds);
+        if (msgIds && msgIds.length > 0) {
+          this.$emit('notice-group-sender', this.targetUser.id, msgIds);
+        }
         this.noticeCount = 0;
       } else {
         const { id: msgId, sendTime } = newMsgs[0];
-        this.$emit('notice-single-sender', this.targetUser.id, msgId, sendTime);
+        if (sendTime > earlyTime) {
+          this.$emit('notice-single-sender', this.targetUser.id, msgId, sendTime);
+        }
         this.noticeCount = 0;
       }
     },
@@ -583,14 +593,16 @@ export default {
           }
         }
 
+        // 测试
         let messageItem = {
+          ...item,
           id: item.messageUId,
           status: 'succeed',
           type: 'text',
           conversationType: item.conversationType,
           sendTime: item.sentTime,
           content: '',
-          toContactId: item.targetId,
+          toContactId: item.conversationType === 3 ? `group_${item.targetId}` : item.targetId,
           fromUser,
           canIncludeExpansion: item.canIncludeExpansion || false,
           expansion: item.expansion || {},
@@ -675,7 +687,7 @@ export default {
         const message = messages[messages.length - 1];
         const { referMsg, referMsgUserId } = data.content;
         if (referMsg) {
-          const updateMsg = { ...message, referMsg, referMsgUserId };
+          const updateMsg = { ...data, ...message, referMsg, referMsgUserId };
           IMUI.updateMessage(updateMsg);
           IMUI.messageViewToBottom();
         }
@@ -683,7 +695,17 @@ export default {
     },
     updateExpansion(expandNew, messageUId) {
       const { IMUI } = this.$refs;
-      const messages = IMUI.getCurrentMessages();
+
+      let target_id = expandNew.target_id; // 带有group_
+      let isCurContact = target_id === this.targetUser.id;
+      let messages = []; // 该消息扩展所属于的会话的消息记录
+      if (isCurContact) {
+        messages = IMUI.getCurrentMessages();
+      } else {
+        const allContacts = IMUI.getMessages();
+        messages = allContacts[target_id] || [];
+      }
+
       let message = messages.length > 0 ? messages.filter(({ id }) => id === messageUId)[0] : null;
       // 如果接收到的不是当前会话 就没有message 无法修改扩展
       if (expandNew && message) {
@@ -696,29 +718,29 @@ export default {
     updateReadState(newReadList, messageUId) {
       const { IMUI } = this.$refs;
       const messages = IMUI.getCurrentMessages();
-      console.log('updateReadState', newReadList, messages);
+      console.log('updateReadState', newReadList, messages, messageUId);
       // 群聊
-      if (messageUId) {
-        let msg = messages.filter(({ id }) => id === messageUId);
-        !msg.readList && (msg.readList = {});
-        msg.readList = { ...msg.readList, ...newReadList };
-        IMUI.updateMessage(msg);
-        bus.$emit('updateReadNum', newReadList, msg.toContactId);
-        return;
-      }
-
-      // 单聊
-      messages.forEach((msg) => {
-        !msg.readList && (msg.readList = {});
-        msg.readList = { ...msg.readList, ...newReadList };
-        IMUI.updateMessage(msg);
-        bus.$emit('updateReadNum', newReadList, msg.toContactId);
-      });
+      // if (messageUId) {
+      //   let msg = messages.filter(({ id }) => id === messageUId);
+      //   !msg.readList && (msg.readList = {});
+      //   msg.readList = { ...msg.readList, ...newReadList };
+      //   IMUI.updateMessage(msg);
+      //   bus.$emit('updateReadNum', newReadList, msg.toContactId);
+      // } else {
+      //   // 单聊
+      //   messages.forEach((msg) => {
+      //     !msg.readList && (msg.readList = {});
+      //     msg.readList = { ...msg.readList, ...newReadList };
+      //     IMUI.updateMessage(msg);
+      //     bus.$emit('updateReadNum', newReadList, msg.toContactId);
+      //   });
+      // }
     },
     // 发完消息之后 处理成lemon格式 传回lemon send方法回调
-    calcSendedMsg(messageUId, item) {
+    calcSendedMsg(data, item) {
       let messageItem = {
-        id: messageUId,
+        ...data,
+        id: data.messageUId,
         status: 'succeed',
         type: 'text',
         conversationType: item.isGroup ? 3 : 1,
@@ -767,7 +789,7 @@ export default {
         next({ status: 'failed' });
       }
 
-      let message = this.calcSendedMsg(data.messageUId, msg);
+      let message = this.calcSendedMsg(data, msg);
       message.id = data.messageUId;
       next(message);
     },
@@ -795,6 +817,7 @@ export default {
           let isReply = !!this.replyObj.type;
           // 回复消息
           if (isReply) {
+            console.log('回复消息体', message.content);
             const { id, type, content, fromUser, fileName = '' } = this.replyObj;
             rongMsg = {
               ...rongMsg,
@@ -816,6 +839,7 @@ export default {
               },
             };
           }
+          console.log('回复', rongMsg);
           this.$emit('handleSendMessage', rongMsg);
 
           break;

@@ -4,22 +4,31 @@ import bus from '@/libs/bus';
 export default {
   name: 'lemonMessageImage',
   data() {
-    return { readNum: 0, userId: null };
+    return { readNum: 0, userId: null, lastReadTime: null, isGroup: false };
   },
   inheritAttrs: false,
   inject: ['IMUI'],
   components: { Toolbar },
   mounted() {
     this.userId = sessionStorage.getItem('current_userId');
+    this.isGroup = this.$attrs.message.conversationType === 3;
 
     bus.$on('updateReadNum', (readList, targetId) => {
       if (this.$attrs.message.toContactId === targetId) {
         this.readNum = readList ? Object.keys(readList).length : 0;
       }
     });
+    bus.$on('setSingleReadStatus', (lastTime) => {
+      this.lastReadTime = lastTime;
+    });
+  },
+  beforeDestroy() {
+    bus.$off('updateReadNum');
+    bus.$off('setSingleReadStatus');
   },
   render() {
-    const { fromUser, expansion } = this.$attrs.message;
+    const { fromUser, expansion, sendTime } = this.$attrs.message;
+    const isNoticeMsg = Number(fromUser.id) < 0;
 
     let markNames = '';
     let thumbList = [];
@@ -38,17 +47,23 @@ export default {
           content: (props) => {
             return (
               <div class='tool-bar-wrapper'>
-                {fromUser.id !== this.userId ? (
+                {fromUser.id !== this.userId && (
                   <div class='only-content'>
                     <img class='content-show img-show' src={props.content} />
-                    <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
+                    {!isNoticeMsg && <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>}
                   </div>
-                ) : (
+                )}
+                {fromUser.id === this.userId && (
                   <div class='all-infos'>
-                    <div class='two-line'>
-                      <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                      <div class='read-num'>{this.readNum}人已读</div>
-                    </div>
+                    {!isNoticeMsg && (
+                      <div class='two-line'>
+                        <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
+                        {this.isGroup && <div class='read-num'>{this.readNum}人已读</div>}
+                        {!this.isGroup && this.lastReadTime > sendTime && (
+                          <div class='read-num'>已读</div>
+                        )}
+                      </div>
+                    )}
                     <img class='content-show img-show' src={props.content} />
                   </div>
                 )}

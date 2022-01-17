@@ -292,6 +292,7 @@ export default {
             flex: 1;
             .content-file__name {
               font-size: 14px;
+              line-height: 20px;
             }
             .content-file__byte {
               font-size: 12px;

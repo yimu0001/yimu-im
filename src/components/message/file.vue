@@ -17,21 +17,30 @@ function formatByte(value) {
 export default {
   name: 'lemonMessageFile',
   data() {
-    return { readNum: 0, userId: null };
+    return { readNum: 0, userId: null, lastReadTime: null, isGroup: false };
   },
   inheritAttrs: false,
   components: { Toolbar },
   mounted() {
     this.userId = sessionStorage.getItem('current_userId');
+    this.isGroup = this.$attrs.message.conversationType === 3;
 
     bus.$on('updateReadNum', (readList, targetId) => {
       if (this.$attrs.message.toContactId === targetId) {
         this.readNum = readList ? Object.keys(readList).length : 0;
       }
     });
+    bus.$on('setSingleReadStatus', (lastTime) => {
+      this.lastReadTime = lastTime;
+    });
+  },
+  beforeDestroy() {
+    bus.$off('updateReadNum');
+    bus.$off('setSingleReadStatus');
   },
   render() {
-    const { fromUser, expansion } = this.$attrs.message;
+    const { fromUser, expansion, sendTime } = this.$attrs.message;
+    const isNoticeMsg = Number(fromUser.id) < 0;
 
     let markNames = '';
     let thumbList = [];
@@ -49,7 +58,7 @@ export default {
           content: (props) => [
             // <div class='tool-bar-wrapper'>
             <div class='inner-content-box'>
-              {fromUser.id === this.userId && (
+              {!isNoticeMsg && fromUser.id === this.userId && (
                 <div class='left-tool-abs'>
                   <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
                   <p class='read-num'>{this.readNum}人已读</p>{' '}
@@ -64,7 +73,7 @@ export default {
                   <i class='lemon-icon-attah' />
                 </div>
               </div>
-              {fromUser.id !== this.userId && (
+              {!isNoticeMsg && fromUser.id !== this.userId && (
                 <div class='right-tool-abs'>
                   <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
                 </div>

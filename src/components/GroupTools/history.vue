@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-24 15:26:54
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-01-11 09:29:05
+ * @LastEditTime: 2022-01-13 17:12:31
 -->
 
 <template>
@@ -28,7 +28,6 @@
             <p class="user">{{ item.sendUser }}</p>
             <p class="time">{{ item.sendTime }}</p>
           </div>
-          <!-- TODO 回复 -->
           <p v-if="item.type === 'text'" class="msg-content">{{ item.content.content }}</p>
           <img
             v-if="item.type === 'image'"
@@ -345,6 +344,7 @@ export default {
             flex: 1;
             .content-file__name {
               font-size: 14px;
+              line-height: 20px;
             }
             .content-file__byte {
               font-size: 12px;

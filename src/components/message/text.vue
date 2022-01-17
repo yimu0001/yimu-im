@@ -16,19 +16,31 @@ import { Popover } from 'element-ui';
 export default {
   name: 'lemonMessageText',
   data() {
-    return { readNum: 0, userId: null };
+    return { readNum: 0, userId: null, lastReadTime: null, isGroup: false, readList: [] };
   },
   inheritAttrs: false,
   inject: ['IMUI'],
   components: { Toolbar, elPopover: Popover },
   mounted() {
     this.userId = sessionStorage.getItem('current_userId');
+    this.isGroup = this.$attrs.message.conversationType === 3;
 
     bus.$on('updateReadNum', (readList, targetId) => {
       if (this.$attrs.message.toContactId === targetId) {
         this.readNum = readList ? Object.keys(readList).length : 0;
       }
     });
+    bus.$on('setSingleReadStatus', (lastTime) => {
+      this.lastReadTime = lastTime;
+    });
+    bus.$on('setGroupReadStatus', (list) => {
+      let userList = list[this.$attrs.message.id] || [];
+      this.readNum = userList.length || 0;
+    });
+  },
+  beforeDestroy() {
+    bus.$off('updateReadNum');
+    bus.$off('setSingleReadStatus');
   },
   methods: {
     previewMsg() {
@@ -50,7 +62,8 @@ export default {
           content: (props) => {
             const content = this.IMUI.emojiNameToImage(props.content);
             const replyObj = this.$attrs.message.referMsg;
-            const { fromUser, expansion } = this.$attrs.message;
+            const { fromUser, expansion, sendTime } = this.$attrs.message;
+            const isNoticeMsg = Number(fromUser.id) < 0;
 
             let markNames = '';
             let thumbList = [];
@@ -68,14 +81,18 @@ export default {
                 <div class='relate-box'>
                   <div class='content-show' domProps={{ innerHTML: content }} />
 
-                  {fromUser.id !== this.userId ? (
+                  {!isNoticeMsg && fromUser.id !== this.userId && (
                     <div class='abs-right-pos'>
                       <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
                     </div>
-                  ) : (
+                  )}
+                  {!isNoticeMsg && fromUser.id === this.userId && (
                     <div class='abs-left-pos'>
                       <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                      <div class='read-num'>{this.readNum}人已读</div>
+                      {this.isGroup && <div class='read-num'>{this.readNum}人已读</div>}
+                      {!this.isGroup && this.lastReadTime > sendTime && (
+                        <div class='read-num'>已读</div>
+                      )}
                     </div>
                   )}
                 </div>

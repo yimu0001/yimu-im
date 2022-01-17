@@ -47,7 +47,7 @@
 
 <script>
 import { fetchPendingDirectorList, createPending } from '@/api/event';
-import { dateFormat } from '@/libs/tools';
+import { CalcTargetId, dateFormat } from '@/libs/tools';
 import { Form, FormItem, Input, Select, Option, DatePicker, Button } from 'view-design';
 
 export default {
@@ -97,6 +97,7 @@ export default {
         ],
       },
       createLoading: false,
+      targetId: null,
     };
   },
   watch: {
@@ -107,18 +108,23 @@ export default {
         this.userList = this.directorList; // 当前用户和聊天者
       }
     },
+    pendGroupId(id) {
+      this.targetId = CalcTargetId(id);
+    },
   },
   mounted() {
+    this.targetId = CalcTargetId(this.pendGroupId);
     if (this.msgInfo.isGroup) {
       this.pendGroupId && this.getSpinner();
     } else {
       this.userList = this.directorList; // 当前用户和聊天者
     }
+
     this.$refs.pendform.resetFields();
   },
   methods: {
     getSpinner() {
-      fetchPendingDirectorList(this.pendGroupId)
+      fetchPendingDirectorList(this.targetId)
         .then((res) => {
           if (res.status === 200) {
             this.userList = res.data.data;
@@ -135,7 +141,6 @@ export default {
         if (valid) {
           const { waitTaskContent, waitTaskUserIds, waitTaskEndTime } = this.formItem;
           let formatDate = dateFormat(waitTaskEndTime.getTime());
-
           this.createLoading = true;
           createPending(this.msgInfo.id, waitTaskContent, waitTaskUserIds.join(), formatDate)
             .then((res) => {

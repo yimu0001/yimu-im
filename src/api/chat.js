@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-22 16:12:19
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2021-12-29 15:45:22
+ * @LastEditTime: 2022-01-14 17:46:12
  */
 import { BaseUrl, CustomUrl, PAGE_SIZE, BIG_PAGE_SIZE } from './constant';
 import commonAxios from 'ym-bridge-shandianyun';
@@ -118,5 +118,22 @@ export const kickGroupMember = (id, members) => {
     url: BaseUrl + '/group/' + id + '/member-dec',
     method: 'post',
     data: { members },
+  });
+};
+
+// 获取群聊已读情况
+export const checkGroupReadStatus = (groupId, msg_uids) => {
+  return commonAxios.request({
+    url: BaseUrl + '/message-read-status/group/' + groupId,
+    method: 'get',
+    params: { msg_uids },
+  });
+};
+
+// 获取单聊已读情况
+export const checkSingleReadStatus = (userId) => {
+  return commonAxios.request({
+    url: BaseUrl + '/message-read-status/person/' + userId,
+    method: 'get',
   });
 };
