@@ -20,6 +20,12 @@
   z-index: 2006 !important;
 }
 
+.im-body .ivu-notice {
+  top: auto !important;
+  bottom: 56px;
+  margin-right: 10px !important;
+}
+
 .over_hide_1 {
   overflow: hidden;
   text-overflow: ellipsis;
