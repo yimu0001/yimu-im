@@ -16,7 +16,14 @@ import { Popover } from 'element-ui';
 export default {
   name: 'lemonMessageText',
   data() {
-    return { readNum: 0, userId: null, lastReadTime: null, isGroup: false, readList: [] };
+    return {
+      readNum: 0,
+      userId: null,
+      lastReadTime: null,
+      isGroup: false,
+      readList: [],
+      expansionObj: {},
+    };
   },
   inheritAttrs: false,
   inject: ['IMUI'],
@@ -37,10 +44,17 @@ export default {
       let userList = list[this.$attrs.message.id] || [];
       this.readNum = userList.length || 0;
     });
+
+    bus.$on('setComplexExpand', (msgId, expansion) => {
+      if (msgId === this.$attrs.message.id && expansion) {
+        this.expansionObj = expansion;
+      }
+    });
   },
   beforeDestroy() {
     bus.$off('updateReadNum');
     bus.$off('setSingleReadStatus');
+    bus.$off('setComplexExpand');
   },
   methods: {
     previewMsg() {
@@ -62,13 +76,14 @@ export default {
           content: (props) => {
             const content = this.IMUI.emojiNameToImage(props.content);
             const replyObj = this.$attrs.message.referMsg;
-            const { fromUser, expansion, sendTime } = this.$attrs.message;
+            this.expansionObj = this.$attrs.message.expansion;
+            const { fromUser, sendTime } = this.$attrs.message;
             const isNoticeMsg = Number(fromUser.id) < 0;
 
             let markNames = '';
             let thumbList = [];
-            if (expansion) {
-              let { markedObj = {}, thumbedInfo = {} } = expansion;
+            if (this.expansionObj) {
+              let { markedObj = {}, thumbedInfo = {} } = this.expansionObj;
               markNames = Object.values(markedObj).join('，');
               thumbList = Object.values(thumbedInfo);
             }
@@ -244,11 +259,11 @@ export default {
   }
 }
 .thumb-text {
-  max-width: 330px;
+  max-width: 360px;
 }
 .mark-text {
   margin: 3px 0;
-  max-width: 330px;
+  max-width: 360px;
   color: #999;
   font-size: 12px;
   line-height: 18px;

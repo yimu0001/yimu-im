@@ -1,7 +1,10 @@
 <template>
   <div>
     <div class="tipDom" v-if="!showList && showComponent" @click="openChatDialog">
-      <Avatar :size="38" fit="cover" :src="currentUser.avatar"></Avatar>
+      <div class="avatar-box">
+        <!-- <div class="red-dot"></div> -->
+        <Avatar :size="38" fit="cover" :src="currentUser.avatar"></Avatar>
+      </div>
       &nbsp;&nbsp;
       <!-- <span>我的IM</span> -->
       <span>{{ currentUser.nickname || '通讯' }}</span>
@@ -107,7 +110,6 @@ export default {
       conversationObj: {},
       orgUserList: [], // 创建待办 负责人下拉列表
       waitingOpen: false,
-      noticeCount: 0,
     };
   },
   props: {
@@ -344,13 +346,15 @@ export default {
               },
             };
         }
-        console.log('收到新消息', this.showList);
-        if (!this.showList) {
+
+        if (!this.showList && Number(item.senderUserId) < 0) {
+          this.closeAllNotice();
+          console.log('收到系统通知消息', messageData);
           Notice.info({
-            title: '消息提醒',
+            title: '通知消息',
             desc: '',
-            name: `nth_${++this.noticeCount}`,
-            duration: 0,
+            name: 'noticeMsg',
+            duration: 5,
             render: (h) => {
               return h(
                 'span',
@@ -366,7 +370,7 @@ export default {
                     },
                   },
                 },
-                '收到新消息，点击查看'
+                messageData.content || '通知消息，点击查看'
               );
             },
           });
@@ -425,7 +429,7 @@ export default {
       // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
       this.contactId = CalcTargetId(targetId);
       this.clearUnread(true, this.contactId);
-      console.log('发送响应回执', this.contactId, msgIds);
+      console.log('群聊-发送响应回执', this.contactId, msgIds);
       RongIMLib.sendReadReceiptResponse(this.contactId, msgIds)
         .then((res) => {
           if (res.code === 0) {
@@ -441,7 +445,7 @@ export default {
     handleNoticeSingleSender(targetId, msgId, sendTime) {
       this.contactId = targetId;
       this.clearUnread(false, this.contactId);
-      console.log('发送响应回执', this.contactId, msgId, sendTime);
+      console.log('单聊-发送响应回执', this.contactId, msgId, sendTime);
       RongIMLib.sendReadReceiptMessage(this.contactId, msgId, sendTime)
         .then((res) => {
           if (res.code === 0) {
@@ -456,14 +460,7 @@ export default {
     },
     // 逐个清空新消息通知框
     closeAllNotice() {
-      if (this.noticeCount > 0) {
-        let count = this.noticeCount;
-        for (let num = 1; num <= count; num++) {
-          Notice.close(`nth_${num}`);
-        }
-
-        this.noticeCount = 0;
-      }
+      Notice.close('noticeMsg');
     },
     clearUnread(isGroup, targetId) {
       const conversationType = isGroup
@@ -842,12 +839,6 @@ export default {
               let otheruser = { id: targetId, displayName, avatar }; // 给单聊用的
               console.log('融云历史记录', list);
               this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
-
-              // if (firstPage) {
-              //   this.historyList = list;
-              // } else {
-              //   this.historyList = this.historyList.concat(list);
-              // }
             } else {
               args.next([], true);
               this.$Message.error('获取聊天记录失败，请刷新重试');
@@ -910,7 +901,6 @@ export default {
           this.showComponent = true;
           // 目前不是本机构的渲染不出来 不知道如何过滤掉
           this.currentOrgUsers = curOrgUsers;
-          // console.log('当前机构用户==currentOrgUsers', this.currentOrgUsers);
         })
         .catch((err) => {
           console.log(err);
@@ -923,7 +913,7 @@ export default {
         targetId,
       }).then((res) => {
         if (res.code === 0) {
-          console.log('删除会话成功', conversationType, targetId);
+          console.log('删除会话', conversationType, targetId);
 
           let delId = Number(conversationType) === 3 ? `group_${targetId}` : targetId;
           this.currentOrgUsers = this.currentOrgUsers.filter(({ id }) => id !== delId);
@@ -938,7 +928,6 @@ export default {
     },
     // 删除会话中某一条消息
     deleteConnectMessage(conversationType, targetId, messageUId, sentTime) {
-      console.log('删除', targetId, messageUId, sentTime);
       const conversation = {
         conversationType,
         targetId, // "<目标用户ID>"
@@ -982,6 +971,20 @@ export default {
   &:hover {
     // animation: shake 800ms ease-in-out;
     transform: scale(1.1);
+  }
+
+  .avatar-box {
+    position: relative;
+    .red-dot {
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      overflow: hidden;
+      background-color: red;
+    }
   }
 }
 @keyframes shake {

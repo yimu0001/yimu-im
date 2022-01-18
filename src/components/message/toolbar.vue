@@ -63,7 +63,6 @@ export default {
         name: this.userName,
         type: this.emojiType,
       };
-      console.log('handleThumb', commentObj);
 
       let thumbedInfo = (this.message.expansion ? this.message.expansion.thumbedInfo : {}) || {};
       // let thumbedIds = (this.message.expansion ? this.message.expansion.thumbedIds : []) || [];
@@ -78,6 +77,7 @@ export default {
           this.$Message.success('评论成功');
           let expansion = { ...this.message.expansion, thumbedInfo };
           this.$set(this.message, 'expansion', expansion);
+          bus.$emit('setComplexExpand', this.message.id, expansion);
         } else {
           this.$Message.error(res.msg || '评论失败');
         }
@@ -88,15 +88,12 @@ export default {
       // 向编辑框内增加本消息的tag 发送消息时作为原消息体扩展
       // content fromUser id sendTime status toContactId type
       bus.$emit('reply', this.message);
-      console.log('回复', this.message);
     },
     handleMark(e) {
-      console.log('标记', this.message);
       e.stopPropagation();
       // 本消息体设置扩展 markedIds
       let markedObj = (this.message.expansion ? this.message.expansion.markedObj : {}) || {};
       // let markedIds = (this.message.expansion ? this.message.expansion.markedIds : []) || [];
-      console.log('markedObj', markedObj);
 
       let unchecked = !markedObj[this.userId];
       if (unchecked) {
@@ -107,7 +104,6 @@ export default {
       }
 
       let operate = { type: 'isMarked', checked: unchecked };
-      console.log('before setExpansion', { markedObj }, this.message, operate);
 
       bus.$emit('setExpansion', { markedObj }, this.message, operate, (res) => {
         let optTip = unchecked ? '标记' : '取消标记';
@@ -115,6 +111,7 @@ export default {
           this.$Message.success(optTip + '成功');
           let expansion = { ...this.message.expansion, markedObj };
           this.$set(this.message, 'expansion', expansion);
+          bus.$emit('setComplexExpand', this.message.id, expansion);
         } else {
           this.$Message.error(res.msg || optTip + '失败');
         }

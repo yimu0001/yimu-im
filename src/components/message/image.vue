@@ -4,7 +4,7 @@ import bus from '@/libs/bus';
 export default {
   name: 'lemonMessageImage',
   data() {
-    return { readNum: 0, userId: null, lastReadTime: null, isGroup: false };
+    return { readNum: 0, userId: null, lastReadTime: null, isGroup: false, expansionObj: {} };
   },
   inheritAttrs: false,
   inject: ['IMUI'],
@@ -21,19 +21,26 @@ export default {
     bus.$on('setSingleReadStatus', (lastTime) => {
       this.lastReadTime = lastTime;
     });
+    bus.$on('setComplexExpand', (msgId, expansion) => {
+      if (msgId === this.$attrs.message.id && expansion) {
+        this.expansionObj = expansion;
+      }
+    });
   },
   beforeDestroy() {
     bus.$off('updateReadNum');
     bus.$off('setSingleReadStatus');
+    bus.$off('setComplexExpand');
   },
   render() {
-    const { fromUser, expansion, sendTime } = this.$attrs.message;
+    const { fromUser, sendTime } = this.$attrs.message;
+    this.expansionObj = this.$attrs.message.expansion;
     const isNoticeMsg = Number(fromUser.id) < 0;
 
     let markNames = '';
     let thumbList = [];
-    if (expansion) {
-      let { markedObj = {}, thumbedInfo = {} } = expansion;
+    if (this.expansionObj) {
+      let { markedObj = {}, thumbedInfo = {} } = this.expansionObj;
       markNames = Object.values(markedObj).join('，');
       thumbList = Object.values(thumbedInfo);
     }

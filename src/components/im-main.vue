@@ -538,7 +538,6 @@ export default {
     // 单聊/群聊已读回执 计算时效2min
     calcReadNotice(list, unreadCount) {
       let earlyTime = new Date().getTime() - 2 * 60 * 1000;
-      console.log('两分钟前', earlyTime);
       let newMsgs = reverseArray(list);
 
       if (this.targetUser.isGroup) {
@@ -636,17 +635,16 @@ export default {
         return messageItem;
       });
 
-      console.log('处理好的历史记录', messages);
+      console.log('处理后历史记录', messages);
       if (this.noticeCount > 0) {
         // 通知
-        console.log('需要已读通知', this.noticeCount, messages);
         this.calcReadNotice(messages, this.noticeCount);
       }
 
       next(messages, !hasMore);
     },
     handleMessageClick(e, key, message, instance) {
-      console.log('点击了消息', e, key, message);
+      console.log('点击了消息', message);
       if (key == 'status') {
         instance.updateMessage({
           id: message.id,
@@ -707,11 +705,15 @@ export default {
       }
 
       let message = messages.length > 0 ? messages.filter(({ id }) => id === messageUId)[0] : null;
+      let oldExpand = JSON.parse(JSON.stringify(message.expansion));
       // 如果接收到的不是当前会话 就没有message 无法修改扩展
       if (expandNew && message) {
-        message.expansion = { ...message.expansion, ...expandNew };
-        console.log('修改消息扩展展示', message);
-        IMUI.updateMessage(message);
+        const updateMsg = {
+          id: message.id,
+          expansion: { ...oldExpand, ...expandNew },
+        };
+
+        IMUI.updateMessage(updateMsg);
       }
     },
     // 测试
@@ -791,6 +793,12 @@ export default {
 
       let message = this.calcSendedMsg(data, msg);
       message.id = data.messageUId;
+      message.expansion = {
+        thumbedInfo: {}, // {id: {name, type}}
+        markedObj: {}, // {id: name}
+        collectedIds: [],
+        target_id: null, // 为了收到扩展通知的时候能够找到属于哪个会话
+      };
       next(message);
     },
     handleSend(message, next, file) {
@@ -817,7 +825,6 @@ export default {
           let isReply = !!this.replyObj.type;
           // 回复消息
           if (isReply) {
-            console.log('回复消息体', message.content);
             const { id, type, content, fromUser, fileName = '' } = this.replyObj;
             rongMsg = {
               ...rongMsg,
@@ -839,7 +846,7 @@ export default {
               },
             };
           }
-          console.log('回复', rongMsg);
+
           this.$emit('handleSendMessage', rongMsg);
 
           break;
