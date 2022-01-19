@@ -80,7 +80,6 @@ import InfiniteLoading from 'vue-infinite-loading';
 import { fetchPendingList, completePending } from '@/api/event';
 import bus from '@/libs/bus';
 import { Button, Tabs, TabPane } from 'element-ui';
-import { Modal, Select, Option, Input } from 'view-design';
 
 export default {
   name: 'PendingDrawer',
@@ -89,10 +88,6 @@ export default {
     elTabs: Tabs,
     elTabPane: TabPane,
     'infinite-loading': InfiniteLoading,
-    Modal,
-    Select,
-    Option,
-    Input,
   },
   data() {
     return {

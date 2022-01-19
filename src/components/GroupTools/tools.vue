@@ -34,18 +34,6 @@ import MarkDrawer from './mark';
 import PendingDrawer from './pending';
 import NoticeDrawer from './notice.vue';
 import SettingDrawer from './setting.vue';
-import {
-  Table,
-  TableColumn,
-  Row,
-  Col,
-  Button,
-  Input,
-  Checkbox,
-  Tag,
-  Tabs,
-  TabPane,
-} from 'element-ui';
 export default {
   name: 'groupTools',
   data() {
@@ -64,16 +52,6 @@ export default {
     },
   },
   components: {
-    elTable: Table,
-    elTableColumn: TableColumn,
-    elRow: Row,
-    elCol: Col,
-    elButton: Button,
-    elInput: Input,
-    elCheckbox: Checkbox,
-    elTag: Tag,
-    elTabs: Tabs,
-    elTabPane: TabPane,
     'mark-drawer': MarkDrawer,
     'pending-drawer': PendingDrawer,
     'notice-drawer': NoticeDrawer,

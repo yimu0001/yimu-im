@@ -9,8 +9,7 @@
     <div class="notice-main narrow-scroll-bar">
       <div class="list-block">
         <div class="new-notice">
-          <el-input type="textarea" :rows="3" placeholder="请输入内容" v-model="noticeContent">
-          </el-input>
+          <Input type="textarea" :rows="3" v-model="noticeContent" placeholder="请输入内容" />
           <div class="opr-btns">
             <el-button type="primary" :loading="pushLoading" size="small" @click="createNotice"
               >发布公告</el-button
@@ -46,12 +45,12 @@ import InfiniteLoading from 'vue-infinite-loading';
 import { fetchGroupNoticeList, createGroupNotice } from '@/api/chat';
 import { CalcTargetId } from '@/libs/tools';
 import bus from '@/libs/bus';
-import { Button, Input } from 'element-ui';
+import { Button } from 'element-ui';
+
 export default {
   name: 'NoticeDrawer',
   components: {
     elButton: Button,
-    elInput: Input,
     'infinite-loading': InfiniteLoading,
   },
   data() {

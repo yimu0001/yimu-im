@@ -17,7 +17,6 @@ export default {
   name: 'lemonMessageText',
   data() {
     return {
-      readNum: 0,
       userId: null,
       lastReadTime: null,
       isGroup: false,
@@ -32,17 +31,16 @@ export default {
     this.userId = sessionStorage.getItem('current_userId');
     this.isGroup = this.$attrs.message.conversationType === 3;
 
-    bus.$on('updateReadNum', (readList, targetId) => {
+    bus.$on('updateReadNum', (readUserId, targetId) => {
       if (this.$attrs.message.toContactId === targetId) {
-        this.readNum = readList ? Object.keys(readList).length : 0;
+        this.readList.push(readUserId);
       }
     });
     bus.$on('setSingleReadStatus', (lastTime) => {
       this.lastReadTime = lastTime;
     });
     bus.$on('setGroupReadStatus', (list) => {
-      let userList = list[this.$attrs.message.id] || [];
-      this.readNum = userList.length || 0;
+      this.readList = list[this.$attrs.message.id] || [];
     });
 
     bus.$on('setComplexExpand', (msgId, expansion) => {
@@ -104,7 +102,11 @@ export default {
                   {!isNoticeMsg && fromUser.id === this.userId && (
                     <div class='abs-left-pos'>
                       <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                      {this.isGroup && <div class='read-num'>{this.readNum}人已读</div>}
+                      {this.isGroup && (
+                        <div class='read-num'>
+                          {this.readList ? this.readList.length : '0'}人已读
+                        </div>
+                      )}
                       {!this.isGroup && this.lastReadTime > sendTime && (
                         <div class='read-num'>已读</div>
                       )}

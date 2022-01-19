@@ -69,7 +69,6 @@
 <script>
 import InfiniteLoading from 'vue-infinite-loading';
 import { Button, Checkbox, Tabs, TabPane } from 'element-ui';
-import { Input } from 'view-design';
 import { fetchMarkList } from '@/api/event';
 
 import bus from '@/libs/bus';
@@ -90,7 +89,6 @@ export default {
     elTabs: Tabs,
     elTabPane: TabPane,
     'infinite-loading': InfiniteLoading,
-    Input,
   },
   data() {
     return {

@@ -1,28 +1,50 @@
 import Vue from 'vue';
+import {
+  Modal,
+  Tag,
+  Notice,
+  Row,
+  Col,
+  Form,
+  FormItem,
+  Input,
+  Select,
+  Option,
+  DatePicker,
+  Message,
+} from 'view-design';
+import 'view-design/dist/styles/iview.css';
+
 import App from './App.vue';
 import router from './router';
 import store from './store';
 import moment from 'moment';
 import LemonIMUI from 'lemon-imui';
 import 'lemon-imui/dist/index.css';
-// import './assets/iconfont/iconfont.css';
 import './components/style.css';
-import { Message } from 'view-design';
-
 import 'element-ui/lib/theme-chalk/index.css';
-import 'view-design/dist/styles/iview.css';
 
 Vue.use(LemonIMUI);
+Vue.component('Modal', Modal);
+Vue.component('Tag', Tag);
+Vue.component('Notice', Notice);
+Vue.component('Row', Row);
+Vue.component('Col', Col);
+Vue.component('Form', Form);
+Vue.component('FormItem', FormItem);
+Vue.component('Input', Input);
+Vue.component('Select', Select);
+Vue.component('Option', Option);
+Vue.component('DatePicker', DatePicker);
 
 Vue.config.productionTip = false;
+Vue.prototype.$Message = Message;
 // 利用插值表达式调用
 Vue.filter('dateformat', function(date, pattern = 'YYYY-MM-DD HH:mm:ss') {
   if (!date) return '';
 
   return moment(date * 1000).format(pattern);
 });
-
-Vue.prototype.$Message = Message;
 
 new Vue({
   router,

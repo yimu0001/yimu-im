@@ -71,12 +71,8 @@
             <li class="list-group-item">
               <p class="item-label">群名称</p>
               <!-- 编辑态 -->
-              <el-input
-                v-if="editNameShow && isOwner"
-                class="set-input"
-                size="small"
-                v-model="initDisplayName"
-              />
+
+              <Input v-if="editNameShow && isOwner" v-model="initDisplayName" class="set-input" />
               <el-button
                 v-if="editNameShow && isOwner"
                 class="edit-btn"
@@ -261,20 +257,7 @@ import MarkDrawer from './mark';
 import PendingDrawer from './pending';
 import NoticeDrawer from './notice.vue';
 import SettingDrawer from './setting.vue';
-import EditGroup from '../EditGroup';
-import {
-  Table,
-  TableColumn,
-  Button,
-  Input,
-  Avatar,
-  CheckboxGroup,
-  Checkbox,
-  Tabs,
-  TabPane,
-  Switch,
-} from 'element-ui';
-import { Modal, Row, Col, Tag } from 'view-design';
+import { Button, Avatar, CheckboxGroup, Checkbox, Tabs, TabPane, Switch } from 'element-ui';
 import bus from '@/libs/bus';
 
 export default {
@@ -322,11 +305,7 @@ export default {
     },
   },
   components: {
-    EditGroup,
-    elTable: Table,
-    elTableColumn: TableColumn,
     elButton: Button,
-    elInput: Input,
     elAvatar: Avatar,
     elCheckboxGroup: CheckboxGroup,
     elCheckbox: Checkbox,
@@ -337,10 +316,6 @@ export default {
     'pending-drawer': PendingDrawer,
     'notice-drawer': NoticeDrawer,
     'setting-drawer': SettingDrawer,
-    Modal,
-    Row,
-    Col,
-    Tag,
   },
   watch: {
     contact: {

@@ -25,17 +25,6 @@
     }
   }
 }
-// .iconfont {
-//   font-size: 12px;
-//   color: #999;
-// }
-
-/deep/ .ivu-modal-wrap {
-  z-index: 2002;
-}
-.ivu-message {
-  z-index: 2006 !important;
-}
 
 .selected-icon-color {
   // color: #f5ae15;

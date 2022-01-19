@@ -1,13 +1,7 @@
 <template>
   <div>
     <div class="group-info">
-      <el-input
-        v-model="groupName"
-        size="small"
-        placeholder="请输入群组标题"
-        style="width: 400px"
-        clearable
-      ></el-input>
+      <Input v-model="groupName" placeholder="请输入群组标题" style="width: 400px" clearable />
       <el-button
         class="con-btn"
         type="primary"
@@ -17,8 +11,8 @@
         >确认创建</el-button
       >
     </div>
-    <el-row :gutter="30" class="peopleSelectDom">
-      <el-col :span="8" :offset="1" class="orgList">
+    <Row :gutter="30" class="peopleSelectDom">
+      <Col :span="8" :offset="1" class="orgList">
         <div
           v-for="item of orgList"
           :key="`orgItem${item.id}`"
@@ -28,8 +22,8 @@
         >
           {{ item.name }}
         </div>
-      </el-col>
-      <el-col :span="8" class="orgList">
+      </Col>
+      <Col :span="8" class="orgList">
         <div v-for="item of currentOrgUsers" :key="`currentOrgUser${item.id}`" class="userItem">
           <el-checkbox
             :label="item.id"
@@ -40,40 +34,36 @@
             {{ item.name }}-{{ item.dpt_name }}</el-checkbox
           >
         </div>
-      </el-col>
-      <el-col :span="6" class="orgList">
+      </Col>
+      <Col :span="6" class="orgList">
         <div>
           已选人员：
         </div>
         <div
           v-for="(item, index) of selecedUser"
           :key="`currentOrgUser${item.id}`"
-          class="userItem"
+          class="userItem tagItem"
         >
           <!-- <el-checkbox :label="item.id" border @change='handleChangeUser($event, item)'> {{item.name}}-{{item.dpt_name}}</el-checkbox> -->
-          <el-tag closable @close="handleDelSelectUser(item.id, index)">
-            {{ item.name }}-{{ item.dpt_name }}
-          </el-tag>
+          <Tag color="blue" closable @on-close="handleDelSelectUser(item.id, index)"
+            >{{ item.name }}-{{ item.dpt_name }}</Tag
+          >
         </div>
-      </el-col>
-    </el-row>
+      </Col>
+    </Row>
   </div>
 </template>
 
 <script>
-import { Button, Input, Row, Col, CheckboxGroup, Checkbox, Tag } from 'element-ui';
+import { Button, CheckboxGroup, Checkbox } from 'element-ui';
 import { getOrgList, getUserByOrgid, createGroup } from '../api/data';
 import Bus from '../libs/bus';
 export default {
   name: 'addGroup',
   components: {
     elButton: Button,
-    elInput: Input,
-    elRow: Row,
-    elCol: Col,
     elCheckboxGroup: CheckboxGroup,
     elCheckbox: Checkbox,
-    elTag: Tag,
   },
   data() {
     return {
@@ -211,6 +201,27 @@ export default {
       line-height: 38px;
       border-radius: 5px;
       cursor: pointer;
+    }
+    .tagItem {
+      margin-top: 2px;
+
+      ::v-deep .ivu-tag {
+        height: 28px;
+        line-height: 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        .ivu-tag-text {
+          height: 28px;
+          line-height: 28px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+      ::v-deep .ivu-icon-ios-close:before {
+        color: #1890ff;
+      }
     }
   }
 }

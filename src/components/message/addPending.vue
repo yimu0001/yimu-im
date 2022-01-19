@@ -12,6 +12,7 @@
           v-model="formItem.waitTaskContent"
           class="all-width"
           type="textarea"
+          :rows="4"
           placeholder="请输入"
         />
       </FormItem>
@@ -39,7 +40,9 @@
         ></DatePicker>
       </FormItem>
       <FormItem>
-        <Button @click="confirmCreate" type="primary" :loading="createLoading">立即创建</Button>
+        <el-button type="primary" size="small" :loading="createLoading" @click="confirmCreate"
+          >立即创建</el-button
+        >
       </FormItem>
     </Form>
   </div>
@@ -48,11 +51,13 @@
 <script>
 import { fetchPendingDirectorList, createPending } from '@/api/event';
 import { CalcTargetId, dateFormat } from '@/libs/tools';
-import { Form, FormItem, Input, Select, Option, DatePicker, Button } from 'view-design';
+import { Button } from 'element-ui';
 
 export default {
   name: 'add-pending',
-  components: { Form, FormItem, Input, Select, Option, DatePicker, Button },
+  components: {
+    elButton: Button,
+  },
   props: {
     // 消息id messageUId
     msgInfo: {

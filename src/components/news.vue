@@ -51,7 +51,6 @@
 <script>
 import imMain from './im-main';
 import { Avatar, Dialog } from 'element-ui';
-import { Notice } from 'view-design';
 
 import * as RongIMLib from '@rongcloud/imlib-next';
 import {
@@ -197,12 +196,12 @@ export default {
     RongIMLib.removeEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
   },
   methods: {
-    onMessageReceiptResponse({ conversation, messageUId, responseUserIdList }) {
-      // responseUserIdList 为已查看发送消息用户的列表
+    onMessageReceiptResponse({ conversation, messageUId, senderUserId }) {
+      // senderUserId 为已查看发送消息用户id
       // {conversationType: 3, targetId: '12', channelId: ''}  BU51-48QJ-9TKC-01H1 {1000053: 1641353350477}
       if (CalcTargetId(this.contactId) === conversation.targetId) {
-        console.log('群聊已读回执', conversation, messageUId, responseUserIdList);
-        this.$refs.imMainDom.updateReadState(responseUserIdList, messageUId);
+        console.log('群聊已读回执', conversation, messageUId, senderUserId);
+        this.$refs.imMainDom.updateReadState(senderUserId, messageUId);
       } else {
         // 后端自己存起来 更新已读的参数
       }
@@ -210,11 +209,10 @@ export default {
     onReadReceiptReceived({ conversation, messageUId, sentTime }) {
       // {conversationType: 1, targetId: '1000053', channelId: ''}  undefined 1641350108871
       if (this.contactId === conversation.targetId) {
-        let responseUserIdList = {};
-        responseUserIdList[conversation.targetId] = sentTime;
-        console.log('单聊已读回执', conversation, messageUId, sentTime, responseUserIdList);
+        let senderUserId = conversation.targetId;
+        console.log('单聊已读回执', conversation, messageUId, sentTime, senderUserId);
         // 跟之前接口获取已读人数拼接起来 更新
-        this.$refs.imMainDom.updateReadState(responseUserIdList, messageUId);
+        this.$refs.imMainDom.updateReadState(senderUserId, messageUId);
       } else {
         // 后端自己存起来 更新已读的参数
         // 每次切换会话框的时候 this.$refs.IMUI.getCurrentMessages 返回当前聊天窗口的所有消息 用来调接口获取已读人数
@@ -430,6 +428,7 @@ export default {
       this.contactId = CalcTargetId(targetId);
       this.clearUnread(true, this.contactId);
       console.log('群聊-发送响应回执', this.contactId, msgIds);
+      // todo: sendReadReceiptResponseV2 5.1.1
       RongIMLib.sendReadReceiptResponse(this.contactId, msgIds)
         .then((res) => {
           if (res.code === 0) {

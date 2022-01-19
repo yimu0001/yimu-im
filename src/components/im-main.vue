@@ -28,30 +28,20 @@
       <!-- 消息筛选 添加群组 -->
       <template #sidebar-message-fixedtop>
         <div class="search-line">
-          <el-input
+          <Input
             class="search-inp"
             v-model="historyKeyword"
-            size="mini"
             placeholder="请输入"
+            search
             clearable
-          >
-            <i slot="prefix" class="iconfont icon-sousuo"></i>
-          </el-input>
+          />
           <i class="iconfont icon-tianjia" title="添加" @click="handleCreateGroup"></i>
         </div>
       </template>
       <!-- 用户群组筛选 -->
       <template #sidebar-contact-fixedtop>
         <div class="search-line">
-          <el-input
-            class="search-inp"
-            v-model="mailKeyword"
-            size="mini"
-            placeholder="请输入"
-            clearable
-          >
-            <i slot="prefix" class="iconfont icon-sousuo"></i>
-          </el-input>
+          <Input class="search-inp" v-model="mailKeyword" placeholder="请输入" search clearable />
           <i class="iconfont icon-tianjia" title="添加" @click="handleCreateGroup"></i>
         </div>
       </template>
@@ -113,7 +103,15 @@
     <Modal title="创建群组" v-model="createPop" :z-index="2002" width="800" transfer footer-hide>
       <addGroup v-if="createPop" />
     </Modal>
-    <Modal title="查看上下文" v-model="historyPop" :z-index="2002" width="600" transfer footer-hide>
+    <Modal
+      title="查看上下文"
+      v-model="historyPop"
+      :z-index="2002"
+      width="600"
+      transfer
+      footer-hide
+      :mask="false"
+    >
       <history-record v-if="historyPop" :contact="historyItem" />
     </Modal>
     <textarea id="input_copy"></textarea>
@@ -130,9 +128,8 @@ import LemonIMUI from 'lemon-imui';
 import LemonPopover from 'lemon-imui';
 import 'lemon-imui/dist/index.css';
 
-import { Image, Input } from 'element-ui';
+import { Image } from 'element-ui';
 import { uploadFile } from '@/api/data';
-import { Modal, Tag } from 'view-design';
 import bus from '@/libs/bus';
 import { reverseArray } from '@/libs/tools';
 
@@ -164,15 +161,12 @@ export default {
   components: {
     AddGroup,
     CreateGroup,
-    elInput: Input,
     elImage: Image,
     groupTools,
     'history-record': HistoryRecord,
     addPending,
     LemonIMUI,
     LemonPopover,
-    Modal,
-    Tag,
   },
   data() {
     return {
@@ -717,24 +711,24 @@ export default {
       }
     },
     // 测试
-    updateReadState(newReadList, messageUId) {
+    updateReadState(readUserId, messageUId) {
       const { IMUI } = this.$refs;
       const messages = IMUI.getCurrentMessages();
-      console.log('updateReadState', newReadList, messages, messageUId);
+      console.log('updateReadState', readUserId, messages, messageUId);
       // 群聊
       // if (messageUId) {
       //   let msg = messages.filter(({ id }) => id === messageUId);
       //   !msg.readList && (msg.readList = {});
-      //   msg.readList = { ...msg.readList, ...newReadList };
+      //   msg.readList = { ...msg.readList, readUserId };
       //   IMUI.updateMessage(msg);
-      //   bus.$emit('updateReadNum', newReadList, msg.toContactId);
+      //   bus.$emit('updateReadNum', readUserId, msg.toContactId);
       // } else {
       //   // 单聊
       //   messages.forEach((msg) => {
       //     !msg.readList && (msg.readList = {});
-      //     msg.readList = { ...msg.readList, ...newReadList };
+      //     msg.readList = { ...msg.readList, readUserId };
       //     IMUI.updateMessage(msg);
-      //     bus.$emit('updateReadNum', newReadList, msg.toContactId);
+      //     bus.$emit('updateReadNum', readUserId, msg.toContactId);
       //   });
       // }
     },
