@@ -79,7 +79,6 @@ export default {
   },
   mounted() {
     bus.$on('refreshDrawerData_3', () => {
-      console.log('refreshDrawerData_3');
       this.refreshParam();
       this.getNoticeList();
     });
@@ -99,7 +98,6 @@ export default {
     getNoticeList(cb) {
       let pageNow = this.page;
       fetchGroupNoticeList(CalcTargetId(this.contact.id), this.page).then((res) => {
-        console.log('接口获取列表', res);
         if (res.status === 200) {
           const { last_page, list } = res.data.data;
           if (pageNow === 1) {
@@ -129,10 +127,8 @@ export default {
       });
     },
     createNotice() {
-      console.log('公告内容', this.noticeContent);
       this.pushLoading = true;
       createGroupNotice(CalcTargetId(this.contact.id), this.noticeContent).then((res) => {
-        console.log('发布', res);
         if (res.status === 200) {
           this.$Message.success(res.data.msg);
           this.getNoticeList();

@@ -136,7 +136,6 @@ export default {
 
   mounted() {
     bus.$on('refreshDrawerData_1', () => {
-      console.log('refreshDrawerData_1');
       this.refreshParam();
       this.$nextTick(this.getMarkList);
     });
@@ -178,7 +177,6 @@ export default {
       let type = this.activeMarkKey === 'my' ? 'my' : '';
       fetchMarkList(this.contact.isGroup, this.contact.id, this.page, type, this.markKeyword).then(
         (res) => {
-          console.log('接口获取已标记列表', res.data);
           if (res.status === 200) {
             const { list, num, pages } = res.data.data;
             let info = list.map((item) => ({

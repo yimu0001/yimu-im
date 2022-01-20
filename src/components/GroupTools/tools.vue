@@ -159,7 +159,6 @@ export default {
     },
     handleGroupSetting() {
       if (this.currentDrawer === 4) {
-        console.log('当前是这个就不用切换了');
         return;
       }
 

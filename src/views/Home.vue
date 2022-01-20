@@ -33,16 +33,12 @@ export default {
       console.log(this.$refs.yimuNews.im);
     }, 500);
   },
-  destroyed() {
-    console.log('销毁');
-  },
   methods: {
     open() {
       this.$refs.yimuNews.openChatDialog();
     },
     handleChangeMenu(menuName) {
       this.curMenuName = menuName;
-      console.log('home', menuName);
     },
     setMenu() {
       this.customMenu = [

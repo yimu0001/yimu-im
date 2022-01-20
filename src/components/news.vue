@@ -272,7 +272,7 @@ export default {
       });
       // 监听消息扩展通知
       RongIMLib.addEventListener(RongIMLib.Events.EXPANSION, (evt) => {
-        console.log('监听消息扩展通知', evt, evt && evt.updatedExpansion);
+        console.log('监听消息扩展通知', evt);
         if (evt && evt.updatedExpansion) {
           const { expansion, messageUId } = evt.updatedExpansion;
 
@@ -348,7 +348,7 @@ export default {
         if (!this.showList && Number(item.senderUserId) < 0) {
           this.closeAllNotice();
           console.log('收到系统通知消息', messageData);
-          Notice.info({
+          this.$Notice.info({
             title: '通知消息',
             desc: '',
             name: 'noticeMsg',
@@ -459,7 +459,7 @@ export default {
     },
     // 逐个清空新消息通知框
     closeAllNotice() {
-      Notice.close('noticeMsg');
+      this.$Notice.close('noticeMsg');
     },
     clearUnread(isGroup, targetId) {
       const conversationType = isGroup

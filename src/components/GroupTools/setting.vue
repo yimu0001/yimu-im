@@ -341,7 +341,6 @@ export default {
     this.userId = sessionStorage.getItem('current_userId');
 
     bus.$on('refreshDrawerData_4', () => {
-      console.log('refreshDrawerData_4');
       this.getList();
     });
   },

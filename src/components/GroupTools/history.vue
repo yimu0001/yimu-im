@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-24 15:26:54
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-01-13 17:12:31
+ * @LastEditTime: 2022-01-20 11:24:44
 -->
 
 <template>
@@ -163,7 +163,7 @@ export default {
       this.beforeLoading = true;
       fetchMessageHistory(this.beforeId, -1)
         .then((res) => {
-          console.log('接口获取历史记录列表 Before', res);
+          console.log('历史记录列表 Before', res);
 
           if (res.status === 200) {
             if (!res.data.data || res.data.data.length === 0) {
@@ -202,7 +202,7 @@ export default {
 
       this.msgLoading = true;
       fetchMessageHistory(this.afterId, 1).then((res) => {
-        console.log('接口获取历史记录列表 After', res);
+        console.log('历史记录列表 After', res);
 
         if (res.status === 200) {
           if (!res.data.data || res.data.data.length === 0) {
@@ -266,7 +266,7 @@ export default {
       this.chatDom = this.$refs.chatlist;
       this.chatDom.onscroll = () => {
         if (this.lastScrollTop !== 0 && this.chatDom.scrollTop === 0) {
-          console.log('on scroll top top');
+          // on scroll top
           setTimeout(() => {
             !this.msgLoading && this.getBeforeChatList(); // getCommentList方法中设置msgLoading
           }, 500);

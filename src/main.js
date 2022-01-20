@@ -27,7 +27,6 @@ import 'element-ui/lib/theme-chalk/index.css';
 Vue.use(LemonIMUI);
 Vue.component('Modal', Modal);
 Vue.component('Tag', Tag);
-Vue.component('Notice', Notice);
 Vue.component('Row', Row);
 Vue.component('Col', Col);
 Vue.component('Form', Form);
@@ -39,6 +38,7 @@ Vue.component('DatePicker', DatePicker);
 
 Vue.config.productionTip = false;
 Vue.prototype.$Message = Message;
+Vue.prototype.$Notice = Notice;
 // 利用插值表达式调用
 Vue.filter('dateformat', function(date, pattern = 'YYYY-MM-DD HH:mm:ss') {
   if (!date) return '';

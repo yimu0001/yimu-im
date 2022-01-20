@@ -34,8 +34,9 @@
               <div
                 v-if="item.taskStatus === 1"
                 class="unchecked-circle"
+                :style="item.waiterIds.includes(userId) ? 'cursor:pointer' : 'cursor:not-allowed'"
                 title="完成"
-                @click="handleComplete(item.taskId)"
+                @click="handleComplete(item.taskId, item.waiterIds)"
               ></div>
               <div v-if="item.taskStatus === 200" class="checked-circle"></div>
             </div>
@@ -102,6 +103,7 @@ export default {
       page: 1,
       finished: false,
       completePop: false,
+      userId: null, // String
     };
   },
   props: {
@@ -138,8 +140,9 @@ export default {
     },
   },
   mounted() {
+    this.userId = sessionStorage.getItem('current_userId');
+
     bus.$on('refreshDrawerData_2', () => {
-      console.log('refreshDrawerData_2');
       this.refreshParam();
       this.$nextTick(this.getPendList);
     });
@@ -168,7 +171,6 @@ export default {
         status,
         keyword
       ).then((res) => {
-        console.log('接口获取待办列表', res.data);
         if (res.status === 200) {
           const { list, num, pages } = res.data.data;
           // newsInfo taskInfo
@@ -176,6 +178,7 @@ export default {
             list.map(({ taskInfo }) => ({
               ...taskInfo,
               taskWaiter: taskInfo.taskWaiter.map(({ name }) => name).join(' '),
+              waiterIds: taskInfo.taskWaiter.map(({ id }) => String(id)),
             })) || [];
 
           if (pageNow === 1) {
@@ -206,7 +209,12 @@ export default {
         this.finished ? $state.complete() : $state.loaded();
       });
     },
-    handleComplete(waitTaskId) {
+    handleComplete(waitTaskId, waiterIds) {
+      // 判断waiterIds
+      if (!waiterIds.includes(this.userId)) {
+        return;
+      }
+
       this.waitTaskId = waitTaskId;
       this.completePop = true;
     },
@@ -300,7 +308,6 @@ export default {
             }
           }
           .unchecked-circle {
-            cursor: pointer;
             margin-left: 5px;
             width: 18px;
             height: 18px;

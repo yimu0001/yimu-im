@@ -162,8 +162,6 @@ export default {
             .finally(() => {
               this.createLoading = false;
             });
-        } else {
-          console.log('验证未通过');
         }
       });
     },
