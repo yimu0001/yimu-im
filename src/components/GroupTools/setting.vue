@@ -35,7 +35,6 @@
       <Row class="memberList" :gutter="4">
         <Col :span="4" class="memberItem">
           <div class="memberItemImg addMemberImg" @click="handleAddMember">
-            <!-- <img src="../../assets/add.png" /> -->
             <i class="iconfont icon-zengjia" title="添加"></i>
           </div>
           <div class="memberItemName" @click="handleAddMember">
@@ -44,7 +43,6 @@
         </Col>
         <Col :span="4" class="memberItem" v-if="isOwner">
           <div class="memberItemImg addMemberImg" @click="handleRemoveMember">
-            <!-- <img src="../../assets/add.png" /> -->
             <i class="iconfont icon-jianshao" title="删除"></i>
           </div>
           <div class="memberItemName" @click="handleRemoveMember">

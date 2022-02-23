@@ -1007,6 +1007,10 @@ export default {
 /deep/ .lemon-message {
   padding: 5px 0;
 }
+// 事件 不带背景
+/deep/ .lemon-message-event__content {
+  background: none;
+}
 /deep/ .lemon-message__title {
   overflow: hidden;
   padding-bottom: 0;

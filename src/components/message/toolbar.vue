@@ -173,7 +173,7 @@ export default {
       >
         <i class='iconfont icon-liaotian' title='回复' onClick={this.handleReply}></i>
         <i
-          class={['iconfont', 'icon-icon-', marked ? 'selected-icon-color' : 'normal-icon-color']}
+          class={['iconfont', 'icon-fujian', marked ? 'selected-icon-color' : 'normal-icon-color']}
           title={marked ? '取消标记' : '标记'}
           onClick={this.debounceMark}
         ></i>
@@ -237,7 +237,7 @@ export default {
           title={collected ? '取消收藏' : '收藏'}
           onClick={this.debounceCollect}
         ></i>
-        <i class='iconfont icon-daibanshixiang' title='创建待办' onClick={this.handlePending}></i>
+        <i class='iconfont icon-daibanrenwu_o' title='创建待办' onClick={this.handlePending}></i>
       </div>
     );
   },

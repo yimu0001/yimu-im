@@ -9,13 +9,15 @@
       <!-- <span>我的IM</span> -->
       <div class="nickname-box over_hide_2">{{ currentUser.nickname || '通讯' }}</div>
     </div>
-    <!-- :destroy-on-close="true" -->
+
     <el-dialog
       class="imDialog"
       :visible.sync="showList"
       :show-close="false"
-      @opened="handleOpenedDialog"
+      :modal="false"
+      :close-on-click-modal="false"
       center
+      @opened="handleOpenedDialog"
     >
       <div class="close-line" @click="handleClose">
         <i class="iconfont icon-guanbi1" title="关闭"></i>
@@ -39,6 +41,21 @@
       ></im-main>
       <span slot="footer" class="dialog-footer"> </span>
     </el-dialog>
+
+    <!-- <Modal
+      class="imModal"
+      v-model="showList"
+      width="800"
+      :mask="false"
+      :mask-closable="false"
+      :closable="false"
+      footer-hide
+      draggable
+      @on-visible-change="handleOpenedDialog"
+    >
+      <span slot="header" class="modal-hedaer"> </span>
+    </Modal> -->
+
     <!-- <div v-if="showList" style="width: 40%">
       <im-main ref="imMainDom" :messageList = "messageList" :currentUser = 'currentUser' @handleSendMessage="handleSendMessage" 
       @handlePullMessages='handlePullMessages'
@@ -1041,6 +1058,9 @@ export default {
     padding: 0;
   }
 }
+// .imModal /deep/ .ivu-modal-content-drag .ivu-modal-body {
+//   padding: 0;
+// }
 
 .close-line {
   z-index: 11;

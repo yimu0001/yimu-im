@@ -72,7 +72,7 @@ export default {
                     {!isNoticeMsg && (
                       <div class='two-line'>
                         <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                        {hideRead && this.isGroup && (
+                        {this.hideRead && this.isGroup && (
                           <div class='read-num'>{this.readNum}人已读</div>
                         )}
                         {!this.isGroup && this.lastReadTime > sendTime && (
@@ -85,7 +85,7 @@ export default {
                 )}
                 {markNames && (
                   <div class='mark-text' style={fromUser.id === this.userId && 'text-align:right'}>
-                    <i class='iconfont icon-icon- marked-color'></i>
+                    <i class='iconfont icon-fujian marked-color'></i>
                     {markNames}已标记了该消息，群内所有成员可见
                   </div>
                 )}

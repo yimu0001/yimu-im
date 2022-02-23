@@ -2,12 +2,12 @@
   <div>
     <div class="right-fixed-bar">
       <i
-        :class="['iconfont', 'icon-thin-_pin_bookma', currentDrawer === 1 ? 'selected-icon' : '']"
+        :class="['iconfont', 'icon-fujian', currentDrawer === 1 ? 'selected-icon' : '']"
         title="标记"
         @click="handleGroupMark"
       ></i>
       <i
-        :class="['iconfont', 'icon-daibanshixiang', currentDrawer === 2 ? 'selected-icon' : '']"
+        :class="['iconfont', 'icon-daibanrenwu_o', currentDrawer === 2 ? 'selected-icon' : '']"
         title="创建待办"
         @click="handleGroupPending"
       ></i>
@@ -220,9 +220,7 @@ export default {
 // }
 
 .right-fixed-bar {
-  // margin-top: 2px;
   .iconfont {
-    margin-bottom: 4px;
     padding: 10px 0;
     width: 100%;
     font-size: 22px;

@@ -29,7 +29,7 @@ export default {
   },
   mounted() {
     setTimeout(() => {
-      // this.setMenu();
+      this.setMenu();
       console.log(this.$refs.yimuNews.im);
     }, 500);
   },
@@ -66,7 +66,7 @@ export default {
           title: '标记',
           unread: 0,
           key: 'mark',
-          iconClass: 'iconfont icon-zhiding',
+          iconClass: 'iconfont icon-fujian',
           component: testComponent,
         },
         {
@@ -75,7 +75,7 @@ export default {
           title: '待办',
           unread: 0,
           key: 'pending',
-          iconClass: 'iconfont icon-daibanshixiang',
+          iconClass: 'iconfont icon-daibanrenwu_o',
           component: testComponent,
         },
         {
