@@ -22,6 +22,7 @@ export default {
       isGroup: false,
       readList: [],
       expansionObj: {},
+      hideRead: true,
     };
   },
   inheritAttrs: false,
@@ -31,9 +32,10 @@ export default {
     this.userId = sessionStorage.getItem('current_userId');
     this.isGroup = this.$attrs.message.conversationType === 3;
 
-    bus.$on('updateReadNum', (readUserId, targetId) => {
+    bus.$on('updateReadNum', (targetId, readUserId, sentTime) => {
       if (this.$attrs.message.toContactId === targetId) {
-        this.readList.push(readUserId);
+        readUserId && this.readList.push(readUserId);
+        sentTime && (this.lastReadTime = sentTime);
       }
     });
     bus.$on('setSingleReadStatus', (lastTime) => {
@@ -102,7 +104,7 @@ export default {
                   {!isNoticeMsg && fromUser.id === this.userId && (
                     <div class='abs-left-pos'>
                       <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                      {this.isGroup && (
+                      {hideRead && this.isGroup && (
                         <div class='read-num'>
                           {this.readList ? this.readList.length : '0'}人已读
                         </div>

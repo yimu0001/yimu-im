@@ -7,7 +7,7 @@
       </div>
       &nbsp;&nbsp;
       <!-- <span>我的IM</span> -->
-      <span>{{ currentUser.nickname || '通讯' }}</span>
+      <div class="nickname-box over_hide_2">{{ currentUser.nickname || '通讯' }}</div>
     </div>
     <!-- :destroy-on-close="true" -->
     <el-dialog
@@ -74,6 +74,8 @@ setTimeout(() => {
   Vue.component(LemonMessageText.name, LemonMessageText);
   Vue.component(LemonMessageFile.name, LemonMessageFile);
 }, 0);
+// 通知 https://im.shandian8.com/public/notify.png
+// 审核 https://im.shandian8.com/public/shenhe.png
 
 export default {
   name: 'yimuIm',
@@ -201,7 +203,7 @@ export default {
       // {conversationType: 3, targetId: '12', channelId: ''}  BU51-48QJ-9TKC-01H1 {1000053: 1641353350477}
       if (CalcTargetId(this.contactId) === conversation.targetId) {
         console.log('群聊已读回执', conversation, messageUId, senderUserId);
-        this.$refs.imMainDom.updateReadState(senderUserId, messageUId);
+        this.$refs.imMainDom.updateReadState(messageUId, senderUserId);
       } else {
         // 后端自己存起来 更新已读的参数
       }
@@ -209,10 +211,8 @@ export default {
     onReadReceiptReceived({ conversation, messageUId, sentTime }) {
       // {conversationType: 1, targetId: '1000053', channelId: ''}  undefined 1641350108871
       if (this.contactId === conversation.targetId) {
-        let senderUserId = conversation.targetId;
-        console.log('单聊已读回执', conversation, messageUId, sentTime, senderUserId);
-        // 跟之前接口获取已读人数拼接起来 更新
-        this.$refs.imMainDom.updateReadState(senderUserId, messageUId);
+        console.log('单聊已读回执', conversation, messageUId, sentTime);
+        this.$refs.imMainDom.updateReadState(messageUId, null, sentTime);
       } else {
         // 后端自己存起来 更新已读的参数
         // 每次切换会话框的时候 this.$refs.IMUI.getCurrentMessages 返回当前聊天窗口的所有消息 用来调接口获取已读人数
@@ -222,24 +222,32 @@ export default {
     handleChangeConcat(id, msg_uids) {
       this.contactId = CalcTargetId(id);
       // TODO api获取消息已读人数 当前用户是sendUserId
-      // console.log('api获取消息已读', this.contactId, msg_uids);
-      // if (msg_uids) {
-      //   checkGroupReadStatus(this.contactId, msg_uids).then((res) => {
-      //     console.log('群聊已读人数', res);
-      //     if (res.status === 200) {
-      //       // const { list } = res.data.data;
-      //       // bus.$emit('setGroupReadStatus', list);
-      //     }
-      //   });
-      // } else {
-      //   checkSingleReadStatus(this.contactId).then((res) => {
-      //     console.log('单聊已读人数', res);
-      //     if (res.status === 200) {
-      //       const { last_message_send_time } = res.data.data;
-      //       bus.$emit('setSingleReadStatus', last_message_send_time);
-      //     }
-      //   });
-      // }
+      console.log('api获取消息已读', this.contactId, msg_uids);
+      // TODO 接口500
+      return;
+
+      if (Number(this.contactId) <= 0) {
+        console.log('系统消息没有已读数量');
+        return;
+      }
+
+      if (msg_uids) {
+        checkGroupReadStatus(this.contactId, msg_uids).then((res) => {
+          console.log('群聊已读人数', res);
+          if (res.status === 200) {
+            // const { list } = res.data.data;
+            // bus.$emit('setGroupReadStatus', list);
+          }
+        });
+      } else {
+        checkSingleReadStatus(this.contactId).then((res) => {
+          console.log('单聊已读人数', res);
+          if (res.status === 200) {
+            const { last_message_send_time } = res.data.data;
+            bus.$emit('setSingleReadStatus', last_message_send_time);
+          }
+        });
+      }
     },
     openChatDialog() {
       if (this.showComponent) {
@@ -280,7 +288,7 @@ export default {
           if (!expansion.thumbedInfo && !expansion.markedObj && expansion.collectedIds) return;
 
           // 其他用户操作了标记或者点赞 更新消息体
-          this.$refs.imMainDom.updateExpansion(expansion, messageUId);
+          this.$refs.imMainDom && this.$refs.imMainDom.updateExpansion(expansion, messageUId);
         }
       });
     },
@@ -340,7 +348,7 @@ export default {
               fromUser: {
                 id: userinfo.id || -1,
                 displayName: userinfo.name || '系统通知',
-                avatar: userinfo.portrait || 'https://im.shandian8.com/public/notify.png',
+                avatar: userinfo.portrait || require('../assets/notice.png'),
               },
             };
         }
@@ -427,19 +435,20 @@ export default {
       // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
       this.contactId = CalcTargetId(targetId);
       this.clearUnread(true, this.contactId);
-      console.log('群聊-发送响应回执', this.contactId, msgIds);
-      // todo: sendReadReceiptResponseV2 5.1.1
-      RongIMLib.sendReadReceiptResponse(this.contactId, msgIds)
-        .then((res) => {
-          if (res.code === 0) {
-            console.log('响应回执请求成功', res.code, res.data);
-          } else {
-            console.log('响应回执请求成功', res.code, res.msg);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+
+      console.log('群聊-发送响应回执', this.contactId, this.currentUser.id, msgIds);
+      this.currentUser.id &&
+        RongIMLib.sendReadReceiptResponseV2(this.contactId, { [this.currentUser.id]: msgIds })
+          .then((res) => {
+            if (res.code === 0) {
+              console.log('响应回执请求成功', res.code, res.data);
+            } else {
+              console.log('响应回执请求成功', res.code, res.msg);
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
     },
     handleNoticeSingleSender(targetId, msgId, sendTime) {
       this.contactId = targetId;
@@ -498,7 +507,7 @@ export default {
         });
     },
     getConnetList() {
-      // 获取会话列表
+      // 获取会话列表 失败 导致右下角不展示
       RongIMLib.getConversationList()
         .then(({ code, data: conversationList }) => {
           if (code === 0) {
@@ -597,7 +606,7 @@ export default {
               let userItem = {
                 ...this.conversationObj[id],
                 displayName: nickname || '未知用户',
-                avatar: avatar || 'https://im.shandian8.com/public/shenhe.png',
+                avatar: avatar || require('../assets/single.png'),
               };
               this.conversationObj[id] = this.handleChatInfo(userItem, false);
             });
@@ -634,13 +643,13 @@ export default {
       // 通知
       if (item.targetId === '-1') {
         item.displayName = '系统审核';
-        item.avatar = 'https://im.shandian8.com/public/shenhe.png';
+        item.avatar = require('../assets/review.png');
       } else if (item.targetId === '-2') {
         item.displayName = '通知提醒';
-        item.avatar = 'https://im.shandian8.com/public/notify.png';
+        item.avatar = require('../assets/notice.png');
       } else if (item.targetId === '-3') {
         item.displayName = '内容监控';
-        item.avatar = 'https://im.shandian8.com/public/shenhe.png';
+        item.avatar = require('../assets/review.png');
       }
       let userItem = {
         id: item.targetId,
@@ -838,6 +847,8 @@ export default {
               let otheruser = { id: targetId, displayName, avatar }; // 给单聊用的
               console.log('融云历史记录', list);
               this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
+              let msg_uids = list.map(({ messageUId }) => messageUId);
+              this.handleChangeConcat(targetId, msg_uids);
             } else {
               args.next([], true);
               this.$Message.error('获取聊天记录失败，请刷新重试');
@@ -960,6 +971,7 @@ export default {
   right: 0px;
   height: 55px;
   width: 150px;
+  padding: 0 8px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -967,23 +979,30 @@ export default {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   font-size: 14px;
   cursor: pointer;
+  z-index: 101;
+
   &:hover {
     // animation: shake 800ms ease-in-out;
     transform: scale(1.1);
   }
 
   .avatar-box {
-    position: relative;
-    .red-dot {
-      position: absolute;
-      top: 0px;
-      left: 0px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      overflow: hidden;
-      background-color: red;
-    }
+    margin-top: 7px;
+    // position: relative;
+    // .red-dot {
+    //   position: absolute;
+    //   top: 0px;
+    //   left: 0px;
+    //   width: 10px;
+    //   height: 10px;
+    //   border-radius: 50%;
+    //   overflow: hidden;
+    //   background-color: red;
+    // }
+  }
+  .nickname-box {
+    line-height: 21px;
+    height: 42px;
   }
 }
 @keyframes shake {

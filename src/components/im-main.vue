@@ -586,7 +586,6 @@ export default {
           }
         }
 
-        // 测试
         let messageItem = {
           ...item,
           id: item.messageUId,
@@ -710,27 +709,27 @@ export default {
         IMUI.updateMessage(updateMsg);
       }
     },
-    // 测试
-    updateReadState(readUserId, messageUId) {
+    // 测试已读
+    updateReadState(messageUId, readUserId, sentTime) {
+      return;
       const { IMUI } = this.$refs;
       const messages = IMUI.getCurrentMessages();
-      console.log('updateReadState', readUserId, messages, messageUId);
+      console.log('updateReadState', messages, messageUId, readUserId, sentTime);
       // 群聊
-      // if (messageUId) {
-      //   let msg = messages.filter(({ id }) => id === messageUId);
-      //   !msg.readList && (msg.readList = {});
-      //   msg.readList = { ...msg.readList, readUserId };
-      //   IMUI.updateMessage(msg);
-      //   bus.$emit('updateReadNum', readUserId, msg.toContactId);
-      // } else {
-      //   // 单聊
-      //   messages.forEach((msg) => {
-      //     !msg.readList && (msg.readList = {});
-      //     msg.readList = { ...msg.readList, readUserId };
-      //     IMUI.updateMessage(msg);
-      //     bus.$emit('updateReadNum', readUserId, msg.toContactId);
-      //   });
-      // }
+      if (readUserId) {
+        let msg = messages.filter(({ id }) => id === messageUId);
+        !msg.readList && (msg.readList = []);
+        msg.readList.push(readUserId);
+        IMUI.updateMessage(msg);
+        // bus.$emit('updateReadNum', msg.toContactId, readUserId, sentTime);
+      } else {
+        // 单聊
+        messages.forEach((msg) => {
+          msg.lastReadTime = sentTime;
+          IMUI.updateMessage(msg);
+          // bus.$emit('updateReadNum', msg.toContactId, readUserId, sentTime);
+        });
+      }
     },
     // 发完消息之后 处理成lemon格式 传回lemon send方法回调
     calcSendedMsg(data, item) {

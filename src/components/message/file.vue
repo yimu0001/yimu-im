@@ -17,7 +17,14 @@ function formatByte(value) {
 export default {
   name: 'lemonMessageFile',
   data() {
-    return { readNum: 0, userId: null, lastReadTime: null, isGroup: false, expansionObj: {} };
+    return {
+      readNum: 0,
+      userId: null,
+      lastReadTime: null,
+      isGroup: false,
+      expansionObj: {},
+      hideRead: true,
+    };
   },
   inheritAttrs: false,
   components: { Toolbar },
@@ -68,7 +75,7 @@ export default {
               {!isNoticeMsg && fromUser.id === this.userId && (
                 <div class='left-tool-abs'>
                   <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                  <p class='read-num'>{this.readNum}人已读</p>{' '}
+                  {hideRead && <p class='read-num'>{this.readNum}人已读</p>}
                 </div>
               )}
               <div class='inner-content'>
