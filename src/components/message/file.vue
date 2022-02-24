@@ -1,6 +1,8 @@
 <script>
 import Toolbar from './toolbar.vue';
 import bus from '@/libs/bus';
+import { Emoji_Type_Obj } from './constant';
+
 function formatByte(value) {
   if (null == value || value == '') {
     return '0 Bytes';
@@ -56,6 +58,7 @@ export default {
     this.expansionObj = this.$attrs.message.expansion;
     const isNoticeMsg = Number(fromUser.id) < 0;
 
+    let emojiObj = Emoji_Type_Obj;
     let markNames = '';
     let thumbList = [];
     if (this.expansionObj) {
@@ -105,25 +108,12 @@ export default {
                 {thumbList &&
                   thumbList.map(({ name, type }) => (
                     <div class='per-thumb'>
-                      {type === '1' && (
-                        <i class='thumb-icon' title='爱心'>
-                          ❤️
-                        </i>
-                      )}
-                      {type === '2' && (
-                        <i class='thumb-icon' title='OK'>
-                          👌
-                        </i>
-                      )}
-                      {type === '3' && (
-                        <i class='thumb-icon' title='赞'>
-                          👍
-                        </i>
-                      )}
-                      {type === '4' && (
-                        <i class='thumb-icon' title='鼓掌'>
-                          👏
-                        </i>
+                      {Object.keys(emojiObj).includes(type) && (
+                        <img
+                          class='thumb-icon'
+                          title={emojiObj[type].title}
+                          src={require(`../../assets/emoji/${emojiObj[type].icon}.png`)}
+                        />
                       )}
                       <span class='thumb-name'>{name}</span>
                     </div>
@@ -249,15 +239,16 @@ export default {
   display: inline-block;
   margin-right: 3px;
   .thumb-icon {
-    line-height: 18px;
-    text-align: center;
-    font-style: normal;
-    font-size: 16px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    background: none;
   }
   .thumb-name {
     color: #999;
     font-size: 12px;
-    line-height: 18px;
+    line-height: 20px;
   }
 }
 </style>

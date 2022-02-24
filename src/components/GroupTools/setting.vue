@@ -320,7 +320,6 @@ export default {
       deep: true,
       immediate: true,
       handler: function(newValue, oldValue) {
-        console.log('watch setting====contact', newValue, this.contact);
         this.searchValue = '';
         this.vContact = newValue;
         if (this.vContact.isGroup) {
@@ -405,7 +404,6 @@ export default {
       checkGroupOwner(CalcTargetId(this.vContact.id)).then((res) => {
         if (res.status === 200) {
           this.isOwner = res.data.data.id === this.userId;
-          console.log('own', this.isOwner);
         } else {
           this.$Message.error(res.data.msg);
         }
@@ -456,7 +454,6 @@ export default {
             let selectUserIds = this.selecedUser.map(({ id }) => id);
             let groupUserIds = this.originalMember.map(({ id }) => id);
             console.log('已选id', selectUserIds); // 已选的人 禁用
-            console.log('返回值', res.data.data);
 
             this.selectOrgUsers = res.data.data.map((item) => {
               item.checked = false;
@@ -547,7 +544,7 @@ export default {
     onRemove() {
       this.memberIds = this.checkedRemoveUser.map(({ id }) => Number(id));
       this.memberNames = this.checkedRemoveUser.map(({ name }) => name).join('，');
-      console.log('移除人员', this.checkedRemoveUser, this.memberIds, this.memberNames);
+      // console.log('移除人员', this.checkedRemoveUser, this.memberIds, this.memberNames);
       this.removePop = true;
     },
     confirmRemoveMember() {

@@ -2,6 +2,7 @@
 import Toolbar from './toolbar.vue';
 import bus from '@/libs/bus';
 import { Popover } from 'element-ui';
+import { Emoji_Type_Obj } from './constant';
 // <el-tooltip
 //   class='item'
 //   effect='dark'
@@ -74,7 +75,10 @@ export default {
         props={{ ...this.$attrs }}
         scopedSlots={{
           content: (props) => {
-            const content = this.IMUI.emojiNameToImage(props.content);
+            let emojiObj = Emoji_Type_Obj;
+            // 回复的消息带着user对象？
+            let info = props.content instanceof Object ? props.content.content : props.content;
+            const content = this.IMUI.emojiNameToImage(info);
             const replyObj = this.$attrs.message.referMsg;
             this.expansionObj = this.$attrs.message.expansion;
             const { fromUser, sendTime } = this.$attrs.message;
@@ -109,7 +113,7 @@ export default {
                           {this.readList ? this.readList.length : '0'}人已读
                         </div>
                       )}
-                      {!this.isGroup && this.lastReadTime > sendTime && (
+                      {this.hideRead && !this.isGroup && this.lastReadTime > sendTime && (
                         <div class='read-num'>已读</div>
                       )}
                     </div>
@@ -156,25 +160,12 @@ export default {
                   {thumbList &&
                     thumbList.map(({ name, type }) => (
                       <div class='per-thumb'>
-                        {type === '1' && (
-                          <i class='thumb-icon' title='爱心'>
-                            ❤️
-                          </i>
-                        )}
-                        {type === '2' && (
-                          <i class='thumb-icon' title='OK'>
-                            👌
-                          </i>
-                        )}
-                        {type === '3' && (
-                          <i class='thumb-icon' title='赞'>
-                            👍
-                          </i>
-                        )}
-                        {type === '4' && (
-                          <i class='thumb-icon' title='鼓掌'>
-                            👏
-                          </i>
+                        {Object.keys(emojiObj).includes(type) && (
+                          <img
+                            class='thumb-icon'
+                            title={emojiObj[type].title}
+                            src={require(`../../assets/emoji/${emojiObj[type].icon}.png`)}
+                          />
                         )}
                         <span class='thumb-name'>{name}</span>
                       </div>
@@ -281,15 +272,16 @@ export default {
   display: inline-block;
   margin-right: 3px;
   .thumb-icon {
-    line-height: 18px;
-    text-align: center;
-    font-style: normal;
-    font-size: 16px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    background: none;
   }
   .thumb-name {
     color: #999;
     font-size: 12px;
-    line-height: 18px;
+    line-height: 20px;
   }
 }
 </style>

@@ -3,7 +3,7 @@
     <div class="tipDom" v-if="!showList && showComponent" @click="openChatDialog">
       <div class="avatar-box">
         <!-- <div class="red-dot"></div> -->
-        <Avatar :size="38" fit="cover" :src="currentUser.avatar"></Avatar>
+        <Avatar :size="44" fit="cover" :src="currentUser.avatar"></Avatar>
       </div>
       &nbsp;&nbsp;
       <!-- <span>我的IM</span> -->
@@ -237,9 +237,9 @@ export default {
     },
 
     handleChangeConcat(id, msg_uids) {
-      this.contactId = CalcTargetId(id);
       // TODO api获取消息已读人数 当前用户是sendUserId
-      console.log('api获取消息已读', this.contactId, msg_uids);
+      this.contactId = CalcTargetId(id);
+      // console.log('api获取消息已读', this.contactId, msg_uids);
       // TODO 接口500
       return;
 
@@ -365,7 +365,7 @@ export default {
               fromUser: {
                 id: userinfo.id || -1,
                 displayName: userinfo.name || '系统通知',
-                avatar: userinfo.portrait || require('../assets/notice.png'),
+                avatar: userinfo.portrait || require('../assets/images/notice.png'),
               },
             };
         }
@@ -623,7 +623,7 @@ export default {
               let userItem = {
                 ...this.conversationObj[id],
                 displayName: nickname || '未知用户',
-                avatar: avatar || require('../assets/single.png'),
+                avatar: avatar || require('../assets/images/single.png'),
               };
               this.conversationObj[id] = this.handleChatInfo(userItem, false);
             });
@@ -660,13 +660,13 @@ export default {
       // 通知
       if (item.targetId === '-1') {
         item.displayName = '系统审核';
-        item.avatar = require('../assets/review.png');
+        item.avatar = require('../assets/images/review.png');
       } else if (item.targetId === '-2') {
         item.displayName = '通知提醒';
-        item.avatar = require('../assets/notice.png');
+        item.avatar = require('../assets/images/notice.png');
       } else if (item.targetId === '-3') {
         item.displayName = '内容监控';
-        item.avatar = require('../assets/review.png');
+        item.avatar = require('../assets/images/review.png');
       }
       let userItem = {
         id: item.targetId,
@@ -984,23 +984,28 @@ export default {
 <style lang="less" scoped>
 .tipDom {
   position: fixed;
-  bottom: 0px;
-  right: 0px;
+  bottom: 50px;
+  right: -79px;
   height: 55px;
-  width: 150px;
-  padding: 0 8px;
+  width: 120px;
+  box-sizing: content-box;
+  transition: transform 0.5s;
+
+  padding: 0 7px;
   display: flex;
-  justify-content: center;
   align-items: center;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  background-color: #2a3daa;
+  // box-shadow: 0 2px 4px rgba(#0c135f, 0.5);
+  border: 3px solid #9aa3d3;
+  border-radius: 55px;
   font-size: 14px;
+  color: #fff;
   cursor: pointer;
   z-index: 101;
 
   &:hover {
-    // animation: shake 800ms ease-in-out;
-    transform: scale(1.1);
+    // transform: scale(1.1);
+    transform: translateX(-62%);
   }
 
   .avatar-box {
@@ -1019,29 +1024,7 @@ export default {
   }
   .nickname-box {
     line-height: 21px;
-    height: 42px;
-  }
-}
-@keyframes shake {
-  /* 水平抖动，核心代码 */
-  10%,
-  90% {
-    transform: translate3d(-1px, 0, 0);
-  }
-  20%,
-  80% {
-    transform: translate3d(+2px, 0, 0);
-  }
-  30%,
-  70% {
-    transform: translate3d(-4px, 0, 0);
-  }
-  40%,
-  60% {
-    transform: translate3d(+4px, 0, 0);
-  }
-  50% {
-    transform: translate3d(-4px, 0, 0);
+    max-height: 42px;
   }
 }
 .imDialog {

@@ -2,6 +2,7 @@
 import bus from '@/libs/bus';
 import { debounce } from 'lodash';
 import { Popover } from 'element-ui';
+import { Emoji_Type_Obj } from './constant';
 
 export default {
   name: 'toolbar',
@@ -149,6 +150,7 @@ export default {
     },
   },
   render() {
+    let emojiObj = Emoji_Type_Obj;
     // 图片文件类型消息 状态展示失败
     let thumbed = false,
       marked = false,
@@ -162,7 +164,7 @@ export default {
     }
 
     const { fromUser = {} } = this.message;
-    // <img class='emoji-icon icon-img' src={require('@/assets/heart.png')} />
+    // <img class='emoji-icon icon-img' src={require('@/assets/images/heart.png')} />
 
     return (
       <div
@@ -178,44 +180,18 @@ export default {
           onClick={this.debounceMark}
         ></i>
 
-        <el-popover popper-class='reply-emoji-pop' placement='top' width='160' trigger='hover'>
+        <el-popover popper-class='reply-emoji-pop' placement='top' width='176' trigger='hover'>
           <div class='emoji-list'>
-            <i
-              class='emoji-icon'
-              title='爱心'
-              onClick={() => {
-                this.onThumbType('1');
-              }}
-            >
-              ❤️
-            </i>
-            <i
-              class='emoji-icon'
-              title='OK'
-              onClick={() => {
-                this.onThumbType('2');
-              }}
-            >
-              👌
-            </i>
-            <i
-              class='emoji-icon'
-              title='赞'
-              onClick={() => {
-                this.onThumbType('3');
-              }}
-            >
-              👍
-            </i>
-            <i
-              class='emoji-icon'
-              title='鼓掌'
-              onClick={() => {
-                this.onThumbType('4');
-              }}
-            >
-              👏
-            </i>
+            {Object.values(emojiObj).map(({ id, title, icon }) => (
+              <img
+                class='emoji-icon'
+                title={title}
+                src={require(`../../assets/emoji/${icon}.png`)}
+                onClick={() => {
+                  this.onThumbType(id);
+                }}
+              />
+            ))}
           </div>
           <div slot='reference'>
             <i

@@ -27,13 +27,14 @@
       </template>
       <!-- 消息筛选 添加群组 -->
       <template #sidebar-message-fixedtop>
+        <!-- TODO 改为人员群组筛选 js控制切换菜单menu -->
         <div class="search-line">
           <Input
             class="search-inp"
-            v-model="historyKeyword"
             placeholder="请输入"
             search
             clearable
+            @on-focus="handleSearchClick"
           />
           <i class="iconfont icon-tianjia" title="添加" @click="handleCreateGroup"></i>
         </div>
@@ -41,7 +42,14 @@
       <!-- 用户群组筛选 -->
       <template #sidebar-contact-fixedtop>
         <div class="search-line">
-          <Input class="search-inp" v-model="mailKeyword" placeholder="请输入" search clearable />
+          <Input
+            ref="userSearchRef"
+            class="search-inp"
+            v-model="mailKeyword"
+            placeholder="请输入"
+            search
+            clearable
+          />
           <i class="iconfont icon-tianjia" title="添加" @click="handleCreateGroup"></i>
         </div>
       </template>
@@ -269,7 +277,6 @@ export default {
       imgUrl: undefined,
       srcList: undefined,
       replyObj: {}, // id: '', type: '', content: '', displayText: ''
-      historyKeyword: '',
       mailKeyword: '',
       pendingPop: false,
       curPendingItem: {},
@@ -485,12 +492,17 @@ export default {
         range.select();
       }
     },
-
+    handleSearchClick() {
+      this.$refs.IMUI.changeMenu('contacts');
+      setTimeout(() => {
+        this.$refs.userSearchRef.focus();
+      }, 400);
+    },
     handleChangeMenu(menuName) {
       this.$emit('change-menu', menuName);
       this.closeRightDrawer();
 
-      console.log('Event:change-menu', menuName);
+      // console.log('Event:change-menu', menuName);
       if (menuName === 'messages') {
         // this.$emit('changeMenuMessage')
         this.$refs.IMUI.initContacts(this.currentOrgUsers);
@@ -504,7 +516,7 @@ export default {
     handleChangeContact(contact, instance) {
       this.closeRightDrawer();
 
-      console.log('Event:change-contact', contact);
+      // console.log('Event:change-contact', contact);
       // contact.unread: 3   id: "group_12"
       // this.mailKeyword && this.changeIMContact(contact);
       this.targetUser = contact;
@@ -628,7 +640,7 @@ export default {
         return messageItem;
       });
 
-      console.log('处理后历史记录', messages);
+      // console.log('处理后历史记录', messages);
       if (this.noticeCount > 0) {
         // 通知
         this.calcReadNotice(messages, this.noticeCount);
@@ -951,185 +963,5 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.cur-user {
-  margin-top: 4px;
-  font-size: 16px;
-  color: #000;
-}
-.more-setting {
-  position: absolute;
-  top: 28px;
-  right: 14px;
-  height: 22px;
-  width: 22px;
-  .icon-gengduo {
-    font-size: 20px;
-    color: #666;
-    cursor: pointer;
-  }
-}
-.right-toolbar-column {
-  height: 100%;
-  width: 50px;
-  overflow: auto;
-  position: absolute;
-  right: -50px;
-  top: 0;
-  background-color: #f4f4f4;
-  border: 1px solid #ececec;
-  box-sizing: border-box;
-}
-/deep/ .lemon-menu .lemon-menu__item {
-  padding: 8px 10px;
-  /deep/ .iconfont {
-    font-size: 24px;
-  }
-}
-/deep/ .lemon-container__title {
-  padding: 15px 15px 0 15px;
-  border-bottom: 1px solid #ececec;
-}
-/deep/ .editorImg {
-  height: 70px;
-}
-
-/deep/ .lemon-icon-default {
-  font-style: normal;
-  &:before {
-    content: '\2740';
-  }
-}
-/deep/ .lemon-badge__label {
-  min-width: 18px;
-  box-sizing: border-box;
-}
-// 消息样式
-/deep/ .lemon-message {
-  padding: 5px 0;
-}
-// 事件 不带背景
-/deep/ .lemon-message-event__content {
-  background: none;
-}
-/deep/ .lemon-message__title {
-  overflow: hidden;
-  padding-bottom: 0;
-  margin-bottom: 4px;
-}
-/deep/ .lemon-message__content {
-  color: #666;
-}
-/deep/.lemon-message-image .lemon-message__content img {
-  min-width: auto !important;
-}
-/deep/ .lemon-message-text {
-  padding: 0;
-  .lemon-message__content {
-    padding: 0 0 10px;
-    background: none;
-    border-radius: 0;
-    &:before {
-      content: '';
-    }
-
-    .tool-bar-wrapper .content-show {
-      font-size: 14px;
-      line-height: 20px;
-      padding: 8px 10px;
-      background: #fff;
-      border-radius: 4px;
-      position: relative;
-      margin: 0;
-    }
-  }
-}
-
-/deep/ .lemon-message--reverse.lemon-message-text {
-  .tool-bar-wrapper .content-show {
-    background: #35d863;
-  }
-}
-
-/deep/ .lemon-editor {
-  border: 1px solid #ececec;
-}
-/deep/ .lemon-drawer {
-  top: 0 !important;
-  border-left: 1px solid #ececec;
-}
-.im-cover {
-  margin-top: 200px;
-  width: 100%;
-  text-align: center;
-  font-size: 16px;
-  .lemon-icon-message {
-    font-size: 35px;
-    margin-bottom: 10px;
-  }
-}
-/deep/ .lemon-drawer {
-  box-shadow: -4px 0px 16px -10px #ccc;
-}
-.bottom-line {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-.reply-box {
-  max-width: 300px;
-  margin-right: 20px;
-  box-sizing: border-box;
-  .rep-text {
-    display: inline-block;
-    max-width: 262px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  ::v-deep .ivu-tag {
-    height: 28px;
-    line-height: 28px;
-    display: flex;
-    align-items: center;
-    .ivu-tag-text {
-      height: 28px;
-      line-height: 28px;
-      font-size: 14px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-}
-
-.search-line {
-  padding: 14px 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #ecebeb;
-  .search-inp {
-    width: 80%;
-  }
-  .icon-sousuo {
-    margin-left: 3px;
-    font-size: 15px;
-    color: #999;
-    line-height: 28px;
-  }
-  .icon-tianjia {
-    cursor: pointer;
-    width: 20%;
-    text-align: center;
-    font-size: 22px;
-    color: #999;
-  }
-}
-#input_copy {
-  position: absolute;
-  top: 0;
-  left: 0;
-  opacity: 0;
-  z-index: -10;
-}
+@import url('../assets/css/im-style.less');
 </style>
