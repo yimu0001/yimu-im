@@ -1,6 +1,10 @@
 <template>
   <div>
-    <div class="tipDom" v-if="!showList && showComponent" @click="openChatDialog">
+    <div
+      :class="['tipDom', theme === 'deep' ? 'deep-color' : '']"
+      v-if="!showList && showComponent"
+      @click="openChatDialog"
+    >
       <div class="avatar-box">
         <!-- <div class="red-dot"></div> -->
         <Avatar :size="44" fit="cover" :src="currentUser.avatar"></Avatar>
@@ -91,8 +95,11 @@ setTimeout(() => {
   Vue.component(LemonMessageText.name, LemonMessageText);
   Vue.component(LemonMessageFile.name, LemonMessageFile);
 }, 0);
-// 通知 https://im.shandian8.com/public/notify.png
-// 审核 https://im.shandian8.com/public/shenhe.png
+// TODO 先用着测试域名 之后替换正式域名
+// https://im.shandian8.com/public/shenhe2.png
+// https://im.shandian8.com/public/qunliao.png
+// https://im.shandian8.com/public/danliao.png
+// https://im.shandian8.com/public/tongzhi.png
 
 export default {
   name: 'yimuIm',
@@ -139,6 +146,11 @@ export default {
       type: String,
       required: false,
       default: '',
+    },
+    theme: {
+      type: String,
+      required: false,
+      default: 'light',
     },
   },
   components: {
@@ -365,7 +377,7 @@ export default {
               fromUser: {
                 id: userinfo.id || -1,
                 displayName: userinfo.name || '系统通知',
-                avatar: userinfo.portrait || require('../assets/images/notice.png'),
+                avatar: userinfo.portrait || 'https://im.shandian8.com/public/tongzhi.png',
               },
             };
         }
@@ -604,7 +616,7 @@ export default {
             let userItem = {
               ...this.conversationObj[`group_${id}`],
               displayName: content || '选题群组',
-              avatar,
+              avatar: avatar || 'https://im.shandian8.com/public/qunliao.png',
             };
             this.conversationObj[`group_${id}`] = this.handleChatInfo(userItem, true);
           });
@@ -623,7 +635,7 @@ export default {
               let userItem = {
                 ...this.conversationObj[id],
                 displayName: nickname || '未知用户',
-                avatar: avatar || require('../assets/images/single.png'),
+                avatar: avatar || 'https://im.shandian8.com/public/danliao.png',
               };
               this.conversationObj[id] = this.handleChatInfo(userItem, false);
             });
@@ -660,13 +672,13 @@ export default {
       // 通知
       if (item.targetId === '-1') {
         item.displayName = '系统审核';
-        item.avatar = require('../assets/images/review.png');
+        item.avatar = 'https://im.shandian8.com/public/shenhe2.png';
       } else if (item.targetId === '-2') {
         item.displayName = '通知提醒';
-        item.avatar = require('../assets/images/notice.png');
+        item.avatar = 'https://im.shandian8.com/public/tongzhi.png';
       } else if (item.targetId === '-3') {
         item.displayName = '内容监控';
-        item.avatar = require('../assets/images/review.png');
+        item.avatar = 'https://im.shandian8.com/public/shenhe2.png';
       }
       let userItem = {
         id: item.targetId,
@@ -994,12 +1006,12 @@ export default {
   padding: 0 7px;
   display: flex;
   align-items: center;
-  background-color: #2a3daa;
+  background-color: #e2ecf7;
+  border: 3px solid #b2d2f3;
+  color: #333;
   // box-shadow: 0 2px 4px rgba(#0c135f, 0.5);
-  border: 3px solid #9aa3d3;
   border-radius: 55px;
   font-size: 14px;
-  color: #fff;
   cursor: pointer;
   z-index: 101;
 
@@ -1026,6 +1038,11 @@ export default {
     line-height: 21px;
     max-height: 42px;
   }
+}
+.deep-color {
+  background-color: #2a3daa;
+  border: 3px solid #9aa3d3;
+  color: #fff;
 }
 .imDialog {
   .el-dialog {

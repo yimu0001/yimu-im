@@ -164,7 +164,6 @@ export default {
     }
 
     const { fromUser = {} } = this.message;
-    // <img class='emoji-icon icon-img' src={require('@/assets/images/heart.png')} />
 
     return (
       <div

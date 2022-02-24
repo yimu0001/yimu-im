@@ -4,6 +4,7 @@
     <news
       ref="yimuNews"
       :customMenu="customMenu"
+      :theme="theme"
       :fromSystem="fromSystem"
       @change-menu="handleChangeMenu"
     ></news>
@@ -22,6 +23,7 @@ export default {
       customMenu: [],
       fromSystem: 'cs',
       curMenuName: 'messages',
+      theme: 'light',
     };
   },
   components: {
