@@ -498,7 +498,11 @@ export default {
     },
     // 逐个清空新消息通知框
     closeAllNotice() {
-      this.$Notice.close && this.$Notice.close('noticeMsg');
+      try {
+        this.$Notice.close('noticeMsg');
+      } catch (err) {
+        console.log('closeAllNotice出错', err);
+      }
     },
     clearUnread(isGroup, targetId) {
       const conversationType = isGroup
@@ -1022,19 +1026,21 @@ export default {
     transform: translateX(-62%);
   }
 
-  // .avatar-box {
-  //   position: relative;
-  //   .red-dot {
-  //     position: absolute;
-  //     top: 0px;
-  //     left: 0px;
-  //     width: 10px;
-  //     height: 10px;
-  //     border-radius: 50%;
-  //     overflow: hidden;
-  //     background-color: red;
-  //   }
-  // }
+  .avatar-box {
+    width: 44px;
+    height: 44px;
+    // position: relative;
+    // .red-dot {
+    //   position: absolute;
+    //   top: 0px;
+    //   left: 0px;
+    //   width: 10px;
+    //   height: 10px;
+    //   border-radius: 50%;
+    //   overflow: hidden;
+    //   background-color: red;
+    // }
+  }
   .nickname-box {
     line-height: 21px;
     max-height: 42px;
