@@ -181,11 +181,11 @@ export default {
 
         <el-popover popper-class='reply-emoji-pop' placement='top' width='176' trigger='hover'>
           <div class='emoji-list'>
-            {Object.values(emojiObj).map(({ id, title, icon }) => (
+            {Object.values(emojiObj).map(({ id, title, url }) => (
               <img
                 class='emoji-icon'
                 title={title}
-                src={require(`../../assets/emoji/${icon}.png`)}
+                src={url}
                 onClick={() => {
                   this.onThumbType(id);
                 }}

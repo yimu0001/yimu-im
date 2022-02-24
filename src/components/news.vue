@@ -16,6 +16,7 @@
 
     <el-dialog
       class="imDialog"
+      style="z-index: 2000;"
       :visible.sync="showList"
       :show-close="false"
       :modal="false"
@@ -497,7 +498,7 @@ export default {
     },
     // 逐个清空新消息通知框
     closeAllNotice() {
-      this.$Notice.close('noticeMsg');
+      this.$Notice.close && this.$Notice.close('noticeMsg');
     },
     clearUnread(isGroup, targetId) {
       const conversationType = isGroup
@@ -874,7 +875,7 @@ export default {
               const hasMore = data.hasMore; // 是否还有历史消息可获取
               list[0] && (this.historyDate = list[0].sentTime);
               let otheruser = { id: targetId, displayName, avatar }; // 给单聊用的
-              console.log('融云历史记录', list);
+              // console.log('融云历史记录', list);
               this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
               let msg_uids = list.map(({ messageUId }) => messageUId);
               this.handleChangeConcat(targetId, msg_uids);
@@ -994,6 +995,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import url('../assets/css/common.css');
 .tipDom {
   position: fixed;
   bottom: 50px;
@@ -1020,20 +1022,19 @@ export default {
     transform: translateX(-62%);
   }
 
-  .avatar-box {
-    margin-top: 7px;
-    // position: relative;
-    // .red-dot {
-    //   position: absolute;
-    //   top: 0px;
-    //   left: 0px;
-    //   width: 10px;
-    //   height: 10px;
-    //   border-radius: 50%;
-    //   overflow: hidden;
-    //   background-color: red;
-    // }
-  }
+  // .avatar-box {
+  //   position: relative;
+  //   .red-dot {
+  //     position: absolute;
+  //     top: 0px;
+  //     left: 0px;
+  //     width: 10px;
+  //     height: 10px;
+  //     border-radius: 50%;
+  //     overflow: hidden;
+  //     background-color: red;
+  //   }
+  // }
   .nickname-box {
     line-height: 21px;
     max-height: 42px;

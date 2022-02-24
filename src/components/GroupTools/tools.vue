@@ -221,7 +221,7 @@ export default {
 
 .right-fixed-bar {
   .iconfont {
-    padding: 10px 0;
+    padding: 12px 0;
     width: 100%;
     font-size: 22px;
     text-align: center;

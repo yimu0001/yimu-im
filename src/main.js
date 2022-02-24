@@ -24,7 +24,6 @@ import 'lemon-imui/dist/index.css';
 import './components/style.css';
 import 'element-ui/lib/theme-chalk/index.css';
 
-Vue.use(LemonIMUI);
 Vue.component('Modal', Modal);
 Vue.component('Tag', Tag);
 Vue.component('Row', Row);
@@ -35,6 +34,7 @@ Vue.component('Input', Input);
 Vue.component('Select', Select);
 Vue.component('Option', Option);
 Vue.component('DatePicker', DatePicker);
+Vue.use(LemonIMUI);
 
 Vue.config.productionTip = false;
 Vue.prototype.$Message = Message;

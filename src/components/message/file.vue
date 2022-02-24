@@ -112,7 +112,7 @@ export default {
                         <img
                           class='thumb-icon'
                           title={emojiObj[type].title}
-                          src={require(`../../assets/emoji/${emojiObj[type].icon}.png`)}
+                          src={emojiObj[type].url}
                         />
                       )}
                       <span class='thumb-name'>{name}</span>
