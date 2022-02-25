@@ -7,11 +7,11 @@
     >
       <div class="avatar-box">
         <!-- <div class="red-dot"></div> -->
-        <Avatar :size="44" fit="cover" :src="currentUser.avatar"></Avatar>
+        <Avatar :size="38" fit="cover" :src="currentUser.avatar"></Avatar>
       </div>
-      &nbsp;&nbsp;
-      <!-- <span>我的IM</span> -->
-      <div class="nickname-box over_hide_2">{{ currentUser.nickname || '通讯' }}</div>
+      <div class="nickname-box over_hide_1" :titlr="currentUser.nickname">
+        {{ currentUser.nickname || '通讯' }}
+      </div>
     </div>
 
     <el-dialog
@@ -1003,9 +1003,9 @@ export default {
 .tipDom {
   position: fixed;
   bottom: 50px;
-  right: -79px;
-  height: 55px;
-  width: 120px;
+  right: -82px;
+  height: 46px;
+  width: 116px;
   box-sizing: content-box;
   transition: transform 0.5s;
 
@@ -1023,12 +1023,12 @@ export default {
 
   &:hover {
     // transform: scale(1.1);
-    transform: translateX(-62%);
+    transform: translateX(-66%);
   }
 
   .avatar-box {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
     // position: relative;
     // .red-dot {
     //   position: absolute;
@@ -1042,13 +1042,16 @@ export default {
     // }
   }
   .nickname-box {
-    line-height: 21px;
-    max-height: 42px;
+    padding-left: 6px;
+    width: 78px;
+    line-height: 30px;
+    height: 30px;
+    box-sizing: border-box;
   }
 }
 .deep-color {
-  background-color: #2a3daa;
-  border: 3px solid #9aa3d3;
+  background-color: #2a339b;
+  border: 3px solid #4050a3;
   color: #fff;
 }
 .imDialog {
