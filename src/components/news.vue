@@ -1,13 +1,25 @@
 <template>
   <div>
+    <!-- TODO 新消息来了之后入口处闪烁两下 边框改变颜色 'notice-border', -->
     <div
-      :class="['tipDom', theme === 'deep' ? 'deep-color' : '']"
+      :class="[
+        'tipDom',
+        theme === 'deep' ? 'deep-color' : 'light-color',
+        hasUnread ? 'notice-border animImage' : '',
+      ]"
       v-if="!showList && showComponent"
       @click="openChatDialog"
     >
       <div class="avatar-box">
-        <!-- <div class="red-dot"></div> -->
-        <Avatar :size="38" fit="cover" :src="currentUser.avatar"></Avatar>
+        <!-- <Avatar :size="38" fit="cover" :src="currentUser.avatar"></Avatar> -->
+        <div v-if="hasUnread" class="red-dot"></div>
+        <Avatar
+          v-if="hasUnread"
+          :size="38"
+          fit="cover"
+          :src="require('../assets/light-avatar.png')"
+        ></Avatar>
+        <Avatar v-else :size="38" fit="cover" :src="require('../assets/deep-avatar.png')"></Avatar>
       </div>
       <div class="nickname-box over_hide_1" :titlr="currentUser.nickname">
         {{ currentUser.nickname || '通讯' }}
@@ -24,7 +36,7 @@
       center
       @opened="handleOpenedDialog"
     >
-      <div class="close-line" @click="handleClose">
+      <div class="close-line" @click="handleClose" ref="closeIcon">
         <i class="iconfont icon-guanbi1" title="关闭"></i>
       </div>
       <im-main
@@ -136,6 +148,9 @@ export default {
       conversationObj: {},
       orgUserList: [], // 创建待办 负责人下拉列表
       waitingOpen: false,
+      hasUnread: false,
+      isSharing: false, // 来了新消息 边框颜色闪烁
+      deviceRatio: 0,
     };
   },
   props: {
@@ -199,6 +214,7 @@ export default {
     //   this.deleteConnectMessage(1, '27', 'BUCQ-JP7L-SE84-01I5', 1642399765463);
     //   this.deleteConnect(1, '27');
     // }, 3000);
+
     this.getCurrentChatUser();
     this.im = RongIMLib.init({ appkey: 'cpj2xarlctfmn', connectType: 'comet' });
     this.imWatcher();
@@ -217,6 +233,15 @@ export default {
     // 监听响应
     RongIMLib.addEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
     RongIMLib.addEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
+
+    let that = this;
+    window.onresize = function() {
+      if (that.$refs.closeIcon) {
+        that.resizeDialog(devicePixelRatio);
+      } else {
+        that.deviceRatio = devicePixelRatio;
+      }
+    };
   },
   beforeDestroy() {
     bus.$off('createGroupOk');
@@ -226,8 +251,29 @@ export default {
     const Events = RongIMLib.Events;
     RongIMLib.removeEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
     RongIMLib.removeEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
+
+    window.onresize = null;
   },
   methods: {
+    // close按钮的位置随着屏幕缩放 始终保持在右上角
+    resizeDialog(ratio) {
+      let dom = this.$refs.closeIcon;
+      if (dom) {
+        // 最多支持到200%
+        if (ratio > 1.75) {
+          dom.style.left = '700px';
+          dom.style.right = 'auto';
+        } else if (ratio > 1.25) {
+          dom.style.left = '725px';
+          dom.style.right = 'auto';
+        } else {
+          dom.style.left = 'auto';
+          dom.style.right = '0';
+        }
+
+        this.deviceRatio = 0;
+      }
+    },
     onMessageReceiptResponse({ conversation, messageUId, senderUserId }) {
       // senderUserId 为已查看发送消息用户id
       // {conversationType: 3, targetId: '12', channelId: ''}  BU51-48QJ-9TKC-01H1 {1000053: 1641353350477}
@@ -283,6 +329,7 @@ export default {
       if (this.showComponent) {
         this.showList = true;
         this.closeAllNotice();
+        this.hasUnread = false;
         this.waitingOpen = false;
       } else {
         this.waitingOpen = true;
@@ -424,9 +471,10 @@ export default {
         }
       });
 
-      // 消息体已读回执
       let noticeCount = curContactMsgs.length;
       if (noticeCount > 0) {
+        this.hasUnread = true;
+        // 消息体已读回执
         this.$refs.imMainDom?.calcReadNotice(curContactMsgs, noticeCount);
       }
     },
@@ -437,7 +485,7 @@ export default {
         this.$Message.warning('当前消息不支持该操作');
         return;
       }
-
+      // bug: Cannot read properties of null (reading 'expansion')
       RongIMLib.updateMessageExpansion(expansion, RongMsg).then((res) => {
         cb && cb(res);
         if (res.code === 0 && this.$refs.imMainDom) {
@@ -844,6 +892,13 @@ export default {
         this.$refs.imMainDom.appendMessage(res);
       });
       this.saveMessageList = [];
+
+      setTimeout(() => {
+        this.hasUnread = false;
+        if (this.deviceRatio > 0) {
+          this.resizeDialog(this.deviceRatio);
+        }
+      }, 100);
     },
     handlePullMessages(args) {
       let { id, isGroup, displayName, avatar } = args.contact;
@@ -1012,9 +1067,6 @@ export default {
   padding: 0 7px;
   display: flex;
   align-items: center;
-  background-color: #e2ecf7;
-  border: 3px solid #b2d2f3;
-  color: #333;
   // box-shadow: 0 2px 4px rgba(#0c135f, 0.5);
   border-radius: 55px;
   font-size: 14px;
@@ -1029,17 +1081,17 @@ export default {
   .avatar-box {
     width: 38px;
     height: 38px;
-    // position: relative;
-    // .red-dot {
-    //   position: absolute;
-    //   top: 0px;
-    //   left: 0px;
-    //   width: 10px;
-    //   height: 10px;
-    //   border-radius: 50%;
-    //   overflow: hidden;
-    //   background-color: red;
-    // }
+    position: relative;
+    .red-dot {
+      position: absolute;
+      top: 0px;
+      right: 0px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      overflow: hidden;
+      background-color: red;
+    }
   }
   .nickname-box {
     padding-left: 6px;
@@ -1049,10 +1101,53 @@ export default {
     box-sizing: border-box;
   }
 }
+.light-color {
+  background-color: #e2ecf7;
+  border: 3px solid #b2d2f3;
+  color: #333;
+}
 .deep-color {
   background-color: #2a339b;
-  border: 3px solid #4050a3;
+  // border: 3px solid #4050a3;
+  border: 3px solid #4b7af6;
   color: #fff;
+}
+// 消息闪烁效果
+.animImage {
+  animation-name: imageAnim;
+  animation-duration: 0.5s;
+  animation-iteration-count: 3;
+  animation-direction: alternate;
+  animation-timing-function: ease;
+  animation-play-state: running;
+  /* Safari 和 Chrome */
+  -webkit-animation-name: imageAnim;
+  -webkit-animation-duration: 0.5s;
+  -webkit-animation-iteration-count: 3;
+  -webkit-animation-direction: alternate;
+  -webkit-animation-timing-function: ease;
+  -webkit-animation-play-state: running;
+}
+
+@keyframes imageAnim {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@-webkit-keyframes imageAnim {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.notice-border {
+  border-color: #09a4f9;
 }
 .imDialog {
   .el-dialog {

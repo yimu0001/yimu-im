@@ -25,7 +25,7 @@ export default {
       lastReadTime: null,
       isGroup: false,
       expansionObj: {},
-      hideRead: true,
+      showRead: false,
     };
   },
   inheritAttrs: false,
@@ -78,7 +78,7 @@ export default {
               {!isNoticeMsg && fromUser.id === this.userId && (
                 <div class='left-tool-abs'>
                   <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                  {this.hideRead && <p class='read-num'>{this.readNum}人已读</p>}
+                  {this.showRead && <p class='read-num'>{this.readNum}人已读</p>}
                 </div>
               )}
               <div class='inner-content'>
@@ -221,6 +221,8 @@ export default {
 .thumb-text {
   max-width: 330px;
   text-align: left;
+  display: flex;
+  flex-wrap: wrap;
 }
 .mark-text {
   margin: 3px 0;
@@ -236,7 +238,7 @@ export default {
   }
 }
 .per-thumb {
-  display: inline-block;
+  display: flex;
   margin-right: 3px;
   .thumb-icon {
     padding: 0;

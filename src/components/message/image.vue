@@ -12,7 +12,7 @@ export default {
       lastReadTime: null,
       isGroup: false,
       expansionObj: {},
-      hideRead: true,
+      showRead: false,
     };
   },
   inheritAttrs: false,
@@ -75,10 +75,10 @@ export default {
                     {!isNoticeMsg && (
                       <div class='two-line'>
                         <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                        {this.hideRead && this.isGroup && (
+                        {this.showRead && this.isGroup && (
                           <div class='read-num'>{this.readNum}人已读</div>
                         )}
-                        {this.hideRead && !this.isGroup && this.lastReadTime > sendTime && (
+                        {this.showRead && !this.isGroup && this.lastReadTime > sendTime && (
                           <div class='read-num'>已读</div>
                         )}
                       </div>

@@ -8,7 +8,7 @@
       ></i>
       <i
         :class="['iconfont', 'icon-daibanrenwu_o', currentDrawer === 2 ? 'selected-icon' : '']"
-        title="创建待办"
+        title="待办"
         @click="handleGroupPending"
       ></i>
       <i
