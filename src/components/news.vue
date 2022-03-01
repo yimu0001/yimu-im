@@ -473,10 +473,12 @@ export default {
 
       let noticeCount = curContactMsgs.length;
       if (noticeCount > 0) {
-        this.hasUnread = true;
         // 消息体已读回执
         this.$refs.imMainDom?.calcReadNotice(curContactMsgs, noticeCount);
       }
+
+      // 入口新消息提示
+      this.hasUnread = true;
     },
     setRongExpansion(expansion, message, operate, cb) {
       expansion.target_id = message.toContactId;
