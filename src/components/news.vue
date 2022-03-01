@@ -29,6 +29,7 @@
     <el-dialog
       class="imDialog"
       style="z-index: 2000;"
+      width="951px"
       :visible.sync="showList"
       :show-close="false"
       :modal="false"
@@ -150,7 +151,6 @@ export default {
       waitingOpen: false,
       hasUnread: false,
       isSharing: false, // 来了新消息 边框颜色闪烁
-      deviceRatio: 0,
     };
   },
   props: {
@@ -233,15 +233,6 @@ export default {
     // 监听响应
     RongIMLib.addEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
     RongIMLib.addEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
-
-    let that = this;
-    window.onresize = function() {
-      if (that.$refs.closeIcon) {
-        that.resizeDialog(devicePixelRatio);
-      } else {
-        that.deviceRatio = devicePixelRatio;
-      }
-    };
   },
   beforeDestroy() {
     bus.$off('createGroupOk');
@@ -251,29 +242,8 @@ export default {
     const Events = RongIMLib.Events;
     RongIMLib.removeEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
     RongIMLib.removeEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
-
-    window.onresize = null;
   },
   methods: {
-    // close按钮的位置随着屏幕缩放 始终保持在右上角
-    resizeDialog(ratio) {
-      let dom = this.$refs.closeIcon;
-      if (dom) {
-        // 最多支持到200%
-        if (ratio > 1.75) {
-          dom.style.left = '700px';
-          dom.style.right = 'auto';
-        } else if (ratio > 1.25) {
-          dom.style.left = '725px';
-          dom.style.right = 'auto';
-        } else {
-          dom.style.left = 'auto';
-          dom.style.right = '0';
-        }
-
-        this.deviceRatio = 0;
-      }
-    },
     onMessageReceiptResponse({ conversation, messageUId, senderUserId }) {
       // senderUserId 为已查看发送消息用户id
       // {conversationType: 3, targetId: '12', channelId: ''}  BU51-48QJ-9TKC-01H1 {1000053: 1641353350477}
@@ -548,10 +518,12 @@ export default {
     },
     // 逐个清空新消息通知框
     closeAllNotice() {
-      try {
-        this.$Notice.close('noticeMsg');
-      } catch (err) {
-        console.log('closeAllNotice出错', err);
+      if (this.$Notice) {
+        try {
+          this.$Notice.close('noticeMsg');
+        } catch (err) {
+          console.log('closeAllNotice出错', err);
+        }
       }
     },
     clearUnread(isGroup, targetId) {
@@ -894,13 +866,7 @@ export default {
         this.$refs.imMainDom.appendMessage(res);
       });
       this.saveMessageList = [];
-
-      setTimeout(() => {
-        this.hasUnread = false;
-        if (this.deviceRatio > 0) {
-          this.resizeDialog(this.deviceRatio);
-        }
-      }, 100);
+      this.hasUnread = false;
     },
     handlePullMessages(args) {
       let { id, isGroup, displayName, avatar } = args.contact;
