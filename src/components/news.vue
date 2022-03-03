@@ -1022,7 +1022,6 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import url('../assets/css/common.css');
 .tipDom {
   position: fixed;
   bottom: 50px;
