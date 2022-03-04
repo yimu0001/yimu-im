@@ -1,3 +1,12 @@
+<!--
+ * @文件描述: 主文件
+ * @待优化: 弹窗拖拽 已读未读
+ * @公司: 广电信通
+ * @作者: 赵婷婷
+ * @Date: 2022-02-24 15:29:01
+ * @LastEditors: 赵婷婷
+ * @LastEditTime: 2022-03-04 09:40:19
+-->
 <template>
   <div>
     <!-- TODO 新消息来了之后入口处闪烁两下 边框改变颜色 'notice-border', -->
@@ -151,6 +160,8 @@ export default {
       waitingOpen: false,
       hasUnread: false,
       isSharing: false, // 来了新消息 边框颜色闪烁
+      readStatusObj: {},
+      readStatusTime: '',
     };
   },
   props: {
@@ -249,48 +260,53 @@ export default {
       // {conversationType: 3, targetId: '12', channelId: ''}  BU51-48QJ-9TKC-01H1 {1000053: 1641353350477}
       if (CalcTargetId(this.contactId) === conversation.targetId) {
         console.log('群聊已读回执', conversation, messageUId, senderUserId);
-        this.$refs.imMainDom.updateReadState(messageUId, senderUserId);
-      } else {
-        // 后端自己存起来 更新已读的参数
+        // this.$refs.imMainDom.updateReadState(messageUId, senderUserId);
       }
+      // 如果非当前对话 后端自己存起来 更新已读的参数
     },
     onReadReceiptReceived({ conversation, messageUId, sentTime }) {
       // {conversationType: 1, targetId: '1000053', channelId: ''}  undefined 1641350108871
       if (this.contactId === conversation.targetId) {
         console.log('单聊已读回执', conversation, messageUId, sentTime);
-        this.$refs.imMainDom.updateReadState(messageUId, null, sentTime);
-      } else {
-        // 后端自己存起来 更新已读的参数
-        // 每次切换会话框的时候 this.$refs.IMUI.getCurrentMessages 返回当前聊天窗口的所有消息 用来调接口获取已读人数
+        // this.$refs.imMainDom.updateReadState(messageUId, null, sentTime);
       }
     },
-
+    // api获取消息已读人数
     handleChangeConcat(id, msg_uids) {
-      // TODO api获取消息已读人数 当前用户是sendUserId
+      if (this.contactId !== CalcTargetId(id)) {
+        this.readStatusObj = {};
+        this.readStatusTime = '';
+      }
+
       this.contactId = CalcTargetId(id);
-      // console.log('api获取消息已读', this.contactId, msg_uids);
-      // TODO 接口500
-      return;
+      console.log('api获取消息已读情况', this.contactId, msg_uids);
 
       if (Number(this.contactId) <= 0) {
         console.log('系统消息没有已读数量');
         return;
       }
-
+      // return;
       if (msg_uids) {
-        checkGroupReadStatus(this.contactId, msg_uids).then((res) => {
-          console.log('群聊已读人数', res);
-          if (res.status === 200) {
-            // const { list } = res.data.data;
-            // bus.$emit('setGroupReadStatus', list);
-          }
-        });
+        if (msg_uids.length > 0) {
+          // TODO 接口空
+          checkGroupReadStatus(this.contactId, msg_uids).then((res) => {
+            console.log('群聊已读人数', res);
+            if (res.status === 200) {
+              // const { list } = res.data.data;
+              // this.readStatusObj = this.readStatusObj.concat(list);
+              // bus.$emit('setGroupReadStatus', list);
+            }
+          });
+        } else {
+          console.log('群聊里面-暂时没消息');
+        }
       } else {
         checkSingleReadStatus(this.contactId).then((res) => {
-          console.log('单聊已读人数', res);
+          console.log('单聊已读时间', res);
           if (res.status === 200) {
             const { last_message_send_time } = res.data.data;
-            bus.$emit('setSingleReadStatus', last_message_send_time);
+            this.readStatusTime = last_message_send_time;
+            bus.$emit('setSingleReadStatus', this.readStatusTime);
           }
         });
       }
@@ -901,11 +917,17 @@ export default {
               const list = data.list; // 获取到的消息列表
               const hasMore = data.hasMore; // 是否还有历史消息可获取
               list[0] && (this.historyDate = list[0].sentTime);
-              let otheruser = { id: targetId, displayName, avatar }; // 给单聊用的
-              // console.log('融云历史记录', list);
-              this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
-              let msg_uids = list.map(({ messageUId }) => messageUId);
+
+              let msg_uids = isGroup
+                ? data.list
+                    .filter(({ senderUserId }) => Number(senderUserId) > 0)
+                    .map(({ messageUId }) => messageUId)
+                : null;
               this.handleChangeConcat(targetId, msg_uids);
+
+              let otheruser = { id: targetId, displayName, avatar }; // 给单聊用的
+              console.log('融云历史记录', list);
+              this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
             } else {
               args.next([], true);
               this.$Message.error('获取聊天记录失败，请刷新重试');

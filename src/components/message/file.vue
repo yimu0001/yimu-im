@@ -34,9 +34,10 @@ export default {
     this.userId = sessionStorage.getItem('current_userId');
     this.isGroup = this.$attrs.message.conversationType === 3;
 
-    bus.$on('updateReadNum', (readList, targetId) => {
+    bus.$on('updateReadNum', (targetId, readUserId, sentTime) => {
       if (this.$attrs.message.toContactId === targetId) {
-        this.readNum = readList ? Object.keys(readList).length : 0;
+        readUserId && this.readList.push(readUserId);
+        sentTime && (this.lastReadTime = sentTime);
       }
     });
     bus.$on('setSingleReadStatus', (lastTime) => {
@@ -54,7 +55,7 @@ export default {
     bus.$off('setComplexExpand');
   },
   render() {
-    const { fromUser } = this.$attrs.message;
+    const { fromUser, sendTime } = this.$attrs.message;
     this.expansionObj = this.$attrs.message.expansion;
     const isNoticeMsg = Number(fromUser.id) < 0;
 
@@ -78,7 +79,14 @@ export default {
               {!isNoticeMsg && fromUser.id === this.userId && (
                 <div class='left-tool-abs'>
                   <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                  {this.showRead && <p class='read-num'>{this.readNum}人已读</p>}
+                  {this.isGroup && (
+                    <div class='read-num'>{this.readList ? this.readList.length : '0'}人已读</div>
+                  )}
+                  {!this.isGroup && (
+                    <div class='read-num'>
+                      {parseInt(this.lastReadTime) > parseInt(sendTime) ? '已读' : '未读'}
+                    </div>
+                  )}
                 </div>
               )}
               <div class='inner-content'>

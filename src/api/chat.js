@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-22 16:12:19
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-01-24 17:51:30
+ * @LastEditTime: 2022-03-03 18:01:05
  */
 import { BaseUrl, CustomUrl, PAGE_SIZE, BIG_PAGE_SIZE } from './constant';
 import commonAxios from 'ym-bridge-shandianyun';
@@ -126,7 +126,7 @@ export const checkGroupReadStatus = (groupId, msg_uids) => {
   return commonAxios.request({
     url: BaseUrl + '/message-read-status/group/' + groupId,
     method: 'get',
-    params: { msg_uids },
+    params: { msg_uids: msg_uids.join() }, // JSON.stringify(msg_uids)
     // params: qs.stringify({ msg_uids }),
   });
 };

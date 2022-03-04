@@ -516,7 +516,9 @@ export default {
     handleChangeContact(contact, instance) {
       this.closeRightDrawer();
 
-      // console.log('Event:change-contact', contact);
+      // 防止每次调取过多的消息已读情况 每次重新获取融云接口
+      this.$refs.IMUI.clearMessages(this.targetUser.id);
+      console.log('Event:change-contact', contact);
       // contact.unread: 3   id: "group_12"
       // this.mailKeyword && this.changeIMContact(contact);
       this.targetUser = contact;
@@ -538,12 +540,11 @@ export default {
       }
 
       const nowList = this.$refs.IMUI.getCurrentMessages();
-      let ids = nowList.map(({ id }) => id);
+      let ids = nowList.filter(({ senderUserId }) => Number(senderUserId) > 0).map(({ id }) => id);
       this.$emit('notice-change-contact', contact.id, contact.isGroup ? ids : null);
     },
-    // 单聊/群聊已读回执 计算时效2min
+    // 单聊/群聊已读回执 无时效
     calcReadNotice(list, unreadCount) {
-      let earlyTime = new Date().getTime() - 2 * 60 * 1000;
       let newMsgs = reverseArray(list);
 
       if (this.targetUser.isGroup) {
@@ -559,9 +560,7 @@ export default {
         this.noticeCount = 0;
       } else {
         const { id: msgId, sendTime } = newMsgs[0];
-        if (sendTime > earlyTime) {
-          this.$emit('notice-single-sender', this.targetUser.id, msgId, sendTime);
-        }
+        this.$emit('notice-single-sender', this.targetUser.id, msgId, sendTime);
         this.noticeCount = 0;
       }
     },
@@ -640,7 +639,7 @@ export default {
         return messageItem;
       });
 
-      // console.log('处理后历史记录', messages);
+      console.log('处理后历史记录', messages);
       if (this.noticeCount > 0) {
         // 通知
         this.calcReadNotice(messages, this.noticeCount);
@@ -721,9 +720,8 @@ export default {
         IMUI.updateMessage(updateMsg);
       }
     },
-    // 测试已读
+    // 测试已读 没必要？？
     updateReadState(messageUId, readUserId, sentTime) {
-      return;
       const { IMUI } = this.$refs;
       const messages = IMUI.getCurrentMessages();
       console.log('updateReadState', messages, messageUId, readUserId, sentTime);
