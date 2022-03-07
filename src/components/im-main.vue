@@ -442,36 +442,25 @@ export default {
       IMUI.initMenus(menus);
 
       IMUI.initEditorTools([
+        // {
+        //   name: 'emoji',
+        // },
         {
           name: 'uploadFile',
         },
         {
           name: 'uploadImage',
         },
-        {
-          name: 'test1',
-          click: () => {
-            IMUI.$refs.editor.selectFile('application/vnd.ms-excel');
-          },
-          render: () => {
-            return <span>Excel</span>;
-          },
-        },
+        // {
+        //   name: 'test1',
+        //   click: () => {
+        //     IMUI.$refs.editor.selectFile('application/vnd.ms-excel');
+        //   },
+        //   render: () => {
+        //     return <span>Excel</span>;
+        //   },
+        // },
       ]);
-
-      // // IMUI.initEmoji(EmojiData);
-      // IMUI.setLastContentRender('text', (message) => {
-      //   return <span>{message.content}</span>;
-      // });
-      // IMUI.setLastContentRender('image', (message) => {
-      //   return <span>[图片]</span>;
-      // });
-      // IMUI.setLastContentRender('event', (message) => {
-      //   return message.content;
-      // });
-      // IMUI.setLastContentRender('file', (message) => {
-      //   return <span>[文件]</span>;
-      // });
     },
     closeRightDrawer() {
       if (this.drawerVisibleShow) {
@@ -828,14 +817,19 @@ export default {
 
       return true;
     },
-    handleSend(message, next, file) {
+    calcUserInfo() {
+      const { id, nickname, avatar } = this.currentUser;
       let user = {
-        id: this.currentUser.id,
-        name: this.currentUser.nickname,
-        portrait: this.currentUser.avatar,
-        portraitUri: this.currentUser.avatar,
+        id,
+        name: nickname,
+        portrait: avatar,
+        portraitUri: avatar,
       };
 
+      return user;
+    },
+    handleSend(message, next, file) {
+      let user = this.calcUserInfo();
       // 文字的最前或者最后有换行就去掉
       message.content = message.content.replace(/^\s+|\s+$/g, '');
 
