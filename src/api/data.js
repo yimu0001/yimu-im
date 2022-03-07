@@ -27,7 +27,7 @@ export const getTargetInfoById = (ids) => {
   });
 };
 
-//通过机构id获取用户
+// 通过机构id获取用户
 export const getUserByOrgid = (orgid) => {
   return commonAxios.request({
     url: BaseUrl + '/org/' + orgid + '/users',
@@ -35,7 +35,23 @@ export const getUserByOrgid = (orgid) => {
   });
 };
 
-//通过机构id获取用户
+/**
+ * @功能描述: 我参与的群聊
+ * @参数: page  per_page目前没加分页 写死  name 可筛选群名称
+ * @返回值:
+ */
+export const getMyGroupList = () => {
+  return commonAxios.request({
+    url: BaseUrl + '/group/self-join',
+    method: 'get',
+    params: {
+      page: '1',
+      per_page: '1000',
+    },
+  });
+};
+
+// 获取机构
 export const getOrgList = () => {
   return commonAxios.request({
     url: BaseUrl + '/orgs',

@@ -156,7 +156,10 @@ export default {
                     {markNames}已标记了该消息，群内所有成员可见
                   </div>
                 )}
-                <div class='thumb-text' style={fromUser.id === this.userId && 'text-align:right'}>
+                <div
+                  class='thumb-text'
+                  style={fromUser.id === this.userId && 'justify-content: flex-end;'}
+                >
                   {thumbList &&
                     thumbList.map(({ name, type }) => (
                       <div class='per-thumb'>

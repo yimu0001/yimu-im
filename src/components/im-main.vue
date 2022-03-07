@@ -27,11 +27,10 @@
       </template>
       <!-- 消息筛选 添加群组 -->
       <template #sidebar-message-fixedtop>
-        <!-- TODO 改为人员群组筛选 js控制切换菜单menu -->
         <div class="search-line">
           <Input
             class="search-inp"
-            placeholder="请输入"
+            placeholder="请输入姓名或群名称"
             search
             clearable
             @on-focus="handleSearchClick"
@@ -46,7 +45,7 @@
             ref="userSearchRef"
             class="search-inp"
             v-model="mailKeyword"
-            placeholder="请输入"
+            placeholder="请输入姓名或群名称"
             search
             clearable
           />
@@ -144,10 +143,6 @@ import { reverseArray } from '@/libs/tools';
 export default {
   name: 'imMain',
   props: {
-    messageList: {
-      type: Array,
-      default: () => [],
-    },
     currentUser: {
       type: Object,
       default: () => {},
@@ -237,24 +232,28 @@ export default {
               id: contact.id,
               lastContent: null,
             });
-            if (IMUI.currentContactId == contact.id) IMUI.changeContact(null);
+            if (IMUI.currentContactId == contact.id) {
+              IMUI.changeContact(null);
+            }
+            this.$emit('delete-contact', contact.isGroup ? 3 : 1, contact.id);
+            console.log('删除该聊天', contact);
             hide();
           },
         },
-        {
-          text: '设置备注和标签',
-        },
+        // {
+        //   text: '设置备注和标签',
+        // },
 
-        {
-          click(e, instance, hide) {
-            const { IMUI, contact } = instance;
-            IMUI.removeContact(contact.id);
-            if (IMUI.currentContactId == contact.id) IMUI.changeContact(null);
-            hide();
-          },
-          color: 'red',
-          text: '删除好友',
-        },
+        // {
+        //   click(e, instance, hide) {
+        //     const { IMUI, contact } = instance;
+        //     IMUI.removeContact(contact.id);
+        //     if (IMUI.currentContactId == contact.id) IMUI.changeContact(null);
+        //     hide();
+        //   },
+        //   color: 'red',
+        //   text: '删除好友',
+        // },
       ],
       theme: 'default',
       hideMenuAvatar: false,
@@ -267,7 +266,6 @@ export default {
         orgid: this.currentUser.orgid || '',
         avatar: this.currentUser.avatar,
       },
-      show_message_list: this.messageList,
       targetUser: {},
       //右侧抽屉
       drawerVisibleShow: false,
@@ -286,6 +284,7 @@ export default {
       directorList: [],
       pendGroupId: '',
       noticeCount: 0, // 当前会话内的最新n条消息 通知发送方已读
+      accepts: ['doc', 'docx', 'pdf', 'jpg', 'png'], // 允许上传的文件格式
     };
   },
   watch: {
@@ -297,10 +296,6 @@ export default {
         avatar: this.currentUser.avatar,
       };
     },
-    messageList(newValue, oldValue) {
-      this.show_message_list = newValue;
-      this.getCurrentOrgUsers();
-    },
     menuList: {
       handler(list) {
         if (list && list.length > 0) {
@@ -309,23 +304,24 @@ export default {
           });
         }
       },
-      // immediate: true,
     },
     mailKeyword(key) {
       const { IMUI } = this.$refs;
       let currentOrgUsers = this.currentOrgUsers;
-      if (!key) {
-        IMUI.initContacts(this.currentOrgUsers);
-        return;
-      }
 
-      let newUsers = currentOrgUsers.filter((item) => item.displayName.includes(key));
-      IMUI.initContacts(newUsers);
+      if (!key) {
+        IMUI.initContacts(currentOrgUsers);
+      } else {
+        let newUsers = currentOrgUsers.filter((item) => item.displayName.includes(key));
+        IMUI.initContacts(newUsers);
+      }
     },
   },
   mounted() {
-    this.getCurrentOrgUsers();
+    this.setCurrentOrgUsers();
+    this.handleRender();
     this.handleMenu();
+
     bus.$on('reply', (data) => {
       this.replyObj = data;
     });
@@ -373,8 +369,25 @@ export default {
     handleCreateGroup() {
       this.createPop = true;
     },
+    // 处理会话列表消息渲染
+    handleRender() {
+      const { IMUI } = this.$refs;
+      // IMUI.initEmoji(EmojiData);
+      IMUI.setLastContentRender('text', (message) => {
+        return <span>{message.content}</span>;
+      });
+      IMUI.setLastContentRender('image', (message) => {
+        return <span>[图片]</span>;
+      });
+      IMUI.setLastContentRender('event', (message) => {
+        return message.content;
+      });
+      IMUI.setLastContentRender('file', (message) => {
+        return <span>[文件]</span>;
+      });
+    },
+    //处理菜单
     handleMenu() {
-      //处理菜单
       const { IMUI } = this.$refs;
       let menus = [];
       this.menuList.forEach((menuItem, menuIndex) => {
@@ -445,19 +458,20 @@ export default {
           },
         },
       ]);
-      // IMUI.initEmoji(EmojiData);
-      IMUI.setLastContentRender('text', (message) => {
-        return <span>{message.content}</span>;
-      });
-      IMUI.setLastContentRender('image', (message) => {
-        return <span>[图片]</span>;
-      });
-      IMUI.setLastContentRender('event', (message) => {
-        return message.content;
-      });
-      IMUI.setLastContentRender('file', (message) => {
-        return <span>[文件]</span>;
-      });
+
+      // // IMUI.initEmoji(EmojiData);
+      // IMUI.setLastContentRender('text', (message) => {
+      //   return <span>{message.content}</span>;
+      // });
+      // IMUI.setLastContentRender('image', (message) => {
+      //   return <span>[图片]</span>;
+      // });
+      // IMUI.setLastContentRender('event', (message) => {
+      //   return message.content;
+      // });
+      // IMUI.setLastContentRender('file', (message) => {
+      //   return <span>[文件]</span>;
+      // });
     },
     closeRightDrawer() {
       if (this.drawerVisibleShow) {
@@ -504,7 +518,6 @@ export default {
 
       // console.log('Event:change-menu', menuName);
       if (menuName === 'messages') {
-        // this.$emit('changeMenuMessage')
         this.$refs.IMUI.initContacts(this.currentOrgUsers);
       } else if (this.mailKeyword && menuName === 'contacts') {
         let filterUsers = this.currentOrgUsers.filter((item) =>
@@ -806,6 +819,17 @@ export default {
       };
       next(message);
     },
+    checkFileAccept(name) {
+      let arr = name.split('.');
+      let suffix = arr[arr.length - 1];
+
+      if (!this.accepts.includes(suffix)) {
+        this.$Message.warning('请上传jpg，png，doc，docx，pdf格式文件！');
+        return false;
+      }
+
+      return true;
+    },
     handleSend(message, next, file) {
       let user = {
         id: this.currentUser.id,
@@ -856,6 +880,12 @@ export default {
 
           break;
         case 'image':
+          // jpg png
+          if (!this.checkFileAccept(file.name)) {
+            this.$refs.IMUI.removeMessage(message.id);
+            return;
+          }
+
           uploadFile(file)
             .then((res) => {
               // 还有图片现在上传结束消息那展示的是blob类型的数据，为了方便回复，建议直接加一个修改该条消息内容改成url/
@@ -877,7 +907,13 @@ export default {
             });
           break;
         case 'file':
+          // doc docx pdf
           let { name, size, type } = file;
+          if (!this.checkFileAccept(name)) {
+            this.$refs.IMUI.removeMessage(message.id);
+            return;
+          }
+
           uploadFile(file)
             .then((res) => {
               if (res.status === 200) {
@@ -919,13 +955,13 @@ export default {
     appendMessage(data) {
       this.$refs.IMUI.appendMessage(data);
     },
-    // 获取当前机构用户
-    getCurrentOrgUsers() {
+    // 设置当前机构通讯录及会话列表
+    setCurrentOrgUsers() {
       let IMUI = this.$refs.IMUI;
       let currentOrgUsers = this.currentOrgUsers;
 
       currentOrgUsers.forEach((item) => {
-        if (item.lastContent) {
+        if (item.lastContent && item.lastSendTime) {
           item.lastContent = IMUI.lastContentRender(item.lastContent);
         }
       });

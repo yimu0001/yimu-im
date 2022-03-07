@@ -104,7 +104,10 @@ export default {
                 </div>
               )}
 
-              <div class='thumb-text' style={fromUser.id === this.userId && 'text-align:right'}>
+              <div
+                class='thumb-text'
+                style={fromUser.id === this.userId && 'justify-content: flex-end;'}
+              >
                 {thumbList &&
                   thumbList.map(({ name, type }) => (
                     <div class='per-thumb'>

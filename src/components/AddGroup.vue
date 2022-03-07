@@ -147,11 +147,14 @@ export default {
       let userIds = this.selecedUser.map((user) => {
         return Number(user.id);
       });
+      let timeDelay = 1500;
       createGroup(this.groupName, userIds)
         .then((res) => {
           if (res.status === 200) {
-            this.$Message.success('创建成功！');
-            Bus.$emit('createGroupOk', res.data.data.id);
+            setTimeout(() => {
+              this.$Message.success('创建成功！');
+              Bus.$emit('createGroupOk', res.data.data.id);
+            }, timeDelay);
           } else {
             this.$Message.error(res.data.msg);
           }
@@ -160,7 +163,9 @@ export default {
           console.log(err);
         })
         .finally(() => {
-          this.createLoading = false;
+          setTimeout(() => {
+            this.createLoading = false;
+          }, timeDelay);
         });
     },
   },
