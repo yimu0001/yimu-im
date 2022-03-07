@@ -43,6 +43,7 @@ export default {
       this.lastReadTime = lastTime;
     });
     bus.$on('setGroupReadStatus', (list) => {
+      // 这一条消息的已读人员id列表
       this.readList = list[this.$attrs.message.id] || [];
     });
 
@@ -108,13 +109,15 @@ export default {
                   {!isNoticeMsg && fromUser.id === this.userId && (
                     <div class='abs-left-pos'>
                       <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                      {this.showRead && this.isGroup && (
+                      {this.isGroup && (
                         <div class='read-num'>
                           {this.readList ? this.readList.length : '0'}人已读
                         </div>
                       )}
-                      {this.showRead && !this.isGroup && this.lastReadTime > sendTime && (
-                        <div class='read-num'>已读</div>
+                      {!this.isGroup && (
+                        <div class='read-num'>
+                          {parseInt(this.lastReadTime) > parseInt(sendTime) ? '已读' : '未读'}
+                        </div>
                       )}
                     </div>
                   )}

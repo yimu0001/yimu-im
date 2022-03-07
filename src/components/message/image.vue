@@ -22,9 +22,10 @@ export default {
     this.userId = sessionStorage.getItem('current_userId');
     this.isGroup = this.$attrs.message.conversationType === 3;
 
-    bus.$on('updateReadNum', (readList, targetId) => {
+    bus.$on('updateReadNum', (targetId, readUserId, sentTime) => {
       if (this.$attrs.message.toContactId === targetId) {
-        this.readNum = readList ? Object.keys(readList).length : 0;
+        readUserId && this.readList.push(readUserId);
+        sentTime && (this.lastReadTime = sentTime);
       }
     });
     bus.$on('setSingleReadStatus', (lastTime) => {
@@ -75,11 +76,15 @@ export default {
                     {!isNoticeMsg && (
                       <div class='two-line'>
                         <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                        {this.showRead && this.isGroup && (
-                          <div class='read-num'>{this.readNum}人已读</div>
+                        {this.isGroup && (
+                          <div class='read-num'>
+                            {this.readList ? this.readList.length : '0'}人已读
+                          </div>
                         )}
-                        {this.showRead && !this.isGroup && this.lastReadTime > sendTime && (
-                          <div class='read-num'>已读</div>
+                        {!this.isGroup && (
+                          <div class='read-num'>
+                            {parseInt(this.lastReadTime) > parseInt(sendTime) ? '已读' : '未读'}
+                          </div>
                         )}
                       </div>
                     )}
