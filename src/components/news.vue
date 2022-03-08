@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-07 17:00:08
+ * @LastEditTime: 2022-03-08 11:00:26
 -->
 <template>
   <div>
@@ -92,7 +92,6 @@ import * as RongIMLib from '@rongcloud/imlib-next';
 import {
   registerUser,
   getCurrentUser,
-  getTargetInfoById,
   groupInfos,
   getUserByOrgid,
   getMyGroupList,
@@ -244,16 +243,27 @@ export default {
     bus.$off('afterQuitGroup');
 
     const Events = RongIMLib.Events;
+    RongIMLib.removeEventListener(Events.MESSAGE_RECEIPT_REQUEST, this.onMessageReceiptRequest);
     RongIMLib.removeEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
     RongIMLib.removeEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
   },
   methods: {
-    onMessageReceiptResponse({ conversation, messageUId, senderUserId }) {
+    // 消息回执请求监听
+    onMessageReceiptRequest({ conversation, messageUId, senderUserId }) {
       // senderUserId 为已查看发送消息用户id
       // {conversationType: 3, targetId: '12', channelId: ''}  BU51-48QJ-9TKC-01H1 {1000053: 1641353350477}
       if (CalcTargetId(this.contactId) === conversation.targetId) {
-        console.log('群聊已读回执', conversation, messageUId, senderUserId);
-        // this.$refs.imMainDom.updateReadState(messageUId, senderUserId);
+        console.log('已读回执请求', conversation, messageUId, senderUserId);
+      }
+    },
+    // 消息回执响应监听
+    onMessageReceiptResponse({ conversation, receivedUserId, messageUIdList }) {
+      // receivedUserId 为消息接收者
+      // {conversationType: 3, targetId: '45', channelId: ''} 4575 ['BVCT-OET5-K84C-01K1']
+      if (CalcTargetId(this.contactId) === conversation.targetId) {
+        console.log('已读回执响应', conversation, receivedUserId, messageUIdList);
+
+        bus.$emit('updateReadNum', 'group', { messageUIdList, receivedUserId });
       }
       // 如果非当前对话 后端自己存起来 更新已读的参数
     },
@@ -261,7 +271,8 @@ export default {
       // {conversationType: 1, targetId: '1000053', channelId: ''}  undefined 1641350108871
       if (this.contactId === conversation.targetId) {
         console.log('单聊已读回执', conversation, messageUId, sentTime);
-        // this.$refs.imMainDom.updateReadState(messageUId, null, sentTime);
+
+        bus.$emit('updateReadNum', 'single', { messageUId, sentTime });
       }
     },
     // api获取消息已读人数
@@ -281,13 +292,17 @@ export default {
       // return;
       if (msg_uids) {
         if (msg_uids.length > 0) {
-          // TODO 接口空
           checkGroupReadStatus(this.contactId, msg_uids).then((res) => {
-            console.log('群聊已读人数', res);
             if (res.status === 200) {
-              // const { list } = res.data.data;
-              // this.readStatusObj = this.readStatusObj.concat(list);
-              // bus.$emit('setGroupReadStatus', list);
+              const list = res.data.data;
+              // {msg_uid: 'BUR1-1Q5F-C14C-01J0', user_ids: Array(6)}
+              list.forEach(({ msg_uid, user_ids }) => {
+                this.readStatusObj[msg_uid] = user_ids;
+              });
+
+              this.$nextTick(() => {
+                bus.$emit('setGroupReadStatus', this.readStatusObj);
+              });
             }
           });
         } else {
@@ -295,7 +310,6 @@ export default {
         }
       } else {
         checkSingleReadStatus(this.contactId).then((res) => {
-          console.log('单聊已读时间', res);
           if (res.status === 200) {
             const { last_message_send_time } = res.data.data;
             this.readStatusTime = last_message_send_time;
@@ -495,7 +509,7 @@ export default {
       this.contactId = CalcTargetId(targetId);
       this.clearUnread(true, this.contactId);
 
-      console.log('群聊-发送响应回执', this.contactId, this.currentUser.id, msgIds);
+      console.log('群聊-发送响应回执', this.contactId, { [this.currentUser.id]: msgIds });
       this.currentUser.id &&
         RongIMLib.sendReadReceiptResponseV2(this.contactId, { [this.currentUser.id]: msgIds })
           .then((res) => {
@@ -831,7 +845,12 @@ export default {
             RongIMLib.sendReadReceiptRequest(conversation.targetId, data.messageUId)
               .then((res) => {
                 if (res.code === 0) {
-                  console.log('群聊-发起已读回执请求成功', res.code, res.data);
+                  console.log(
+                    '群聊-发起已读回执请求成功',
+                    conversation.targetId,
+                    data.messageUId,
+                    res
+                  );
                 } else {
                   console.log('群聊-发起已读回执请求失败', res.code, res.msg);
                 }
@@ -902,7 +921,7 @@ export default {
             }
           })
           .catch((error) => {
-            console.log('获取聊天记录失败', error.code, error.msg);
+            console.log('获取聊天记录失败', error, error.msg);
           });
     },
     // 从聊天界面点击关闭会话

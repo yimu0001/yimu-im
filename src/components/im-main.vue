@@ -518,7 +518,7 @@ export default {
     handleChangeContact(contact, instance) {
       this.closeRightDrawer();
 
-      // 防止每次调取过多的消息已读情况 每次重新获取融云接口
+      // 已读相关：防止每次调取过多的消息已读情况 每次重新获取融云接口
       this.$refs.IMUI.clearMessages(this.targetUser.id);
       console.log('Event:change-contact', contact);
       // contact.unread: 3   id: "group_12"
@@ -552,7 +552,7 @@ export default {
       if (this.targetUser.isGroup) {
         let msgIds = [];
         newMsgs.forEach((item, index) => {
-          if (index < unreadCount && item.sendTime > earlyTime) {
+          if (index < unreadCount) {
             msgIds.push(item.id);
           }
         });
@@ -720,27 +720,6 @@ export default {
         };
 
         IMUI.updateMessage(updateMsg);
-      }
-    },
-    // 测试已读 没必要？？
-    updateReadState(messageUId, readUserId, sentTime) {
-      const { IMUI } = this.$refs;
-      const messages = IMUI.getCurrentMessages();
-      console.log('updateReadState', messages, messageUId, readUserId, sentTime);
-      // 群聊
-      if (readUserId) {
-        let msg = messages.filter(({ id }) => id === messageUId);
-        !msg.readList && (msg.readList = []);
-        msg.readList.push(readUserId);
-        IMUI.updateMessage(msg);
-        // bus.$emit('updateReadNum', msg.toContactId, readUserId, sentTime);
-      } else {
-        // 单聊
-        messages.forEach((msg) => {
-          msg.lastReadTime = sentTime;
-          IMUI.updateMessage(msg);
-          // bus.$emit('updateReadNum', msg.toContactId, readUserId, sentTime);
-        });
       }
     },
     // 发完消息之后 处理成lemon格式 传回lemon send方法回调

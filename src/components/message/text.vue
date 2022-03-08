@@ -32,11 +32,28 @@ export default {
   mounted() {
     this.userId = sessionStorage.getItem('current_userId');
     this.isGroup = this.$attrs.message.conversationType === 3;
+    // 新消息发出去之后 isGroup不正确
+    if (!this.$attrs.message.conversationType) {
+      setTimeout(() => {
+        this.isGroup = this.$attrs.message.conversationType === 3;
+      }, 500);
+    }
 
-    bus.$on('updateReadNum', (targetId, readUserId, sentTime) => {
-      if (this.$attrs.message.toContactId === targetId) {
-        readUserId && this.readList.push(readUserId);
-        sentTime && (this.lastReadTime = sentTime);
+    bus.$on('updateReadNum', (type, params) => {
+      if (type === 'single') {
+        const { messageUId, sentTime } = params;
+        if (this.$attrs.message.messageUId === messageUId && sentTime) {
+          this.lastReadTime = sentTime;
+        }
+      } else if (type === 'group') {
+        const { messageUIdList, receivedUserId } = params;
+        if (
+          messageUIdList.includes(this.$attrs.message.messageUId) &&
+          receivedUserId &&
+          !this.readList.includes(receivedUserId)
+        ) {
+          this.$set(this.readList, this.readList.length, receivedUserId);
+        }
       }
     });
     bus.$on('setSingleReadStatus', (lastTime) => {
