@@ -12,6 +12,9 @@ import {
   Option,
   DatePicker,
   Message,
+  Switch,
+  RadioGroup,
+  Radio,
 } from 'view-design';
 import 'view-design/dist/styles/iview.css';
 
@@ -34,13 +37,16 @@ Vue.component('Input', Input);
 Vue.component('Select', Select);
 Vue.component('Option', Option);
 Vue.component('DatePicker', DatePicker);
+Vue.component('i-switch', Switch);
+Vue.component('RadioGroup', RadioGroup);
+Vue.component('Radio', Radio);
 Vue.use(LemonIMUI);
 
 Vue.config.productionTip = false;
 Vue.prototype.$Message = Message;
 Vue.prototype.$Notice = Notice;
 // 利用插值表达式调用
-Vue.filter('dateformat', function(date, pattern = 'YYYY-MM-DD HH:mm:ss') {
+Vue.filter('dateformat', function (date, pattern = 'YYYY-MM-DD HH:mm:ss') {
   if (!date) return '';
 
   return moment(date * 1000).format(pattern);

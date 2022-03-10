@@ -89,15 +89,6 @@ export default {
           iconClass: 'iconfont icon-paixingbang',
           component: testComponent,
         },
-        {
-          name: 'manage',
-          isBottom: false,
-          title: '管理',
-          unread: 0,
-          key: 'manage',
-          iconClass: 'iconfont icon-shezhi',
-          component: testComponent,
-        },
       ];
     },
   },
