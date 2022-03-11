@@ -239,6 +239,7 @@ export default {
     border-radius: 2px;
     box-shadow: 0 0 6px rgba(0, 0, 0, 0.04);
     margin-bottom: 8px;
+    color: #000;
   }
 
   .init-msg {

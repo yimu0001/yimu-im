@@ -5,11 +5,10 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-10 17:53:43
+ * @LastEditTime: 2022-03-11 10:24:37
 -->
 <template>
   <div>
-    <!-- TODO 新消息来了之后入口处闪烁两下 边框改变颜色 'notice-border', -->
     <div
       :class="[
         'tipDom',
@@ -301,7 +300,7 @@ export default {
       link.id = 'mg-service-font-link';
       link.type = 'text/css';
       link.rel = 'stylesheet';
-      link.href = require(`@/assets/theme/${size}.css`);
+      link.href = require(`@/assets/theme/${size}.less`);
       document.getElementsByTagName('head')[0].appendChild(link);
     },
     // 消息回执响应监听
@@ -427,7 +426,6 @@ export default {
             displayName: userinfo.name,
             avatar: userinfo.portrait,
           },
-          // todo 来自客户端的消息不可设置扩展
           canIncludeExpansion: item.canIncludeExpansion || false,
           expansion: item.expansion || {},
         };
@@ -826,7 +824,7 @@ export default {
     },
     // 仅当发送消息时指定 canIncludeExpansion 值为 true，才可对消息进行拓展
     handleSendMessage(item) {
-      // TODO 如果当前用户已被移除群聊 消息发不出去
+      // TODO 如果当前用户已被移除群聊 消息发不出去吗
       let {
         target_id,
         conversation_type,

@@ -1,6 +1,8 @@
 @title: 16px; // 14 16 18
 @name: 14px; // 12 14 16
 @desc: 12px; // 12 12 14
+@listTime: 18px; // 16 18 24
+@contentHeight: 20px; // 16 20 24
 
 .title-size {
   font-size: @title;
@@ -14,6 +16,13 @@
   font-size: @desc;
 }
 
+.time-height {
+  line-height: @listTime;
+}
+
+.content-height {
+  line-height: @contentHeight;
+}
 
 /* 聊天： */
 .lemon-wrapper {
@@ -22,7 +31,7 @@
 
 .lemon-contact__time {
   .desc-size !important;
-  // line-height: 18px;
+  .time-height !important;
 }
 
 .lemon-contact__content {
@@ -39,6 +48,7 @@
 
 .content-show {
   .name-size !important;
+  .content-height !important;
 }
 
 .lemon-message-event__content {
