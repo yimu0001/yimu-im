@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-23 10:37:04
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-04 15:15:59
+ * @LastEditTime: 2022-03-14 15:05:36
  */
 import moment from 'moment';
 
@@ -51,28 +51,19 @@ export const reverseArray = (array) => {
   return newArr;
 };
 
-const Type_Key_Obj = {
-  'RC:ReferenceMsg': { type: 'text', key: 'content' },
-  'RC:ImgMsg': { type: 'image', key: 'imageUri' },
-  'RC:TxtMsg': { type: 'text', key: 'content' },
-  'RC:VcMsg': { type: 'text', key: null, content: '视频通话' },
-  'RC:InfoNtf': { type: 'event', key: 'message' },
-  'RC:FileMsg': { type: 'file', key: 'name' },
-};
-const Default_Content = { type: 'text', key: null, content: '未知消息' };
-// 最新一条信息 融云 ==> IM
-export const CalcLastCentent = (messageType, content) => {
-  let contentObj = content.content instanceof Object ? content.content : content;
-
-  let obj = Type_Key_Obj[messageType] || Default_Content;
-  let lastContent = {
-    type: obj.type,
-    content: obj.key ? contentObj[obj.key] : obj.contentObj,
-  };
-
-  if (lastContent.type === 'event') {
-    lastContent.content = '[通知]';
+// 根据字体大小 引入css文件
+export const SetIMTheme = (size) => {
+  // 移除旧的节点
+  const oldNode = document.querySelector('#mg-service-font-link');
+  if (oldNode) {
+    oldNode.parentNode.removeChild(document.querySelector('#mg-service-font-link'));
   }
 
-  return lastContent;
+  // 生成新节点，引入css
+  const link = document.createElement('link');
+  link.id = 'mg-service-font-link';
+  link.type = 'text/css';
+  link.rel = 'stylesheet';
+  link.href = require(`@/assets/theme/${size}.less`);
+  document.getElementsByTagName('head')[0].appendChild(link);
 };

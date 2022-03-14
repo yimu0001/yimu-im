@@ -502,7 +502,6 @@ export default {
       }, 400);
     },
     handleChangeMenu(menuName) {
-      this.$emit('change-menu', menuName);
       this.closeRightDrawer();
 
       // console.log('Event:change-menu', menuName);

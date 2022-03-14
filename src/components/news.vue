@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-14 14:35:04
+ * @LastEditTime: 2022-03-14 15:20:28
 -->
 <template>
   <div>
@@ -43,7 +43,7 @@
       :modal="false"
       :close-on-click-modal="false"
       center
-      @opened="handleOpenedDialog"
+      @opened="onOpenedDialog"
     >
       <div class="close-line" @click="handleClose" ref="closeIcon">
         <i class="iconfont icon-guanbi1" title="关闭"></i>
@@ -57,8 +57,6 @@
         :orgUserList="orgUserList"
         @handleSendMessage="handleSendMessage"
         @handlePullMessages="handlePullMessages"
-        @closeModal="handleClose"
-        @change-menu="changeMenu"
         @notice-group-sender="handleNoticeGroupSender"
         @notice-single-sender="handleNoticeSingleSender"
         @notice-change-contact="handleChangeConcat"
@@ -66,28 +64,16 @@
       ></im-main>
       <span slot="footer" class="dialog-footer"> </span>
     </el-dialog>
-
-    <!-- <Modal
-      class="imModal"
-      v-model="showList"
-      width="800"
-      :mask="false"
-      :mask-closable="false"
-      :closable="false"
-      footer-hide
-      draggable
-      @on-visible-change="handleOpenedDialog"
-    >
-      <span slot="header" class="modal-hedaer"> </span>
-    </Modal> -->
   </div>
 </template>
 
 <script>
+import * as RongIMLib from '@rongcloud/imlib-next';
 import imMain from './im-main';
+import testComponent from '../components/testComponent.vue';
+import Settings from './manus/settings';
 import { Avatar, Dialog } from 'element-ui';
 
-import * as RongIMLib from '@rongcloud/imlib-next';
 import {
   registerUser,
   getCurrentUser,
@@ -97,9 +83,8 @@ import {
 } from '@/api/data.js';
 import { setBackExpansion, checkGroupReadStatus, checkSingleReadStatus } from '@/api/chat.js';
 import bus from '@/libs/bus';
-import { CalcTargetId, CalcLastCentent } from '@/libs/tools';
-import testComponent from '../components/testComponent.vue';
-import Settings from './manus/settings';
+import { CalcTargetId, SetIMTheme } from '@/libs/tools';
+import { CalcLastCentent, getFormatChatInfo, getFormatNoticeInfo } from '@/libs/chat';
 
 import Vue from 'vue';
 import LemonMessageImage from '@/components/message/image.vue';
@@ -110,11 +95,7 @@ setTimeout(() => {
   Vue.component(LemonMessageText.name, LemonMessageText);
   Vue.component(LemonMessageFile.name, LemonMessageFile);
 }, 0);
-// TODO 先用着测试域名 之后替换正式域名
-// https://im.shandian8.com/public/shenhe2.png
-// https://im.shandian8.com/public/qunliao.png
-// https://im.shandian8.com/public/danliao.png
-// https://im.shandian8.com/public/tongzhi.png
+// TODO 审核等图标先用测试域名 之后替换正式域名https://im.shandian8.com/public/xxx
 
 export default {
   name: 'yimuIm',
@@ -171,9 +152,6 @@ export default {
       allFriendsList: [],
       readStatusObj: {},
       readStatusTime: '',
-      // 弃用
-      conversationObj: {},
-      messageList: [],
       sizeOptions: ['large', 'middle', 'small'],
       noticeAllowPop: false,
     };
@@ -254,10 +232,6 @@ export default {
     const Events = RongIMLib.Events;
     RongIMLib.addEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
     RongIMLib.addEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
-    // setTimeout(() => {
-    //   this.deleteConnectMessage(1, '27', 'BUCQ-JP7L-SE84-01I5', 1642399765463);
-    //   this.deleteConnect(1, '27');
-    // }, 3000);
   },
   beforeDestroy() {
     bus.$off('createGroupOk');
@@ -283,51 +257,102 @@ export default {
     setThemeInit(size) {
       if (this.sizeOptions.includes(size)) {
         // 设置字号大小是根据接口返回值来的
-        this.setIMTheme(size);
+        SetIMTheme(size);
 
-        // session中存在 说明是刷新界面的 需要重新打开
+        // session中存在 说明是刷新界面的 需要重新自动打开聊天窗口
         let isReload = sessionStorage.getItem('themeSize');
         if (isReload) {
-          // 这里的session仅用于判定是否是relaod 是否需要自动打开聊天窗口
           sessionStorage.setItem('themeSize', '');
           this.openChatDialog();
         }
       }
     },
-    // 根据接口获取的字体大小引入css文件
-    setIMTheme(size) {
-      // 移除旧的节点
-      const oldNode = document.querySelector('#mg-service-font-link');
-      if (oldNode) {
-        oldNode.parentNode.removeChild(document.querySelector('#mg-service-font-link'));
-      }
-
-      // 生成新节点，引入css
-      const link = document.createElement('link');
-      link.id = 'mg-service-font-link';
-      link.type = 'text/css';
-      link.rel = 'stylesheet';
-      link.href = require(`@/assets/theme/${size}.less`);
-      document.getElementsByTagName('head')[0].appendChild(link);
-    },
-    // 消息回执响应监听
+    // 群聊已读消息回执响应监听 receivedUserId 为消息接收者
     onMessageReceiptResponse({ conversation, receivedUserId, messageUIdList }) {
-      // receivedUserId 为消息接收者
       // {conversationType: 3, targetId: '45', channelId: ''} 4575 ['BVCT-OET5-K84C-01K1']
       if (CalcTargetId(this.contactId) === conversation.targetId) {
-        // console.log('已读回执响应', conversation, receivedUserId, messageUIdList);
-
         bus.$emit('updateReadNum', 'group', { messageUIdList, receivedUserId });
       }
       // 如果非当前对话 后端自己存起来 更新已读的参数
     },
+    // 单聊已读消息回执响应监听
     onReadReceiptReceived({ conversation, messageUId, sentTime }) {
       // {conversationType: 1, targetId: '1000053', channelId: ''}  undefined 1641350108871
       if (this.contactId === conversation.targetId) {
-        // console.log('单聊已读回执', conversation, messageUId, sentTime);
-
         bus.$emit('updateReadNum', 'single', { messageUId, sentTime });
       }
+    },
+    connectRongyun() {
+      registerUser()
+        .then((res) => {
+          if (res.status === 200) {
+            this.user_token = res.data.data.token;
+            this.user_id = res.data.data.userId;
+
+            RongIMLib.connect(this.user_token).then((res) => {
+              if (res.code === RongIMLib.ErrorCode.SUCCESS) {
+                console.log('链接成功, 链接用户 id 为: ', res.data.userId);
+                this.getConnetList();
+              } else {
+                console.warn('链接失败, code:', res.code);
+              }
+            });
+          } else {
+            this.$Message.error(res.data.msg);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    getConnetList() {
+      // 获取会话列表 失败 导致右下角不展示
+      RongIMLib.getConversationList()
+        .then(({ code, data: conversationList }) => {
+          if (code === 0) {
+            // console.log('获取会话列表成功', conversationList);
+            conversationList.forEach((item) => {
+              let { targetId, conversationType } = item;
+              let id = conversationType === 3 ? `group_${targetId}` : targetId;
+              item.targetId = id;
+            });
+
+            if (conversationList[0]) {
+              let { targetId } = conversationList[0];
+              this.firstConversationId = targetId;
+            }
+
+            this.msgTypeList = this.classifyConnectList(conversationList);
+            this.$nextTick(() => {
+              this.loadStep += 1;
+            });
+          } else {
+            console.log('获取会话列表失败: ', error.code, error.msg);
+          }
+        })
+        .catch((err) => {
+          console.log('获取会话列表失败err', err);
+        });
+    },
+    classifyConnectList(conversationList) {
+      let groupList = [];
+      let singleList = [];
+      let noticeList = [];
+
+      conversationList.forEach((item) => {
+        if (item.conversationType === 3) {
+          groupList.push(item);
+        }
+        if (item.conversationType === 1) {
+          if (Number(item.targetId) > 0) {
+            singleList.push(item);
+          } else {
+            noticeList.push(item);
+          }
+        }
+      });
+
+      return { groupList, singleList, noticeList };
     },
     // api获取消息已读人数
     handleChangeConcat(id, msg_uids) {
@@ -338,36 +363,42 @@ export default {
 
       this.contactId = CalcTargetId(id);
       if (Number(this.contactId) <= 0) {
-        console.log('系统消息没有已读数量');
+        console.log('系统消息-没有已读数量');
         return;
       }
-      // return;
-      if (msg_uids) {
-        if (msg_uids.length > 0) {
-          checkGroupReadStatus(this.contactId, msg_uids).then((res) => {
-            if (res.status === 200) {
-              const list = res.data.data;
-              // {msg_uid: 'BUR1-1Q5F-C14C-01J0', user_ids: Array(6)}
-              list.forEach(({ msg_uid, user_ids }) => {
-                this.readStatusObj[msg_uid] = user_ids;
-              });
 
-              this.$nextTick(() => {
-                bus.$emit('setGroupReadStatus', this.readStatusObj);
-              });
-            }
-          });
-        } else {
-          console.log('群聊里面-暂时没消息');
-        }
+      if (!msg_uids) {
+        this.getSingleRead();
       } else {
-        checkSingleReadStatus(this.contactId).then((res) => {
+        this.getGroupRead(msg_uids);
+      }
+    },
+    getSingleRead() {
+      checkSingleReadStatus(this.contactId).then((res) => {
+        if (res.status === 200) {
+          const { last_message_send_time } = res.data.data;
+          this.readStatusTime = last_message_send_time;
+          bus.$emit('setSingleReadStatus', this.readStatusTime);
+        }
+      });
+    },
+    getGroupRead(msgIds) {
+      if (msgIds.length > 0) {
+        checkGroupReadStatus(this.contactId, msgIds).then((res) => {
           if (res.status === 200) {
-            const { last_message_send_time } = res.data.data;
-            this.readStatusTime = last_message_send_time;
-            bus.$emit('setSingleReadStatus', this.readStatusTime);
+            const list = res.data.data;
+            // {msg_uid: 'BUR1-1Q5F-C14C-01J0', user_ids: Array(6)}
+            list.forEach(({ msg_uid, user_ids }) => {
+              this.readStatusObj[msg_uid] = user_ids;
+            });
+
+            this.$nextTick(() => {
+              bus.$emit('setGroupReadStatus', this.readStatusObj);
+            });
           }
         });
+      } else {
+        console.log('群聊里面-暂时没消息');
       }
     },
     openChatDialog() {
@@ -380,9 +411,17 @@ export default {
         this.waitingOpen = true;
       }
     },
-    // 为了切换菜单的时候 重新获取接口
-    changeMenu(menuName) {
-      this.$emit('change-menu', menuName);
+    // 监听打开弹窗 处理一些额外参数
+    onOpenedDialog() {
+      this.saveMessageList.forEach((res) => {
+        this.$refs.imMainDom.appendMessage(res);
+      });
+      this.saveMessageList = [];
+      this.hasUnread = false;
+    },
+    // 从聊天界面点击关闭会话
+    handleClose() {
+      this.showList = false;
     },
     imWatcher() {
       let that = this;
@@ -565,15 +604,13 @@ export default {
       // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
       this.contactId = CalcTargetId(targetId);
       this.clearUnread(true, this.contactId);
-
-      // console.log('群聊-发送响应回执', this.contactId, { [this.currentUser.id]: msgIds });
       this.currentUser.id &&
         RongIMLib.sendReadReceiptResponseV2(this.contactId, { [this.currentUser.id]: msgIds })
           .then((res) => {
             if (res.code === 0) {
-              console.log('响应回执请求成功', res.code, res.data);
+              console.log('群聊-发送响应回执请求成功', res.code, res.data);
             } else {
-              console.log('响应回执请求成功', res.code, res.msg);
+              console.log('群聊-发送响应回执请求成功', res.code, res.msg);
             }
           })
           .catch((error) => {
@@ -583,26 +620,25 @@ export default {
     handleNoticeSingleSender(targetId, msgId, sendTime) {
       this.contactId = targetId;
       this.clearUnread(false, this.contactId);
-      // console.log('单聊-发送响应回执', this.contactId, msgId, sendTime);
       RongIMLib.sendReadReceiptMessage(this.contactId, msgId, sendTime)
         .then((res) => {
           if (res.code === 0) {
-            console.log('响应回执成功', res.code, res.data);
+            console.log('单聊-发送响应回执成功', res.code, res.data);
           } else {
-            console.log('响应回执成功', res.code, res.msg);
+            console.log('单聊-发送响应回执成功', res.code, res.msg);
           }
         })
         .catch((error) => {
           console.log(error);
         });
     },
-    // 逐个清空新消息通知框
+    // 清空新消息通知框
     closeAllNotice() {
       if (this.$Notice) {
         try {
           this.$Notice.close('noticeMsg');
         } catch (err) {
-          console.log('closeAllNotice出错', err);
+          console.log('清空新消息通知框-出错', err);
         }
       }
     },
@@ -618,94 +654,7 @@ export default {
       });
     },
 
-    connectRongyun() {
-      registerUser()
-        .then((res) => {
-          if (res.status === 200) {
-            this.user_token = res.data.data.token;
-            this.user_id = res.data.data.userId;
-
-            RongIMLib.connect(this.user_token).then((res) => {
-              if (res.code === RongIMLib.ErrorCode.SUCCESS) {
-                console.log('链接成功, 链接用户 id 为: ', res.data.userId);
-                this.getConnetList();
-                // this.getUnreadNumber();
-              } else {
-                console.warn('链接失败, code:', res.code);
-              }
-            });
-          } else {
-            this.$Message.error(res.data.msg);
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    },
-    getConnetList() {
-      // 获取会话列表 失败 导致右下角不展示
-      RongIMLib.getConversationList()
-        .then(({ code, data: conversationList }) => {
-          if (code === 0) {
-            // console.log('获取会话列表成功', conversationList);
-            conversationList.forEach((item) => {
-              let { targetId, conversationType } = item;
-              let id = conversationType === 3 ? `group_${targetId}` : targetId;
-              item.targetId = id;
-            });
-
-            if (conversationList[0]) {
-              let { targetId } = conversationList[0];
-              this.firstConversationId = targetId;
-            }
-
-            this.msgTypeList = this.classifyConnectList(conversationList);
-            this.$nextTick(() => {
-              this.loadStep += 1;
-              // this.handleConnectList1(groupList, singleList, noticeList);
-            });
-          } else {
-            console.log('获取会话列表失败: ', error.code, error.msg);
-          }
-        })
-        .catch((err) => {
-          console.log('获取会话列表失败err', err);
-        });
-    },
-    getUnreadNumber() {
-      RongIMLib.getTotalUnreadCount()
-        .then((res) => {
-          if (res.code === 0) {
-            console.log('获取所有会话未读数ok', res.code, res.data);
-          } else {
-            console.log('获取所有会话未读数no', res.code, res.msg);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    classifyConnectList(conversationList) {
-      let groupList = [];
-      let singleList = [];
-      let noticeList = [];
-
-      conversationList.forEach((item) => {
-        if (item.conversationType === 3) {
-          groupList.push(item);
-        }
-        if (item.conversationType === 1) {
-          if (Number(item.targetId) > 0) {
-            singleList.push(item);
-          } else {
-            noticeList.push(item);
-          }
-        }
-      });
-
-      return { groupList, singleList, noticeList };
-    },
-    // 用户列表 群组列表 合并成通讯录
+    // 用户列表 群组列表 合并成通讯录 ==> 入口展示
     handleConnectList() {
       this.currentOrgUsers = [];
       const { groupList, singleList, noticeList } = this.msgTypeList;
@@ -718,7 +667,7 @@ export default {
           const { targetId, unreadMessageCount, latestMessage } = curMsg;
           item = { ...item, targetId, unreadMessageCount, latestMessage };
         }
-        this.currentOrgUsers.push(this.handleChatInfo(item, true));
+        this.currentOrgUsers.push(getFormatChatInfo(item, true));
       });
 
       // 会话列表-个人
@@ -729,64 +678,16 @@ export default {
           const { unreadMessageCount, latestMessage } = curMsg;
           userItem = { ...userItem, unreadMessageCount, latestMessage };
         }
-        this.currentOrgUsers.push(this.handleChatInfo(userItem, false));
+        this.currentOrgUsers.push(getFormatChatInfo(userItem, false));
       });
 
       // 通知消息
       noticeList.forEach((item) => {
-        this.currentOrgUsers.push(this.handleNoticeInfo(item));
+        this.currentOrgUsers.push(getFormatNoticeInfo(item));
       });
 
       // console.log('this.currentOrgUsers====>', this.currentOrgUsers);
       this.showComponent = true;
-    },
-    handleChatInfo(item, isGroup = false) {
-      let defaultName = isGroup ? '选题群组' : '未知用户';
-      let defaultAvatar = isGroup
-        ? 'https://im.shandian8.com/public/qunliao.png'
-        : 'https://im.shandian8.com/public/danliao.png';
-
-      let userItem = {
-        id: item.targetId,
-        displayName: item.displayName || defaultName,
-        avatar: item.avatar || defaultAvatar,
-        index: isGroup ? '[2]群聊' : '[1]好友',
-        unread: item.unreadMessageCount,
-        lastSendTime: item.latestMessage ? item.latestMessage.sentTime : item.lastSendTime,
-        lastContent: {},
-        isGroup,
-      };
-
-      if (item.latestMessage) {
-        let { messageType, content } = item.latestMessage || {};
-        userItem.lastContent = CalcLastCentent(messageType, content);
-      }
-
-      return userItem;
-    },
-    handleNoticeInfo(item) {
-      // 通知
-      if (item.targetId === '-1') {
-        item.displayName = '系统审核';
-        item.avatar = 'https://im.shandian8.com/public/shenhe2.png';
-      } else if (item.targetId === '-2') {
-        item.displayName = '通知提醒';
-        item.avatar = 'https://im.shandian8.com/public/tongzhi.png';
-      } else if (item.targetId === '-3') {
-        item.displayName = '内容监控';
-        item.avatar = 'https://im.shandian8.com/public/shenhe2.png';
-      }
-      let userItem = {
-        id: item.targetId,
-        displayName: item.displayName,
-        avatar: item.avatar,
-        index: '[3]通知',
-        unread: item.unreadMessageCount,
-        lastSendTime: item.latestMessage.sentTime,
-        lastContent: { type: 'text', content: item.latestMessage.content.content },
-      };
-
-      return userItem;
     },
     // 创建群组之后 获取会话列表
     getNewConnectList(id) {
@@ -919,13 +820,6 @@ export default {
         }
       });
     },
-    handleOpenedDialog() {
-      this.saveMessageList.forEach((res) => {
-        this.$refs.imMainDom.appendMessage(res);
-      });
-      this.saveMessageList = [];
-      this.hasUnread = false;
-    },
     handlePullMessages(args) {
       let { id, isGroup, displayName, avatar } = args.contact;
       let targetId = CalcTargetId(id); // 原本id 现在group_id
@@ -978,10 +872,6 @@ export default {
           .catch((error) => {
             console.log('获取聊天记录失败', error, error.msg);
           });
-    },
-    // 从聊天界面点击关闭会话
-    handleClose() {
-      this.showList = false;
     },
     //唤起会话
     changeContact(contact) {
@@ -1071,7 +961,7 @@ export default {
         });
     },
 
-    // 删除会话
+    // 删除会话 this.deleteConnect(1, '27');
     deleteConnect(conversationType, contactId) {
       let targetId = CalcTargetId(contactId);
       RongIMLib.removeConversation({
@@ -1085,7 +975,7 @@ export default {
         }
       });
     },
-    // 删除会话中某一条消息
+    // 删除会话中某一条消息 this.deleteConnectMessage(1, '27', 'BUCQ-JP7L-SE84-01I5', 1642399765463);
     deleteConnectMessage(conversationType, targetId, messageUId, sentTime) {
       const conversation = {
         conversationType,
@@ -1093,8 +983,8 @@ export default {
       };
       RongIMLib.deleteMessages(conversation, [
         {
-          messageUId, // : "BS4O-P5AO-D1O6-9GPP"
-          sentTime, // 1632728405345
+          messageUId,
+          sentTime,
           messageDirection: RongIMLib.MessageDirection.SEND,
         },
       ])
@@ -1114,136 +1004,5 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.tipDom {
-  position: fixed;
-  bottom: 50px;
-  right: -82px;
-  height: 46px;
-  width: 116px;
-  box-sizing: content-box;
-  transition: transform 0.5s;
-
-  padding: 0 7px;
-  display: flex;
-  align-items: center;
-  // box-shadow: 0 2px 4px rgba(#0c135f, 0.5);
-  border-radius: 55px;
-  font-size: 14px;
-  cursor: pointer;
-  z-index: 101;
-
-  &:hover {
-    // transform: scale(1.1);
-    transform: translateX(-66%);
-  }
-
-  .avatar-box {
-    width: 38px;
-    height: 38px;
-    position: relative;
-    .red-dot {
-      position: absolute;
-      top: 0px;
-      right: 0px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      overflow: hidden;
-      background-color: red;
-    }
-  }
-  .nickname-box {
-    padding-left: 6px;
-    width: 78px;
-    line-height: 30px;
-    height: 30px;
-    box-sizing: border-box;
-  }
-}
-.light-color {
-  background-color: #e2ecf7;
-  border: 3px solid #b2d2f3;
-  color: #333;
-}
-.deep-color {
-  background-color: #2a339b;
-  // border: 3px solid #4050a3;
-  border: 3px solid #4b7af6;
-  color: #fff;
-}
-// 消息闪烁效果
-.animImage {
-  animation-name: imageAnim;
-  animation-duration: 0.5s;
-  animation-iteration-count: 3;
-  animation-direction: alternate;
-  animation-timing-function: ease;
-  animation-play-state: running;
-  /* Safari 和 Chrome */
-  -webkit-animation-name: imageAnim;
-  -webkit-animation-duration: 0.5s;
-  -webkit-animation-iteration-count: 3;
-  -webkit-animation-direction: alternate;
-  -webkit-animation-timing-function: ease;
-  -webkit-animation-play-state: running;
-}
-
-@keyframes imageAnim {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-@-webkit-keyframes imageAnim {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-.notice-border {
-  border-color: #09a4f9;
-}
-.imDialog {
-  .el-dialog {
-    width: 800px;
-  }
-  /deep/.el-dialog__header {
-    padding: 0;
-  }
-  /deep/.el-dialog__body {
-    padding: 0;
-  }
-  /deep/.el-dialog--center .el-dialog__footer {
-    padding: 0;
-  }
-}
-// .imModal /deep/ .ivu-modal-content-drag .ivu-modal-body {
-//   padding: 0;
-// }
-
-.close-line {
-  z-index: 11;
-  position: absolute;
-  top: 0;
-  right: 0;
-  padding: 2px 0;
-  width: 30px;
-  height: 22px;
-  line-height: 22px;
-  text-align: center;
-  cursor: pointer;
-  color: #999;
-  &:hover {
-    color: #fff;
-    background-color: rgb(250, 97, 97);
-  }
-  .icon-guanbi1 {
-    font-size: 12px;
-  }
-}
+@import url('../assets/css/news-style.less');
 </style>
