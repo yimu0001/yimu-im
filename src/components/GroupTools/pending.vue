@@ -1,7 +1,7 @@
 <template>
   <div class="pend-box">
     <div class="common-drawer-title">
-      <p class="title">待办列表</p>
+      <p class="title normal-size-text">待办列表</p>
       <div class="close-btn" @click="closePop">
         <i class="iconfont icon-guanbi" title="关闭"></i>
       </div>
@@ -13,7 +13,7 @@
       </el-tabs>
       <div class="list-block">
         <div class="filter-line">
-          <Select v-model="filterForm.status" style="width:160px" placeholder="选择状态" clearable>
+          <Select v-model="filterForm.status" style="width: 160px" placeholder="选择状态" clearable>
             <Option v-for="{ value, label } in statusOptions" :value="value" :key="value">{{
               label
             }}</Option>
@@ -28,7 +28,7 @@
           />
         </div>
         <div class="pend-list">
-          <div class="pend-item" v-for="item in pendList" :key="item.taskId">
+          <div class="pend-item normal-size-text" v-for="item in pendList" :key="item.taskId">
             <div class="pend-status">
               <!-- 1未处理 200完成 -->
               <div
@@ -47,7 +47,7 @@
               >
                 {{ item.taskContent }}
               </p>
-              <div class="send-user">
+              <div class="send-user little-grey-text">
                 <p class="user">{{ item.taskWaiter }}</p>
                 <p class="time">{{ item.createdAt }}</p>
               </div>
@@ -326,17 +326,16 @@ export default {
           color: #333;
         }
         .send-user {
+          font-size: 12px;
           display: flex;
           justify-content: space-between;
           align-items: center;
           .user {
             margin-right: 20px;
-            font-size: 12px;
             color: #333;
           }
           .time {
             color: #999;
-            font-size: 12px;
           }
         }
       }

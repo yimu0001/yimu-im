@@ -1,7 +1,7 @@
 <template>
   <div class="notice-box">
     <div class="common-drawer-title">
-      <p class="title">群公告</p>
+      <p class="title normal-size-text">群公告</p>
       <div class="close-btn" @click="closePop">
         <i class="iconfont icon-guanbi" title="关闭"></i>
       </div>
@@ -19,8 +19,8 @@
 
         <div class="notice-list">
           <div class="notice-item" v-for="item in noticeList" :key="item.id">
-            <p class="msg-content">{{ item.content }}</p>
-            <div class="send-user">
+            <p class="msg-content normal-size-text">{{ item.content }}</p>
+            <div class="send-user little-grey-text">
               <div class="user">
                 <img class="user-pic" :src="item.user.avatar" alt="" />
                 <p class="user-name">{{ item.user.nickname }}</p>
@@ -184,21 +184,21 @@ export default {
         border: 1px solid #ececec;
         background: #fff;
         border-radius: 4px;
-        font-size: 14px;
         line-height: 30px;
         .msg-content {
+          font-size: 14px;
           padding: 4px 0;
           line-height: 20px;
           color: #333;
         }
         .send-user {
+          font-size: 12px;
           display: flex;
           justify-content: space-between;
           align-items: center;
 
           .user {
             margin-right: 20px;
-            font-size: 12px;
             color: #666;
             display: flex;
             align-items: center;
@@ -218,7 +218,6 @@ export default {
           }
           .time {
             color: #999;
-            font-size: 12px;
           }
         }
       }

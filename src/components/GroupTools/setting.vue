@@ -1,7 +1,7 @@
 <template>
   <div class="set-box">
     <div class="common-drawer-title">
-      <p class="title">群设置</p>
+      <p class="title normal-size-text">群设置</p>
       <div class="close-btn" @click="closePop">
         <i class="iconfont icon-guanbi" title="关闭"></i>
       </div>
@@ -15,7 +15,7 @@
         </div>
       </Col>
       <Col :span="24">
-        <ul class="list-group list-group-striped">
+        <ul class="list-group list-group-striped normal-size-text">
           <li class="list-group-item">
             <i class="el-icon-user-solid"></i>
             用户账号
@@ -37,7 +37,7 @@
           <div class="memberItemImg addMemberImg" @click="handleAddMember">
             <i class="iconfont icon-zengjia" title="添加"></i>
           </div>
-          <div class="memberItemName" @click="handleAddMember">
+          <div class="memberItemName little-grey-text" @click="handleAddMember">
             <span>添加</span>
           </div>
         </Col>
@@ -45,7 +45,7 @@
           <div class="memberItemImg addMemberImg" @click="handleRemoveMember">
             <i class="iconfont icon-jianshao" title="删除"></i>
           </div>
-          <div class="memberItemName" @click="handleRemoveMember">
+          <div class="memberItemName little-grey-text" @click="handleRemoveMember">
             <span>删除</span>
           </div>
         </Col>
@@ -53,7 +53,7 @@
           <div class="memberItemImg">
             <img :src="item.avatar" />
           </div>
-          <div class="memberItemName">
+          <div class="memberItemName little-grey-text">
             <span :title="item.nickname">{{ item.nickname }}</span>
           </div>
         </Col>
@@ -114,7 +114,7 @@
       </Row>
 
       <div class="quit-btn">
-        <el-button type="danger" size="mini" @click="handleQuitGroup">退出群聊</el-button>
+        <el-button type="danger" size="small" @click="handleQuitGroup">退出群聊</el-button>
       </div>
     </div>
 
@@ -319,7 +319,7 @@ export default {
     contact: {
       deep: true,
       immediate: true,
-      handler: function(newValue, oldValue) {
+      handler: function (newValue, oldValue) {
         this.searchValue = '';
         this.vContact = newValue;
         if (this.vContact.isGroup) {

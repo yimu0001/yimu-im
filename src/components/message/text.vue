@@ -127,12 +127,12 @@ export default {
                     <div class='abs-left-pos'>
                       <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
                       {this.isGroup && (
-                        <div class='read-num'>
+                        <div class='read-num little-grey-text'>
                           {this.readList ? this.readList.length : '0'}人已读
                         </div>
                       )}
                       {!this.isGroup && (
-                        <div class='read-num'>
+                        <div class='read-num little-grey-text'>
                           {parseInt(this.lastReadTime) > parseInt(sendTime) ? '已读' : '未读'}
                         </div>
                       )}
@@ -171,7 +171,10 @@ export default {
                 )}
 
                 {markNames && (
-                  <div class='mark-text' style={fromUser.id === this.userId && 'text-align:right'}>
+                  <div
+                    class='mark-text little-grey-text'
+                    style={fromUser.id === this.userId && 'text-align:right'}
+                  >
                     <i class='iconfont icon-fujian marked-color'></i>
                     {markNames}已标记了该消息，群内所有成员可见
                   </div>
@@ -190,7 +193,7 @@ export default {
                             src={emojiObj[type].url}
                           />
                         )}
-                        <span class='thumb-name'>{name}</span>
+                        <span class='thumb-name little-grey-text'>{name}</span>
                       </div>
                     ))}
                 </div>

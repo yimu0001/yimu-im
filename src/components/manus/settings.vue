@@ -4,30 +4,37 @@
  * @作者: 赵婷婷
  * @Date: 2022-03-09 11:31:19
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-10 17:38:25
+ * @LastEditTime: 2022-03-14 14:33:31
 -->
 <template>
   <div class="set-page">
-    <div class="setting-col">
-      <div class="grey-title">消息通知</div>
-      <div class="set-line">
-        <p class="title">通知弹出：</p>
-        <i-switch class="switch-value" v-model="noticePop" size="large">
+    <Form
+      ref="setform"
+      class="setting-col normal-size-text"
+      :label-width="120"
+      label-position="right"
+      :model="formItem"
+    >
+      <FormItem label="通知弹出：" prop="allowPop">
+        <i-switch class="switch-value" v-model="formItem.allowPop" size="large">
           <span slot="open">开启</span>
           <span slot="close">关闭</span>
         </i-switch>
-      </div>
-
-      <div class="grey-title">字体设置</div>
-      <div class="set-line">
-        <p class="title">字体大小：</p>
-        <RadioGroup v-model="sizeType">
+      </FormItem>
+      <FormItem label="字体大小：" prop="sizeType">
+        <RadioGroup v-model="formItem.sizeType">
           <Radio label="large">大</Radio>
           <Radio label="middle">中</Radio>
           <Radio label="small">小</Radio>
         </RadioGroup>
-      </div>
-    </div>
+      </FormItem>
+      <FormItem>
+        <el-button type="primary" size="small" :loading="saveLoading" @click="confirmSave"
+          >保存设置</el-button
+        >
+        <el-button size="small" @click="cancelSave">取消</el-button>
+      </FormItem>
+    </Form>
 
     <Modal
       v-model="completePop"
@@ -46,42 +53,48 @@
 </template>
 
 <script>
+import { Button } from 'element-ui';
+
 export default {
   name: 'Settings',
   data() {
     return {
-      // formItem: { noticePop: false },
-      noticePop: false,
-      sizeType: 'middle',
+      initForm: {
+        allowPop: true,
+        sizeType: 'middle',
+      },
+      formItem: {
+        allowPop: true,
+        sizeType: 'middle',
+      },
       sizeOptions: ['large', 'middle', 'small'],
       completePop: false,
+      saveLoading: false,
     };
   },
-  watch: {
-    sizeType(size) {
-      if (!this.sizeOptions.includes(size)) {
-        this.$Message.warning('请设置有效的字体大小');
-        return;
-      }
-
-      this.saveTextSize(size);
-      // this.setTheme(size);
-    },
+  components: {
+    elButton: Button,
   },
   mounted() {
     let userInfo = sessionStorage.getItem('current_user');
     if (userInfo) {
       this.user = JSON.parse(userInfo);
     }
+
+    this.getSettingInfo();
   },
   methods: {
-    saveTextSize(size) {
-      // TODO 调接口
-      sessionStorage.setItem('themeSize', size);
-      this.completePop = true;
-    },
-    reloadPage() {
-      window.location.reload();
+    getSettingInfo() {
+      setTimeout(() => {
+        // 模拟接口
+        this.initForm = {
+          allowPop: true,
+          sizeType: 'middle',
+        };
+        this.formItem = { ...this.initForm };
+
+        console.log('设置界面-调接口', this.initForm, this.formItem);
+      }, 1500);
     },
     // 设置字体大小 size: large|middle|small
     setTheme(size) {
@@ -99,6 +112,54 @@ export default {
       link.href = require(`@/assets/theme/${size}.css`);
       document.getElementsByTagName('head')[0].appendChild(link);
     },
+    setIMThemeEdit(size) {
+      var obj = document.getElementById('mg-service-font-link');
+      if (!obj) {
+        console.log('新节点');
+        // 生成新节点，引入css
+        const link = document.createElement('link');
+        link.id = 'mg-service-font-link';
+        link.type = 'text/css';
+        link.rel = 'stylesheet';
+        link.href = require(`@/assets/theme/${size}.less`);
+        document.getElementsByTagName('head')[0].appendChild(link);
+        console.log('link', link);
+      } else {
+        console.log('旧节点');
+        obj.setAttribute('href', require(`@/assets/theme/${size}.less`));
+        console.log('obj', obj);
+      }
+    },
+    setDomsStyle() {
+      let doms = document.getElementsByClassName('lemon-contact__content');
+      console.log('doms', doms.length);
+      for (var i in doms) {
+        console.log('dom', doms[i].style);
+        doms[i].style && (doms[i].style.fontSize = '12px');
+      }
+    },
+    confirmSave() {
+      const { allowPop, sizeType } = this.formItem;
+      if (!this.sizeOptions.includes(sizeType)) {
+        this.$Message.warning('请设置有效的字体大小');
+        return;
+      }
+
+      this.saveLoading = true;
+      setTimeout(() => {
+        // TODO 调接口
+        this.initForm = { allowPop, sizeType };
+        sessionStorage.setItem('themeSize', sizeType);
+        this.completePop = true;
+        this.saveLoading = false;
+      }, 1000);
+    },
+    cancelSave() {
+      this.formItem = { ...this.initForm };
+    },
+    reloadPage() {
+      window.location.reload();
+    },
   },
 };
 </script>
@@ -109,15 +170,14 @@ export default {
   padding: 5px 15px 0;
   box-sizing: border-box;
   background-color: #f2f2f2;
-  font-size: 14px;
 
   .setting-col {
-    padding: 20px;
+    padding: 40px 0;
+    font-size: 14px;
     .grey-title {
       height: 40px;
       line-height: 40px;
       color: #999;
-      font-size: 13px;
     }
     .set-line {
       display: flex;

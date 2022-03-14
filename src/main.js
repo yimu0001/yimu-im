@@ -15,6 +15,7 @@ import {
   Switch,
   RadioGroup,
   Radio,
+  Spin,
 } from 'view-design';
 import 'view-design/dist/styles/iview.css';
 
@@ -40,6 +41,7 @@ Vue.component('DatePicker', DatePicker);
 Vue.component('i-switch', Switch);
 Vue.component('RadioGroup', RadioGroup);
 Vue.component('Radio', Radio);
+Vue.component('Spin', Spin);
 Vue.use(LemonIMUI);
 
 Vue.config.productionTip = false;

@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-11 10:24:37
+ * @LastEditTime: 2022-03-14 14:35:04
 -->
 <template>
   <div>
@@ -100,8 +100,6 @@ import bus from '@/libs/bus';
 import { CalcTargetId, CalcLastCentent } from '@/libs/tools';
 import testComponent from '../components/testComponent.vue';
 import Settings from './manus/settings';
-// import '../assets/theme/global.less';
-// import globalFont from '../assets/theme/global.less';
 
 import Vue from 'vue';
 import LemonMessageImage from '@/components/message/image.vue';
@@ -177,6 +175,7 @@ export default {
       conversationObj: {},
       messageList: [],
       sizeOptions: ['large', 'middle', 'small'],
+      noticeAllowPop: false,
     };
   },
   props: {
@@ -235,20 +234,14 @@ export default {
     },
   },
   mounted() {
-    // setTimeout(() => {
-    //   this.deleteConnectMessage(1, '27', 'BUCQ-JP7L-SE84-01I5', 1642399765463);
-    //   this.deleteConnect(1, '27');
-    // }, 3000);
+    // 接口获取 设置是否通知、字体大小
+    this.getSettingItems();
 
     this.loadStep = 0;
     this.getCurrentChatUser();
     this.im = RongIMLib.init({ appkey: 'cpj2xarlctfmn', connectType: 'comet' });
     this.imWatcher();
     this.connectRongyun();
-
-    setTimeout(() => {
-      this.setThemeInit();
-    }, 500);
 
     bus.$on('createGroupOk', (id) => {
       this.$refs.imMainDom.createPop = false;
@@ -261,6 +254,10 @@ export default {
     const Events = RongIMLib.Events;
     RongIMLib.addEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
     RongIMLib.addEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
+    // setTimeout(() => {
+    //   this.deleteConnectMessage(1, '27', 'BUCQ-JP7L-SE84-01I5', 1642399765463);
+    //   this.deleteConnect(1, '27');
+    // }, 3000);
   },
   beforeDestroy() {
     bus.$off('createGroupOk');
@@ -272,20 +269,30 @@ export default {
     RongIMLib.removeEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
   },
   methods: {
-    setThemeInit() {
+    getSettingItems() {
       setTimeout(() => {
-        // session中存在 说明是刷新界面的 需要重新打开
-        let size = sessionStorage.getItem('themeSize');
-        if (size && this.sizeOptions.includes(size)) {
-          console.log('根据sessionStorage设置size');
-          // 设置字号大小是根据接口返回值来的
-          this.setIMTheme(size);
+        // 模拟接口
+        let obj = {
+          allowPop: true,
+          size: 'middle',
+        };
+        this.noticeAllowPop = obj.allowPop;
+        this.setThemeInit(obj.size);
+      }, 1500);
+    },
+    setThemeInit(size) {
+      if (this.sizeOptions.includes(size)) {
+        // 设置字号大小是根据接口返回值来的
+        this.setIMTheme(size);
 
+        // session中存在 说明是刷新界面的 需要重新打开
+        let isReload = sessionStorage.getItem('themeSize');
+        if (isReload) {
           // 这里的session仅用于判定是否是relaod 是否需要自动打开聊天窗口
           sessionStorage.setItem('themeSize', '');
           this.openChatDialog();
         }
-      }, 500);
+      }
     },
     // 根据接口获取的字体大小引入css文件
     setIMTheme(size) {
@@ -496,6 +503,8 @@ export default {
     },
     // 弹出通知
     noticeMsgPop(content) {
+      if (!this.noticeAllowPop) return;
+
       this.$Notice.info({
         title: '通知消息',
         desc: '',
@@ -1105,8 +1114,6 @@ export default {
 </script>
 
 <style lang="less" scoped>
-// @import url('../assets/theme/large.css');
-
 .tipDom {
   position: fixed;
   bottom: 50px;

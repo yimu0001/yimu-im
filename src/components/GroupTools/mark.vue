@@ -1,7 +1,7 @@
 <template>
   <div class="mark-box">
     <div class="common-drawer-title">
-      <p class="title">重要标记</p>
+      <p class="title normal-size-text">重要标记</p>
       <div class="close-btn" @click="closePop">
         <i class="iconfont icon-guanbi" title="关闭"></i>
       </div>
@@ -22,7 +22,7 @@
           />
         </div>
         <div class="mark-list narrow-scroll-bar">
-          <div class="mark-item" v-for="item in markList" :key="item.id">
+          <div class="mark-item normal-size-text" v-for="item in markList" :key="item.id">
             <div class="top-user">{{ item.markUserName }}</div>
             <!-- <p class="msg-content">{{ item.newsContent }}</p> -->
 
@@ -40,8 +40,10 @@
               @click="downloadFile(item.newsContent.fileUrl)"
             >
               <div class="content-file__inner">
-                <p class="content-file__name">{{ item.newsContent.name }}</p>
-                <p class="content-file__byte">{{ computeFileSize(item.newsContent.size) }}</p>
+                <p class="content-file__name normal-size-text">{{ item.newsContent.name }}</p>
+                <p class="content-file__byte little-grey-text">
+                  {{ computeFileSize(item.newsContent.size) }}
+                </p>
               </div>
               <div class="content-file__sfx">
                 <i class="lemon-icon-attah" />
@@ -49,8 +51,8 @@
             </div>
 
             <div class="send-user">
-              <p class="user">来自：{{ item.newsUserName }}</p>
-              <p class="time">{{ item.pushTime }}</p>
+              <p class="user little-grey-text">来自：{{ item.newsUserName }}</p>
+              <p class="time little-grey-text">{{ item.pushTime }}</p>
               <i class="iconfont icon-jinru" title="查看" @click="checkHistory(item)"></i>
             </div>
           </div>

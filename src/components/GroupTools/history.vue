@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-24 15:26:54
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-01-20 11:24:44
+ * @LastEditTime: 2022-03-14 11:35:24
 -->
 
 <template>
@@ -18,13 +18,18 @@
       <div
         v-for="(item, index) in historyList"
         :key="index"
-        :class="['per-info', 'history-item', contact.imId === item.id && 'cur-history-item']"
+        :class="[
+          'per-info',
+          'history-item',
+          'normal-size-text',
+          contact.imId === item.id && 'cur-history-item',
+        ]"
       >
         <div class="left-avatar">
           <img :src="item.avatar" alt="头像" />
         </div>
         <div class="right-infos">
-          <div class="send-user">
+          <div class="send-user little-grey-text">
             <p class="user">{{ item.sendUser }}</p>
             <p class="time">{{ item.sendTime }}</p>
           </div>
@@ -307,17 +312,16 @@ export default {
       .right-infos {
         width: 460px;
         .send-user {
+          font-size: 12px;
           display: flex;
           justify-content: space-between;
           align-items: center;
           .user {
             margin-right: 20px;
-            font-size: 12px;
             color: #666;
           }
           .time {
             color: #999;
-            font-size: 12px;
           }
         }
         .msg-content {

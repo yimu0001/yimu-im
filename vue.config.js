@@ -65,6 +65,8 @@ module.exports = {
       .set('_c', resolve('src/components'));
   },
   css: {
-    extract: false,
+    extract: false, // 是否使用css分离插件 ExtractTextPlugin
+    // true: 打包生成css文件，link引入（此项目不能用，设置之后字体大小切换会出问题）；
+    // false: 组件样式以内部样式表的形式加载的 <style>内联
   },
 };
