@@ -15,6 +15,7 @@
     "babel-plugin-import": "^1.13.3",
     "core-js": "^3.6.5",
     "element-ui": "^2.15.6",
+    "jquery": "^3.6.0",
     "jsx-loader": "^0.13.2",
     "lemon-imui": "^1.7.4",
     "lodash": "^4.17.21",

@@ -4,10 +4,11 @@
  * @作者: 赵婷婷
  * @Date: 2022-03-09 11:31:19
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-14 14:33:31
+ * @LastEditTime: 2022-03-15 11:14:46
 -->
 <template>
   <div class="set-page">
+    <div class="page-title title-size-text enable-drag-area">设置</div>
     <Form
       ref="setform"
       class="setting-col normal-size-text"
@@ -92,8 +93,6 @@ export default {
           sizeType: 'middle',
         };
         this.formItem = { ...this.initForm };
-
-        console.log('设置界面-调接口', this.initForm, this.formItem);
       }, 1500);
     },
     // 设置字体大小 size: large|middle|small
@@ -167,12 +166,20 @@ export default {
 <style lang="less" scoped>
 .set-page {
   height: 100%;
-  padding: 5px 15px 0;
+  padding: 0;
   box-sizing: border-box;
   background-color: #f2f2f2;
 
+  .page-title {
+    padding: 0 20px;
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+    color: #000;
+    border-bottom: 1px solid #ececec;
+  }
   .setting-col {
-    padding: 40px 0;
+    padding: 40px 15px;
     font-size: 14px;
     .grey-title {
       height: 40px;

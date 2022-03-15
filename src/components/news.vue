@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-14 15:20:28
+ * @LastEditTime: 2022-03-15 11:12:16
 -->
 <template>
   <div>
@@ -33,8 +33,8 @@
         {{ currentUser.nickname || '通讯' }}
       </div>
     </div>
-
     <el-dialog
+      id="mainDialog"
       class="imDialog"
       style="z-index: 2000"
       width="951px"
@@ -68,6 +68,7 @@
 </template>
 
 <script>
+import $ from 'jquery';
 import * as RongIMLib from '@rongcloud/imlib-next';
 import imMain from './im-main';
 import testComponent from '../components/testComponent.vue';
@@ -85,6 +86,7 @@ import { setBackExpansion, checkGroupReadStatus, checkSingleReadStatus } from '@
 import bus from '@/libs/bus';
 import { CalcTargetId, SetIMTheme } from '@/libs/tools';
 import { CalcLastCentent, getFormatChatInfo, getFormatNoticeInfo } from '@/libs/chat';
+import { OnInitDrag } from '@/libs/drag';
 
 import Vue from 'vue';
 import LemonMessageImage from '@/components/message/image.vue';
@@ -154,6 +156,7 @@ export default {
       readStatusTime: '',
       sizeOptions: ['large', 'middle', 'small'],
       noticeAllowPop: false,
+      firstOpen: true, // 绑定监听拖拽的事件
     };
   },
   props: {
@@ -212,6 +215,7 @@ export default {
     },
   },
   mounted() {
+    this.firstOpen = true;
     // 接口获取 设置是否通知、字体大小
     this.getSettingItems();
 
@@ -418,6 +422,12 @@ export default {
       });
       this.saveMessageList = [];
       this.hasUnread = false;
+
+      // 只有第一次初始化的时候才绑定
+      if (this.firstOpen) {
+        OnInitDrag();
+        this.firstOpen = false;
+      }
     },
     // 从聊天界面点击关闭会话
     handleClose() {
