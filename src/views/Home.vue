@@ -7,6 +7,7 @@
       :theme="theme"
       :fromSystem="fromSystem"
       @change-menu="handleChangeMenu"
+      @set-font="handleSetFont"
     ></news>
   </div>
 </template>
@@ -40,7 +41,11 @@ export default {
       this.$refs.yimuNews.openChatDialog();
     },
     handleChangeMenu(menuName) {
+      console.log('handleChangeMenu======', menuName);
       this.curMenuName = menuName;
+    },
+    handleSetFont(size) {
+      console.log('handleSetFont======', size);
     },
     setMenu() {
       this.customMenu = [

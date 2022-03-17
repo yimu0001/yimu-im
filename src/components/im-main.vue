@@ -504,6 +504,7 @@ export default {
     handleChangeMenu(menuName) {
       this.closeRightDrawer();
 
+      this.$emit('change-menu', menuName);
       // console.log('Event:change-menu', menuName);
       if (menuName === 'messages') {
         this.$refs.IMUI.initContacts(this.currentOrgUsers);
@@ -640,7 +641,7 @@ export default {
         return messageItem;
       });
 
-      console.log('处理后历史记录', messages);
+      // console.log('处理后历史记录', messages);
       if (this.noticeCount > 0) {
         // 通知
         this.calcReadNotice(messages, this.noticeCount);

@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-16 17:56:37
+ * @LastEditTime: 2022-03-17 09:50:26
 -->
 <template>
   <div>
@@ -57,6 +57,7 @@
         :orgUserList="orgUserList"
         @handleSendMessage="handleSendMessage"
         @handlePullMessages="handlePullMessages"
+        @change-menu="handleChangeMenu"
         @notice-group-sender="handleNoticeGroupSender"
         @notice-single-sender="handleNoticeSingleSender"
         @notice-change-contact="handleChangeConcat"
@@ -273,6 +274,7 @@ export default {
       if (this.sizeOptions.includes(size)) {
         // 设置字号大小是根据接口返回值来的
         SetIMTheme(size);
+        this.$emit('set-font', size);
 
         // session中存在 说明是刷新界面的 需要重新自动打开聊天窗口
         let isReload = sessionStorage.getItem('themeSize');
@@ -378,7 +380,7 @@ export default {
 
       this.contactId = CalcTargetId(id);
       if (Number(this.contactId) <= 0) {
-        console.log('系统消息-没有已读数量');
+        // console.log('系统消息-没有已读数量');
         return;
       }
 
@@ -620,6 +622,9 @@ export default {
           console.log(res.code, res.msg, '设置扩展-更新失败');
         }
       });
+    },
+    handleChangeMenu(menuName) {
+      this.$emit('change-menu', menuName);
     },
     handleNoticeGroupSender(targetId, msgIds) {
       // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
@@ -883,7 +888,7 @@ export default {
               this.handleChangeConcat(targetId, msg_uids);
 
               let otheruser = { id: targetId, displayName, avatar }; // 给单聊用的
-              console.log('融云历史记录', targetId, list);
+              // console.log('融云历史记录', targetId, list);
               this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
             } else {
               args.next([], true);
