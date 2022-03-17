@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-03-09 11:31:19
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-15 11:14:46
+ * @LastEditTime: 2022-03-16 17:51:34
 -->
 <template>
   <div class="set-page">
@@ -54,7 +54,10 @@
 </template>
 
 <script>
+import bus from '@/libs/bus';
 import { Button } from 'element-ui';
+import { getSettingOptions, saveSettingOptions } from '@/api/chat.js';
+import { SizeTextObj, SizeNumberObj } from '@/libs/constant';
 
 export default {
   name: 'Settings',
@@ -86,15 +89,58 @@ export default {
   },
   methods: {
     getSettingInfo() {
-      setTimeout(() => {
-        // 模拟接口
-        this.initForm = {
-          allowPop: true,
-          sizeType: 'middle',
-        };
-        this.formItem = { ...this.initForm };
-      }, 1500);
+      getSettingOptions().then((res) => {
+        if (res.status === 200) {
+          // is_notify	1接收消息 0不接受消息;  font_size 0小 1中 2大
+          const { is_notify, font_size } = res.data.data;
+
+          let allowPop = is_notify === 1;
+          let sizeType = SizeTextObj[font_size] || 'middle';
+
+          this.initForm = { allowPop, sizeType };
+          this.formItem = { allowPop, sizeType };
+        }
+      });
     },
+    confirmSave() {
+      const { allowPop, sizeType } = this.formItem;
+      if (!this.sizeOptions.includes(sizeType)) {
+        this.$Message.warning('请设置有效的字体大小');
+        return;
+      }
+
+      let is_notify = allowPop ? 1 : 0;
+      let font_size = SizeNumberObj[sizeType];
+      this.saveLoading = true;
+      saveSettingOptions(is_notify, font_size)
+        .then((res) => {
+          if (res.status === 200) {
+            this.$Message.success('设置保存成功');
+            if (this.initForm.sizeType !== sizeType) {
+              // 只有字体大小改变了 才弹出刷新提示
+              this.completePop = true;
+            }
+            if (this.initForm.allowPop !== allowPop) {
+              // 是否通知改变了 才弹出刷新提示
+              bus.$emit('noticePermissionChange', allowPop);
+            }
+            this.initForm = { allowPop, sizeType };
+          }
+        })
+        .finally(() => {
+          this.saveLoading = false;
+        });
+    },
+    cancelSave() {
+      this.formItem = { ...this.initForm };
+    },
+    reloadPage() {
+      sessionStorage.setItem('themeSize', this.formItem.sizeType);
+      this.$nextTick(() => {
+        window.location.reload();
+      });
+    },
+
     // 设置字体大小 size: large|middle|small
     setTheme(size) {
       // 移除旧的节点
@@ -136,28 +182,6 @@ export default {
         console.log('dom', doms[i].style);
         doms[i].style && (doms[i].style.fontSize = '12px');
       }
-    },
-    confirmSave() {
-      const { allowPop, sizeType } = this.formItem;
-      if (!this.sizeOptions.includes(sizeType)) {
-        this.$Message.warning('请设置有效的字体大小');
-        return;
-      }
-
-      this.saveLoading = true;
-      setTimeout(() => {
-        // TODO 调接口
-        this.initForm = { allowPop, sizeType };
-        sessionStorage.setItem('themeSize', sizeType);
-        this.completePop = true;
-        this.saveLoading = false;
-      }, 1000);
-    },
-    cancelSave() {
-      this.formItem = { ...this.initForm };
-    },
-    reloadPage() {
-      window.location.reload();
     },
   },
 };

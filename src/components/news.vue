@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-15 11:12:16
+ * @LastEditTime: 2022-03-16 17:56:37
 -->
 <template>
   <div>
@@ -82,11 +82,17 @@ import {
   getUserByOrgid,
   getMyGroupList,
 } from '@/api/data.js';
-import { setBackExpansion, checkGroupReadStatus, checkSingleReadStatus } from '@/api/chat.js';
+import {
+  setBackExpansion,
+  checkGroupReadStatus,
+  checkSingleReadStatus,
+  getSettingOptions,
+} from '@/api/chat.js';
 import bus from '@/libs/bus';
 import { CalcTargetId, SetIMTheme } from '@/libs/tools';
 import { CalcLastCentent, getFormatChatInfo, getFormatNoticeInfo } from '@/libs/chat';
 import { OnInitDrag } from '@/libs/drag';
+import { SizeTextObj } from '@/libs/constant';
 
 import Vue from 'vue';
 import LemonMessageImage from '@/components/message/image.vue';
@@ -216,7 +222,6 @@ export default {
   },
   mounted() {
     this.firstOpen = true;
-    // 接口获取 设置是否通知、字体大小
     this.getSettingItems();
 
     this.loadStep = 0;
@@ -231,6 +236,9 @@ export default {
     });
     bus.$on('setExpansion', this.setRongExpansion);
     bus.$on('afterQuitGroup', this.deleteConnect);
+    bus.$on('noticePermissionChange', (allowPop) => {
+      this.noticeAllowPop = allowPop;
+    });
 
     // 监听已读响应
     const Events = RongIMLib.Events;
@@ -241,6 +249,7 @@ export default {
     bus.$off('createGroupOk');
     bus.$off('setExpansion');
     bus.$off('afterQuitGroup');
+    bus.$off('noticePermissionChange');
 
     const Events = RongIMLib.Events;
     RongIMLib.removeEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
@@ -248,15 +257,17 @@ export default {
   },
   methods: {
     getSettingItems() {
-      setTimeout(() => {
-        // 模拟接口
-        let obj = {
-          allowPop: true,
-          size: 'middle',
-        };
-        this.noticeAllowPop = obj.allowPop;
-        this.setThemeInit(obj.size);
-      }, 1500);
+      getSettingOptions().then((res) => {
+        if (res.status === 200) {
+          // is_notify	1接收消息 0不接受消息;  font_size 0小 1中 2大
+          const { is_notify, font_size } = res.data.data;
+          let allowPop = is_notify === 1;
+          let sizeType = SizeTextObj[font_size] || 'middle';
+
+          this.noticeAllowPop = allowPop;
+          this.setThemeInit(sizeType);
+        }
+      });
     },
     setThemeInit(size) {
       if (this.sizeOptions.includes(size)) {
