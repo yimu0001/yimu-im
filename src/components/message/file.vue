@@ -76,6 +76,12 @@ export default {
     bus.$off('setSingleReadStatus');
     bus.$off('setComplexExpand');
   },
+  methods: {
+    handleReadingInfo(e) {
+      e.stopPropagation();
+      bus.$emit('openReading', this.$attrs.message.toContactId, this.$attrs.message.id);
+    },
+  },
   render() {
     const { fromUser, sendTime } = this.$attrs.message;
     this.expansionObj = this.$attrs.message.expansion;
@@ -102,7 +108,10 @@ export default {
                 <div class='left-tool-abs'>
                   <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
                   {this.isGroup && (
-                    <div class='read-num little-grey-text'>
+                    <div
+                      class='read-num read-pointer little-grey-text'
+                      onClick={this.handleReadingInfo}
+                    >
                       {this.readList ? this.readList.length : '0'}人已读
                     </div>
                   )}

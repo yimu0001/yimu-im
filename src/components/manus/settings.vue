@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-03-09 11:31:19
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-16 17:51:34
+ * @LastEditTime: 2022-03-17 10:33:36
 -->
 <template>
   <div class="set-page">
@@ -193,6 +193,7 @@ export default {
   padding: 0;
   box-sizing: border-box;
   background-color: #f2f2f2;
+  white-space: normal;
 
   .page-title {
     padding: 0 20px;

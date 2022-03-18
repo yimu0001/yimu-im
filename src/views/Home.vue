@@ -32,7 +32,7 @@ export default {
   },
   mounted() {
     setTimeout(() => {
-      this.setMenu();
+      // this.setMenu();
       console.log(this.$refs.yimuNews.im);
     }, 500);
   },

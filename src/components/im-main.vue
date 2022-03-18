@@ -107,6 +107,14 @@
         @close="handleClosePending"
       />
     </Modal>
+    <Modal title="已读详情" v-model="readingPop" :z-index="2002" width="600" transfer footer-hide>
+      <reading-show
+        v-if="readingPop"
+        :readingContactId="readingContactId"
+        :readingMsgId="readingMsgId"
+        @close="handleCloseReading"
+      />
+    </Modal>
     <Modal title="创建群组" v-model="createPop" :z-index="2002" width="800" transfer footer-hide>
       <addGroup v-if="createPop" />
     </Modal>
@@ -131,6 +139,7 @@ import CreateGroup from './CreateGroup';
 import groupTools from './GroupTools/tools';
 import HistoryRecord from './GroupTools/history';
 import addPending from './message/addPending.vue';
+import readingShow from './message/readingShow.vue';
 import LemonIMUI from 'lemon-imui';
 import LemonPopover from 'lemon-imui';
 import 'lemon-imui/dist/index.css';
@@ -138,7 +147,7 @@ import 'lemon-imui/dist/index.css';
 import { Image } from 'element-ui';
 import { uploadFile } from '@/api/data';
 import bus from '@/libs/bus';
-import { reverseArray } from '@/libs/tools';
+import { reverseArray, CalcTargetId } from '@/libs/tools';
 
 export default {
   name: 'imMain',
@@ -168,6 +177,7 @@ export default {
     groupTools,
     'history-record': HistoryRecord,
     addPending,
+    readingShow,
     LemonIMUI,
     LemonPopover,
   },
@@ -277,6 +287,9 @@ export default {
       replyObj: {}, // id: '', type: '', content: '', displayText: ''
       mailKeyword: '',
       pendingPop: false,
+      readingPop: false,
+      readingContactId: null,
+      readingMsgId: null,
       curPendingItem: {},
       createPop: false,
       historyPop: false,
@@ -339,6 +352,11 @@ export default {
       this.curPendingItem = { ...obj, isGroup: !!contactObj.isGroup };
       this.pendingPop = true;
     });
+    bus.$on('openReading', (contactId, id) => {
+      this.readingPop = true;
+      this.readingContactId = CalcTargetId(contactId);
+      this.readingMsgId = id;
+    });
 
     bus.$on('previewReplyImg', (url) => {
       this.imgUrl = url;
@@ -349,6 +367,7 @@ export default {
   beforeDestroy() {
     bus.$off('reply');
     bus.$off('openPending');
+    bus.$off('openReading');
     bus.$off('previewReplyImg');
   },
   methods: {
@@ -365,6 +384,11 @@ export default {
       this.pendGroupId = '';
       this.directorList = [];
       this.curPendingItem = {};
+    },
+    handleCloseReading() {
+      this.readingPop = false;
+      this.readingContactId = null;
+      this.readingMsgId = null;
     },
     handleCreateGroup() {
       this.createPop = true;
@@ -666,14 +690,12 @@ export default {
         }, 2000);
       }
       // 图片预览还要保证点击的不是工具栏 i标签
-      if (e.target.nodeName !== 'I') {
-        if (message.type == 'image') {
-          this.imgUrl = message.content;
-          this.srcList = [message.content];
-          this.outerVisible = true;
-        } else if (message.type == 'file') {
-          window.open(message.content);
-        }
+      if (message.type == 'image' && e.target.nodeName === 'IMG') {
+        this.imgUrl = message.content;
+        this.srcList = [message.content];
+        this.outerVisible = true;
+      } else if (message.type == 'file' && e.target.nodeName !== 'I') {
+        window.open(message.content);
       }
     },
     handleMenuAvatarClick() {

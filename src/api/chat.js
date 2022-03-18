@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-22 16:12:19
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-16 17:29:49
+ * @LastEditTime: 2022-03-18 10:26:49
  */
 import { BaseUrl, CustomUrl, PAGE_SIZE, BIG_PAGE_SIZE } from './constant';
 import commonAxios from 'ym-bridge-shandianyun';
@@ -161,5 +161,17 @@ export const saveSettingOptions = (is_notify, font_size) => {
     url: BaseUrl + '/chat-option',
     method: 'post',
     data: { is_notify, font_size },
+  });
+};
+/**
+ * @功能描述: 已读情况
+ * @参数:
+ * @返回值:
+ */
+export const fetchMsgReadingInfo = (contactId, msg_uid) => {
+  return commonAxios.request({
+    url: BaseUrl + '/message-read-status-detail/group/' + contactId,
+    method: 'get',
+    params: { msg_uid },
   });
 };

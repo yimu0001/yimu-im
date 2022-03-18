@@ -43,4 +43,8 @@ p {
 :before {
   box-sizing: border-box;
 }
+
+.read-pointer {
+  cursor: pointer;
+}
 </style>

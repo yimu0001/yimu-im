@@ -83,6 +83,10 @@ export default {
         bus.$emit('previewReplyImg', msg.content);
       }
     },
+    handleReadingInfo(e) {
+      e.stopPropagation();
+      bus.$emit('openReading', this.$attrs.message.toContactId, this.$attrs.message.id);
+    },
   },
   render() {
     // 原本在最后一个</div>前面
@@ -127,7 +131,10 @@ export default {
                     <div class='abs-left-pos'>
                       <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
                       {this.isGroup && (
-                        <div class='read-num little-grey-text'>
+                        <div
+                          class='read-num read-pointer little-grey-text'
+                          onClick={this.handleReadingInfo}
+                        >
                           {this.readList ? this.readList.length : '0'}人已读
                         </div>
                       )}
