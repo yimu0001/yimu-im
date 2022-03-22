@@ -20,9 +20,11 @@
       width="100%"
     >
       <template #cover>
-        <div class="im-cover">
-          <i class="lemon-icon-message"></i>
-          <p>你好，欢迎进入闪电云聊天系统</p>
+        <div>
+          <div class="im-cover-box">
+            <i class="lemon-icon-message center-icon"></i>
+            <p class="center-welcome">你好，欢迎进入闪电云聊天系统</p>
+          </div>
         </div>
       </template>
       <!-- 消息筛选 添加群组 -->
@@ -794,7 +796,9 @@ export default {
         this.replyObj = {};
       }
       if (data.status === 'failed') {
+        console.log('信息发送失败', data);
         next({ status: 'failed' });
+        return;
       }
 
       let message = this.calcSendedMsg(data, msg);
@@ -961,6 +965,16 @@ export default {
       IMUI.initContacts(currentOrgUsers);
       setTimeout(() => {
         this.firstConversationId && IMUI.changeContact(this.firstConversationId);
+      }, 500);
+    },
+    // 来了新消息之后 切换到最新的会话框
+    changeLastestConnect() {
+      setTimeout(() => {
+        if (this.firstConversationId) {
+          let IMUI = this.$refs.IMUI;
+          IMUI.changeContact(this.firstConversationId);
+          IMUI.messageViewToBottom();
+        }
       }, 500);
     },
     // 新增或删除会话 (建群、退群...)

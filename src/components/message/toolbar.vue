@@ -66,7 +66,6 @@ export default {
       };
 
       let thumbedInfo = (this.message.expansion ? this.message.expansion.thumbedInfo : {}) || {};
-      // let thumbedIds = (this.message.expansion ? this.message.expansion.thumbedIds : []) || [];
 
       // 没有取消点赞这一说，所以只要是点击了都是true 第一次点赞就通知后端 否则不通知
       let firstOperate = !thumbedInfo[this.userId];
@@ -92,9 +91,8 @@ export default {
     },
     handleMark(e) {
       e.stopPropagation();
-      // 本消息体设置扩展 markedIds
+      // 本消息体设置扩展 markedObj
       let markedObj = (this.message.expansion ? this.message.expansion.markedObj : {}) || {};
-      // let markedIds = (this.message.expansion ? this.message.expansion.markedIds : []) || [];
 
       let unchecked = !markedObj[this.userId];
       if (unchecked) {
@@ -156,10 +154,10 @@ export default {
       marked = false,
       collected = false;
     if (this.message.expansion) {
-      let { thumbedIds = [], markedIds = [], collectedIds = [] } = this.message.expansion;
+      let { thumbedInfo = [], markedObj = [], collectedIds = [] } = this.message.expansion;
 
-      thumbed = thumbedIds.includes(this.userId);
-      marked = markedIds.includes(this.userId);
+      thumbed = Object.keys(thumbedInfo).includes(this.userId);
+      marked = Object.keys(markedObj).includes(this.userId);
       collected = collectedIds.includes(this.userId);
     }
 

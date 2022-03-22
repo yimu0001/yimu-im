@@ -76,9 +76,8 @@ export default {
     bus.$off('setComplexExpand');
   },
   methods: {
-    previewMsg() {
+    previewReplyMsg() {
       let msg = this.$attrs.message.referMsg;
-      console.log('预览', this.$attrs.message);
       if (msg.type === 'image') {
         bus.$emit('previewReplyImg', msg.content);
       }
@@ -163,7 +162,10 @@ export default {
                       </el-popover>
                     )}
                     {replyObj.type === 'image' && (
-                      <div class='init-msg msg-img over_hide_1 noselect' onClick={this.previewMsg}>
+                      <div
+                        class='init-msg msg-img over_hide_1 noselect'
+                        onClick={this.previewReplyMsg}
+                      >
                         {replyObj.displayName}：
                         <img class='rep-img' src={replyObj.content} alt='' />
                       </div>

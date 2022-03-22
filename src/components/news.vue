@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-17 09:50:26
+ * @LastEditTime: 2022-03-22 09:39:59
 -->
 <template>
   <div>
@@ -19,7 +19,6 @@
       @click="openChatDialog"
     >
       <div class="avatar-box">
-        <!-- <Avatar :size="38" fit="cover" :src="currentUser.avatar"></Avatar> -->
         <div v-if="hasUnread" class="red-dot"></div>
         <Avatar
           v-if="hasUnread"
@@ -69,7 +68,6 @@
 </template>
 
 <script>
-import $ from 'jquery';
 import * as RongIMLib from '@rongcloud/imlib-next';
 import imMain from './im-main';
 import testComponent from '../components/testComponent.vue';
@@ -93,7 +91,7 @@ import bus from '@/libs/bus';
 import { CalcTargetId, SetIMTheme } from '@/libs/tools';
 import { CalcLastCentent, getFormatChatInfo, getFormatNoticeInfo } from '@/libs/chat';
 import { OnInitDrag } from '@/libs/drag';
-import { SizeTextObj } from '@/libs/constant';
+import { SizeTextObj, ErrorCodeTextObj, NotInGroupCode } from '@/libs/constant';
 
 import Vue from 'vue';
 import LemonMessageImage from '@/components/message/image.vue';
@@ -121,6 +119,7 @@ export default {
       currentUser: {},
       //用来储存
       saveMessageList: [],
+      rongConversationIds: [], // 融云返回的有聊天记录的会话列表id数组
       // 会话第一个联系人id
       firstConversationId: undefined,
       currentOrgUsers: [], //本机构联系人
@@ -212,7 +211,9 @@ export default {
     loadStep(step) {
       if (step === 3) {
         // 好友列表+群组列表+会话列表 全部加载完毕
+        // <会话列表>中的群组必须是后端返回的<群组列表>中的数据 否则删除
         this.handleConnectList();
+        this.cleanRemovedConnect();
       }
     },
     showComponent(bool) {
@@ -334,11 +335,8 @@ export default {
               item.targetId = id;
             });
 
-            if (conversationList[0]) {
-              let { targetId } = conversationList[0];
-              this.firstConversationId = targetId;
-            }
-
+            // 万一当前聊天不在群组中 firstConversationId往下顺延
+            this.rongConversationIds = conversationList.map(({ targetId }) => targetId);
             this.msgTypeList = this.classifyConnectList(conversationList);
             this.$nextTick(() => {
               this.loadStep += 1;
@@ -534,12 +532,30 @@ export default {
                 avatar: userinfo.portrait || 'https://im.shandian8.com/public/tongzhi.png',
               },
             };
+
+            let newGroupNotice = item.conversationType === 3;
+            let isNewGroup = !this.allGroupsList.map(({ id }) => id).includes(item.targetId);
+            if (newGroupNotice && isNewGroup) {
+              // 被拉进新群
+              this.getNewConnectList(item.targetId);
+            }
         }
 
         if (!this.showList && Number(item.senderUserId) < 0) {
           this.closeAllNotice();
           console.log('收到系统通知消息', messageData);
           this.noticeMsgPop(messageData.content);
+        }
+
+        // 切换会话框到最新消息
+        if (!this.showList) {
+          let cid = messageData.toContactId;
+          this.firstConversationId = cid;
+          if (!this.rongConversationIds.includes(cid)) {
+            this.rongConversationIds.unshift(cid);
+          }
+          this.$refs.imMainDom &&
+            this.$refs.imMainDom.changeLastestConnect(this.firstConversationId);
         }
 
         if (this.$refs.imMainDom) {
@@ -679,7 +695,14 @@ export default {
         }
       });
     },
+    // 把融云记录里面有 但是后端接口没有的群组 删除会话
+    cleanRemovedConnect() {
+      const { groupList } = this.msgTypeList;
+      let rongIds = groupList.map(({ targetId }) => Number(CalcTargetId(targetId)));
+      let backGroupIds = this.allGroupsList.map(({ id }) => id);
 
+      this.batchDeleteConnect(rongIds, backGroupIds);
+    },
     // 用户列表 群组列表 合并成通讯录 ==> 入口展示
     handleConnectList() {
       this.currentOrgUsers = [];
@@ -712,8 +735,17 @@ export default {
         this.currentOrgUsers.push(getFormatNoticeInfo(item));
       });
 
-      // console.log('this.currentOrgUsers====>', this.currentOrgUsers);
+      this.setFirstConversation();
       this.showComponent = true;
+    },
+    setFirstConversation() {
+      let allIds = this.currentOrgUsers.map(({ id }) => id);
+      for (var i = 0; i < this.rongConversationIds.length; i++) {
+        if (allIds.includes(this.rongConversationIds[i])) {
+          this.firstConversationId = this.rongConversationIds[i];
+          break; // 终止循环
+        }
+      }
     },
     // 创建群组之后 获取会话列表
     getNewConnectList(id) {
@@ -750,7 +782,7 @@ export default {
               };
 
               this.currentOrgUsers.push(userItem);
-              this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
+              this.$refs.imMainDom && this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
             }
           });
         } else {
@@ -760,7 +792,7 @@ export default {
     },
     // 仅当发送消息时指定 canIncludeExpansion 值为 true，才可对消息进行拓展
     handleSendMessage(item) {
-      // TODO 如果当前用户已被移除群聊 消息发不出去吗
+      // 如果当前用户已被移除群聊 消息发不出去
       let {
         target_id,
         conversation_type,
@@ -827,12 +859,7 @@ export default {
             RongIMLib.sendReadReceiptRequest(conversation.targetId, data.messageUId)
               .then((res) => {
                 if (res.code === 0) {
-                  console.log(
-                    '群聊-发起已读回执请求成功',
-                    conversation.targetId,
-                    data.messageUId,
-                    res
-                  );
+                  console.log('群聊-发起已读回执请求成功', conversation.targetId, data.messageUId);
                 } else {
                   console.log('群聊-发起已读回执请求失败', res.code, res.msg);
                 }
@@ -841,8 +868,20 @@ export default {
                 console.log(error);
               });
         } else {
+          let errorMsg = ErrorCodeTextObj[code] || '';
+          this.$Message.warning({
+            content: '发送失败：' + errorMsg,
+            duration: 4,
+          });
+
           console.log('消息发送失败：', code);
           fun({ status: 'failed' });
+
+          // 22406 被移除群聊
+          if (code === NotInGroupCode) {
+            // 将用户的该条群组记录移除 from会话列表&群组列表
+            this.deleteConnect(3, conversation.targetId);
+          }
         }
       });
     },
@@ -891,8 +930,20 @@ export default {
               // console.log('融云历史记录', targetId, list);
               this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
             } else {
+              console.log('聊天记录失败', code, data);
               args.next([], true);
-              this.$Message.error('获取聊天记录失败，请刷新重试');
+
+              let errorMsg = ErrorCodeTextObj[code] || '获取聊天记录失败，请刷新重试';
+              this.$Message.error({
+                content: errorMsg,
+                duration: 4,
+              });
+
+              // 22406 被移除群聊
+              if (code === NotInGroupCode) {
+                // 将用户的该条群组记录移除 from会话列表&群组列表
+                this.deleteConnect(3, conversation.targetId);
+              }
             }
           })
           .catch((error) => {
@@ -986,7 +1037,14 @@ export default {
           console.log(err);
         });
     },
-
+    // 批量删除已退出的群聊 id number
+    batchDeleteConnect(rongIds, backIds) {
+      rongIds.forEach((id) => {
+        if (!backIds.includes(id)) {
+          this.deleteConnect(3, String(id));
+        }
+      });
+    },
     // 删除会话 this.deleteConnect(1, '27');
     deleteConnect(conversationType, contactId) {
       let targetId = CalcTargetId(contactId);
@@ -995,7 +1053,19 @@ export default {
         targetId,
       }).then((res) => {
         if (res.code === 0) {
-          console.log('删除会话', conversationType, targetId);
+          // console.log('删除会话', conversationType, targetId);
+
+          let index = null;
+          this.currentOrgUsers.forEach((item, i) => {
+            if (CalcTargetId(item.id) === targetId) {
+              index = i;
+            }
+          });
+          if (index >= 0) {
+            this.currentOrgUsers.splice(index, 1);
+            this.$refs.imMainDom && this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
+            this.setFirstConversation();
+          }
         } else {
           console.log(res.code, res.msg);
         }

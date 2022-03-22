@@ -4,10 +4,11 @@
  * @作者: 赵婷婷
  * @Date: 2022-03-17 11:11:33
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-18 11:26:53
+ * @LastEditTime: 2022-03-21 09:49:55
 -->
 <template>
   <div class="reading-columns">
+    <Spin size="large" fix v-if="loading"></Spin>
     <div class="user-list narrow-scroll-bar">
       <div class="reading-title normal-size-text">
         未读人员（{{ unReceiveList ? unReceiveList.length : 0 }}人）
@@ -47,7 +48,7 @@ export default {
     },
   },
   data() {
-    return { msgId: null, receiveList: [], unReceiveList: [] };
+    return { msgId: null, receiveList: [], unReceiveList: [], loading: false };
   },
   components: {
     Avatar,
@@ -65,21 +66,26 @@ export default {
   },
   methods: {
     handleInfo() {
-      this.msgId &&
-        fetchMsgReadingInfo(this.readingContactId, this.msgId)
-          .then((res) => {
-            if (!res) {
-              console.log('已读情况获取失败', res);
-            }
-            if (res.status === 200) {
-              const { receive_users, un_receive_users } = res.data.data;
-              this.receiveList = receive_users;
-              this.unReceiveList = un_receive_users;
-            }
-          })
-          .catch((err) => {
-            console.log('已读情况err', err);
-          });
+      this.loading = true;
+      fetchMsgReadingInfo(this.readingContactId, this.msgId)
+        .then((res) => {
+          if (!res) {
+            console.log('已读情况获取失败', res);
+            return;
+          }
+
+          if (res.status === 200) {
+            const { receive_users, un_receive_users } = res.data.data;
+            this.receiveList = receive_users;
+            this.unReceiveList = un_receive_users;
+          }
+        })
+        .catch((err) => {
+          console.log('已读情况err', err);
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
   },
 };
@@ -88,6 +94,7 @@ export default {
 <style lang="less" scoped>
 .reading-columns {
   width: 100%;
+  min-height: 300px;
   display: flex;
   background-color: #fff;
   box-sizing: border-box;
