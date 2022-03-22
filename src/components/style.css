@@ -41,6 +41,10 @@
   overflow: hidden;
 }
 
+.read-pointer {
+  cursor: pointer;
+}
+
 .noselect {
   -moz-user-select: none;
   /*火狐*/
