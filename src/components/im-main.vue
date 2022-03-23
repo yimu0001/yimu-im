@@ -948,9 +948,9 @@ export default {
       this.getContactsList();
     },
 
-    //接受新消息
+    // 接受新消息
     appendMessage(data) {
-      this.$refs.IMUI.appendMessage(data);
+      this.$refs.IMUI.appendMessage(data, true); // Message, scrollToBottom
     },
     // 设置当前机构通讯录及会话列表
     setCurrentOrgUsers() {
@@ -973,7 +973,6 @@ export default {
         if (this.firstConversationId) {
           let IMUI = this.$refs.IMUI;
           IMUI.changeContact(this.firstConversationId);
-          IMUI.messageViewToBottom();
         }
       }, 500);
     },

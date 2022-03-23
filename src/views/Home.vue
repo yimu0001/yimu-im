@@ -41,11 +41,11 @@ export default {
       this.$refs.yimuNews.openChatDialog();
     },
     handleChangeMenu(menuName) {
-      console.log('handleChangeMenu======', menuName);
+      // console.log('handleChangeMenu======', menuName);
       this.curMenuName = menuName;
     },
     handleSetFont(size) {
-      console.log('handleSetFont======', size);
+      // console.log('handleSetFont======', size);
     },
     setMenu() {
       this.customMenu = [

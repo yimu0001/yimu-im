@@ -125,7 +125,7 @@
           <div
             v-for="(orgItem, orgIndex) of orgList"
             :key="`orgItem-${orgIndex}`"
-            class="orgItem"
+            :class="selectOrgId === orgItem.id ? 'orgItem selected-col' : 'orgItem'"
             @click="chooseOrg(orgItem.id)"
           >
             {{ orgItem.name }}
@@ -486,6 +486,13 @@ export default {
 
     //加人
     handleAddMember() {
+      this.selecedUser = [];
+      if (this.selectOrgUsers && this.selectOrgUsers.length > 0) {
+        this.selectOrgUsers.forEach((item) => {
+          item.checked = false;
+        });
+      }
+
       this.getAllOrgList();
       this.addUserOpen = true;
       this.originalMember = this.groupMemberList.map(({ avatar, dptname, id, nickname }) => ({
@@ -499,6 +506,11 @@ export default {
       console.log('回显', this.originalMember);
     },
     handleRemoveMember() {
+      this.canRemoveMember = [];
+      this.checkedRemoveUser = [];
+      this.memberIds = [];
+      this.memberNames = '';
+
       this.removeUserOpen = true;
       this.canRemoveMember = this.groupMemberList.map(({ avatar, dptname, id, nickname }) => ({
         avatar,
@@ -555,6 +567,7 @@ export default {
             this.$Message.success(res.data.data || '移除成功');
             this.removeUserOpen = false;
             this.canRemoveMember = [];
+            this.checkedRemoveUser = [];
             this.getList();
             this.memberIds = [];
             this.memberNames = '';
@@ -699,8 +712,15 @@ p {
         cursor: pointer;
         // width: 80%;
         margin: 10px auto;
+        color: #515a6e;
         border: 1px solid #eee;
         padding: 8px 10px;
+        border-radius: 4px;
+      }
+
+      .selected-col {
+        color: #409eff;
+        border: 1px solid #409eff;
       }
     }
     .userListDom {

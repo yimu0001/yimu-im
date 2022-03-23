@@ -1,12 +1,13 @@
 // 拖拽
 export const OnInitDrag = () => {
   // lemon-menu lemon-sidebar__fixed-top lemon-container__title
-  $(
-    '.lemon-menu, .lemon-sidebar__fixed-top, .lemon-container__title, .enable-drag-area, .lemon-contact-info'
-  ).mousedown(function (e) {
-    handleDragAll(e, this.className);
-    // console.log('开始移动了', this.className);
-  });
+  // .lemon-sidebar__fixed-top,
+  $('.lemon-menu, .lemon-container__title, .enable-drag-area, .lemon-contact-info').mousedown(
+    function (e) {
+      handleDragAll(e, this.className);
+      // console.log('开始移动了', this.className);
+    }
+  );
 };
 const handleDragAll = (e, className) => {
   e.stopPropagation();

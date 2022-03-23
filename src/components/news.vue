@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-22 09:39:59
+ * @LastEditTime: 2022-03-23 17:46:44
 -->
 <template>
   <div>
@@ -157,6 +157,7 @@ export default {
       isSharing: false, // 来了新消息 边框颜色闪烁
       msgTypeList: { groupList: [], singleList: [], noticeList: [] },
       allGroupsList: [],
+      allGroupIds: [],
       allFriendsList: [],
       readStatusObj: {},
       readStatusTime: '',
@@ -221,6 +222,9 @@ export default {
         this.openChatDialog();
       }
     },
+    allGroupIds() {
+      console.log('群聊变化');
+    },
   },
   mounted() {
     this.firstOpen = true;
@@ -253,9 +257,7 @@ export default {
     bus.$off('afterQuitGroup');
     bus.$off('noticePermissionChange');
 
-    const Events = RongIMLib.Events;
-    RongIMLib.removeEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
-    RongIMLib.removeEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
+    this.removeImWatcher();
   },
   methods: {
     getSettingItems() {
@@ -324,11 +326,9 @@ export default {
         });
     },
     getConnetList() {
-      // 获取会话列表 失败 导致右下角不展示
       RongIMLib.getConversationList()
-        .then(({ code, data: conversationList }) => {
+        .then(({ code, data: conversationList = [] }) => {
           if (code === 0) {
-            // console.log('获取会话列表成功', conversationList);
             conversationList.forEach((item) => {
               let { targetId, conversationType } = item;
               let id = conversationType === 3 ? `group_${targetId}` : targetId;
@@ -444,9 +444,8 @@ export default {
     handleClose() {
       this.showList = false;
     },
+    // 添加事件监听
     imWatcher() {
-      let that = this;
-      // 添加事件监听
       const Events = RongIMLib.Events;
       RongIMLib.addEventListener(Events.CONNECTING, function () {
         console.log('正在链接服务器');
@@ -454,28 +453,27 @@ export default {
       RongIMLib.addEventListener(Events.CONNECTED, function () {
         console.log('已经链接到服务器');
       });
-      RongIMLib.addEventListener(Events.MESSAGES, function ({ messages }) {
-        if (messages && messages.length > 0) {
-          // that.historyList = that.historyList.concat(messages);
-          that.handleReceiveMessage(messages);
-        }
-      });
+      RongIMLib.addEventListener(Events.MESSAGES, this.handleReceiveMessage);
       // 监听消息扩展通知
-      RongIMLib.addEventListener(RongIMLib.Events.EXPANSION, (evt) => {
-        console.log('监听消息扩展通知', evt);
-        if (evt && evt.updatedExpansion) {
-          const { expansion, messageUId } = evt.updatedExpansion;
-
-          // 有用户收藏不需要其他用户更新消息
-          if (!expansion.thumbedInfo && !expansion.markedObj && expansion.collectedIds) return;
-
-          // 其他用户操作了标记或者点赞 更新消息体
-          this.$refs.imMainDom && this.$refs.imMainDom.updateExpansion(expansion, messageUId);
-        }
-      });
+      RongIMLib.addEventListener(Events.EXPANSION, this.handleExpansion);
+      // 监听已读响应
+      RongIMLib.addEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
+      RongIMLib.addEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
+    },
+    // 移除事件监听
+    removeImWatcher() {
+      const Events = RongIMLib.Events;
+      RongIMLib.removeEventListener(Events.MESSAGES, this.handleReceiveMessage);
+      RongIMLib.removeEventListener(Events.EXPANSION, this.handleExpansion);
+      RongIMLib.removeEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
+      RongIMLib.removeEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
     },
     // 融云消息类型 处理成lemon-ui的格式 并插入
-    handleReceiveMessage(messages) {
+    handleReceiveMessage({ messages }) {
+      if (!messages || messages.length === 0) {
+        return;
+      }
+
       console.log('接收到的融云推送', messages);
       let curContactMsgs = [];
       messages.forEach((item) => {
@@ -533,17 +531,20 @@ export default {
               },
             };
 
-            let newGroupNotice = item.conversationType === 3;
-            let isNewGroup = !this.allGroupsList.map(({ id }) => id).includes(item.targetId);
+            let newGroupNotice =
+              item.conversationType === 3 &&
+              (item.content.message.includes('创建了') ||
+                item.content.message.includes('邀请了 ' + this.currentUser.nickname));
+            let isNewGroup = !this.allGroupIds.includes(item.targetId);
             if (newGroupNotice && isNewGroup) {
               // 被拉进新群
               this.getNewConnectList(item.targetId);
             }
         }
 
+        // 收到系统通知消息
         if (!this.showList && Number(item.senderUserId) < 0) {
           this.closeAllNotice();
-          console.log('收到系统通知消息', messageData);
           this.noticeMsgPop(messageData.content);
         }
 
@@ -551,11 +552,12 @@ export default {
         if (!this.showList) {
           let cid = messageData.toContactId;
           this.firstConversationId = cid;
-          if (!this.rongConversationIds.includes(cid)) {
-            this.rongConversationIds.unshift(cid);
-          }
-          this.$refs.imMainDom &&
-            this.$refs.imMainDom.changeLastestConnect(this.firstConversationId);
+
+          this.rongConversationIds = this.rongConversationIds.filter((id) => id !== cid);
+          this.rongConversationIds.unshift(cid);
+
+          // this.$refs.imMainDom &&
+          //   this.$refs.imMainDom.changeLastestConnect(this.firstConversationId);
         }
 
         if (this.$refs.imMainDom) {
@@ -607,6 +609,18 @@ export default {
           );
         },
       });
+    },
+    // 监听消息扩展通知
+    handleExpansion(evt) {
+      if (evt && evt.updatedExpansion) {
+        const { expansion, messageUId } = evt.updatedExpansion;
+
+        // 有用户收藏不需要其他用户更新消息
+        if (!expansion.thumbedInfo && !expansion.markedObj && expansion.collectedIds) return;
+
+        // 其他用户操作了标记或者点赞 更新消息体
+        this.$refs.imMainDom && this.$refs.imMainDom.updateExpansion(expansion, messageUId);
+      }
     },
     setRongExpansion(expansion, message, operate, cb) {
       expansion.target_id = message.toContactId;
@@ -699,7 +713,7 @@ export default {
     cleanRemovedConnect() {
       const { groupList } = this.msgTypeList;
       let rongIds = groupList.map(({ targetId }) => Number(CalcTargetId(targetId)));
-      let backGroupIds = this.allGroupsList.map(({ id }) => id);
+      let backGroupIds = this.allGroupIds;
 
       this.batchDeleteConnect(rongIds, backGroupIds);
     },
@@ -749,6 +763,14 @@ export default {
     },
     // 创建群组之后 获取会话列表
     getNewConnectList(id) {
+      let existGroup = this.allGroupIds.includes(id);
+      if (existGroup) {
+        console.log('这个群已经存在了', existGroup);
+        return;
+      }
+
+      this.allGroupIds.push(Number(id));
+
       RongIMLib.getConversationList().then(({ code, data: conversationList }) => {
         if (code === 0) {
           let curConverse = conversationList.filter((item) => item.targetId == id)[0] || {};
@@ -773,7 +795,7 @@ export default {
                 id: targetId,
                 displayName,
                 avatar,
-                index: '[2]群聊',
+                index: '[1]群聊',
                 unread: curConverse.unreadMessageCount,
                 lastSendTime: sentTime,
                 lastContent,
@@ -989,12 +1011,13 @@ export default {
           }
 
           const { list } = res.data.data; // total, last_page
+          this.allGroupIds = list.map(({ id }) => id);
           this.allGroupsList = list.map((item) => {
             let userItem = {
               id: item.id,
               displayName: item.name,
               avatar: item.avatar,
-              index: '[2]群聊',
+              index: '[1]群聊',
               unread: 0,
               lastSendTime: '',
               lastContent: '',
@@ -1023,7 +1046,7 @@ export default {
               id: item.id,
               displayName: item.name,
               avatar: item.avatar,
-              index: '[1]好友',
+              index: '[2]好友',
               unread: 0,
               lastSendTime: '',
               lastContent: '',
