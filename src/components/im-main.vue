@@ -96,7 +96,8 @@
     </lemon-imui>
 
     <Modal title="图片预览" v-model="outerVisible" :z-index="2003" width="600" transfer footer-hide>
-      <el-image :src="imgUrl" :preview-src-list="srcList" title="查看大图"> </el-image>
+      <!-- <el-image :src="imgUrl" :preview-src-list="srcList" title="查看大图"> </el-image> -->
+      <img class="pre-modal-img" :src="imgUrl" alt="图片" />
     </Modal>
 
     <Modal title="创建待办" v-model="pendingPop" :z-index="2002" width="600" transfer footer-hide>
