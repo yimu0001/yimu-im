@@ -41,8 +41,8 @@ export default {
 
     bus.$on('updateReadNum', (type, params) => {
       if (type === 'single') {
-        const { messageUId, sentTime } = params;
-        if (this.$attrs.message.messageUId === messageUId && sentTime) {
+        const { targetId, sentTime } = params;
+        if (this.$attrs.message.toContactId === targetId && sentTime) {
           this.lastReadTime = sentTime;
         }
       } else if (type === 'group') {

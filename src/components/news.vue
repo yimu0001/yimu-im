@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-23 17:46:44
+ * @LastEditTime: 2022-03-25 15:30:12
 -->
 <template>
   <div>
@@ -59,7 +59,6 @@
         @change-menu="handleChangeMenu"
         @notice-group-sender="handleNoticeGroupSender"
         @notice-single-sender="handleNoticeSingleSender"
-        @notice-change-contact="handleChangeConcat"
         @delete-contact="deleteConnect"
       ></im-main>
       <span slot="footer" class="dialog-footer"> </span>
@@ -223,7 +222,7 @@ export default {
       }
     },
     allGroupIds() {
-      console.log('群聊变化');
+      // console.log('群聊变化');
     },
   },
   mounted() {
@@ -237,19 +236,14 @@ export default {
     this.connectRongyun();
 
     bus.$on('createGroupOk', (id) => {
+      // 因为会收到融云建群通知 所以这里不需要再获取新群信息
       this.$refs.imMainDom.createPop = false;
-      this.getNewConnectList(id); // 获取会话列表
     });
     bus.$on('setExpansion', this.setRongExpansion);
     bus.$on('afterQuitGroup', this.deleteConnect);
     bus.$on('noticePermissionChange', (allowPop) => {
       this.noticeAllowPop = allowPop;
     });
-
-    // 监听已读响应
-    const Events = RongIMLib.Events;
-    RongIMLib.addEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
-    RongIMLib.addEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
   },
   beforeDestroy() {
     bus.$off('createGroupOk');
@@ -289,6 +283,7 @@ export default {
     },
     // 群聊已读消息回执响应监听 receivedUserId 为消息接收者
     onMessageReceiptResponse({ conversation, receivedUserId, messageUIdList }) {
+      console.log('群聊已读监听', conversation, receivedUserId, messageUIdList);
       // {conversationType: 3, targetId: '45', channelId: ''} 4575 ['BVCT-OET5-K84C-01K1']
       if (CalcTargetId(this.contactId) === conversation.targetId) {
         bus.$emit('updateReadNum', 'group', { messageUIdList, receivedUserId });
@@ -297,9 +292,10 @@ export default {
     },
     // 单聊已读消息回执响应监听
     onReadReceiptReceived({ conversation, messageUId, sentTime }) {
+      console.log('单聊已读监听', conversation, messageUId, sentTime);
       // {conversationType: 1, targetId: '1000053', channelId: ''}  undefined 1641350108871
       if (this.contactId === conversation.targetId) {
-        bus.$emit('updateReadNum', 'single', { messageUId, sentTime });
+        bus.$emit('updateReadNum', 'single', { targetId: conversation.targetId, sentTime });
       }
     },
     connectRongyun() {
@@ -413,7 +409,7 @@ export default {
           }
         });
       } else {
-        console.log('群聊里面-暂时没消息');
+        // console.log('群聊里面暂时没消息');
       }
     },
     openChatDialog() {
@@ -537,8 +533,7 @@ export default {
                 item.content.message.includes('邀请了 ' + this.currentUser.nickname));
             let isNewGroup = !this.allGroupIds.includes(item.targetId);
             if (newGroupNotice && isNewGroup) {
-              // 被拉进新群
-              this.getNewConnectList(item.targetId);
+              this.loadStep === 3 && this.getNewConnectList(item.targetId);
             }
         }
 
@@ -666,7 +661,7 @@ export default {
             if (res.code === 0) {
               console.log('群聊-发送响应回执请求成功', res.code, res.data);
             } else {
-              console.log('群聊-发送响应回执请求成功', res.code, res.msg);
+              console.log('群聊-发送响应回执请求失败', res.code, res.msg);
             }
           })
           .catch((error) => {
@@ -713,7 +708,7 @@ export default {
     cleanRemovedConnect() {
       const { groupList } = this.msgTypeList;
       let rongIds = groupList.map(({ targetId }) => Number(CalcTargetId(targetId)));
-      let backGroupIds = this.allGroupIds;
+      let backGroupIds = this.allGroupIds.map((id) => Number(id));
 
       this.batchDeleteConnect(rongIds, backGroupIds);
     },
@@ -727,7 +722,7 @@ export default {
         item.targetId = `group_${item.id}`;
         let curMsg = groupList.filter(({ targetId }) => CalcTargetId(targetId) == item.id)[0];
         if (curMsg) {
-          const { targetId, unreadMessageCount, latestMessage } = curMsg;
+          const { targetId, unreadMessageCount = 0, latestMessage } = curMsg;
           item = { ...item, targetId, unreadMessageCount, latestMessage };
         }
         this.currentOrgUsers.push(getFormatChatInfo(item, true));
@@ -738,7 +733,7 @@ export default {
         userItem.targetId = userItem.id;
         let curMsg = singleList.filter(({ targetId }) => targetId == userItem.id)[0];
         if (curMsg) {
-          const { unreadMessageCount, latestMessage } = curMsg;
+          const { unreadMessageCount = 0, latestMessage } = curMsg;
           userItem = { ...userItem, unreadMessageCount, latestMessage };
         }
         this.currentOrgUsers.push(getFormatChatInfo(userItem, false));
@@ -769,7 +764,7 @@ export default {
         return;
       }
 
-      this.allGroupIds.push(Number(id));
+      this.allGroupIds.push(String(id));
 
       RongIMLib.getConversationList().then(({ code, data: conversationList }) => {
         if (code === 0) {
@@ -789,22 +784,28 @@ export default {
                 sentTime: new Date().getTime(),
               };
               let { messageType, content, sentTime } = curConverse.latestMessage || defaultMessage;
-              let lastContent = CalcLastCentent(messageType, content);
+              let lastInfo = CalcLastCentent(messageType, content);
 
               let userItem = {
                 id: targetId,
                 displayName,
                 avatar,
                 index: '[1]群聊',
-                unread: curConverse.unreadMessageCount,
+                unread: curConverse.unreadMessageCount || 0,
                 lastSendTime: sentTime,
-                lastContent,
+                lastContent: { ...lastInfo },
                 isGroup: true,
                 isNew: true, // for render lastContent
               };
 
-              this.currentOrgUsers.push(userItem);
-              this.$refs.imMainDom && this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
+              // 现在通讯录里的群
+              let nowGroups = this.currentOrgUsers.filter(({ isGroup }) => isGroup);
+              let existItem = nowGroups.filter(({ id }) => id === targetId)[0];
+              if (!existItem) {
+                // 往通讯录里加新群
+                this.currentOrgUsers.push(userItem);
+                this.$refs.imMainDom && this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
+              }
             }
           });
         } else {
@@ -881,7 +882,7 @@ export default {
             RongIMLib.sendReadReceiptRequest(conversation.targetId, data.messageUId)
               .then((res) => {
                 if (res.code === 0) {
-                  console.log('群聊-发起已读回执请求成功', conversation.targetId, data.messageUId);
+                  console.log('群聊-发起已读回执请求成功', res.code, res.msg);
                 } else {
                   console.log('群聊-发起已读回执请求失败', res.code, res.msg);
                 }
@@ -1011,7 +1012,7 @@ export default {
           }
 
           const { list } = res.data.data; // total, last_page
-          this.allGroupIds = list.map(({ id }) => id);
+          this.allGroupIds = list.map(({ id }) => String(id));
           this.allGroupsList = list.map((item) => {
             let userItem = {
               id: item.id,

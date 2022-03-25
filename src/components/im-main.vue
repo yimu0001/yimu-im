@@ -567,10 +567,6 @@ export default {
           this.noticeCount = contact.unread;
         }
       }
-
-      const nowList = this.$refs.IMUI.getCurrentMessages();
-      let ids = nowList.filter(({ senderUserId }) => Number(senderUserId) > 0).map(({ id }) => id);
-      this.$emit('notice-change-contact', contact.id, contact.isGroup ? ids : null);
     },
     // 单聊/群聊已读回执 无时效
     calcReadNotice(list, unreadCount) {
