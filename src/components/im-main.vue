@@ -953,6 +953,9 @@ export default {
     // 接受新消息
     appendMessage(data) {
       this.$refs.IMUI.appendMessage(data, true); // Message, scrollToBottom
+      // setTimeout(() => {
+      //   this.$refs.IMUI.initContacts(this.currentOrgUsers);
+      // }, 500);
     },
     // 设置当前机构通讯录及会话列表
     setCurrentOrgUsers() {

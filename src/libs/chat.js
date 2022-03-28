@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-23 10:37:04
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-14 15:15:17
+ * @LastEditTime: 2022-03-28 14:47:12
  */
 const Type_Key_Obj = {
   'RC:ReferenceMsg': { type: 'text', key: 'content' },
@@ -45,7 +45,7 @@ export const getFormatChatInfo = (item, isGroup = false) => {
     displayName: item.displayName || defaultName,
     avatar: item.avatar || defaultAvatar,
     index: isGroup ? '[2]群聊' : '[1]好友',
-    unread: item.unreadMessageCount,
+    unread: item.unreadMessageCount || 0,
     lastSendTime: item.latestMessage ? item.latestMessage.sentTime : item.lastSendTime,
     lastContent: {},
     isGroup,
@@ -76,7 +76,7 @@ export const getFormatNoticeInfo = (item) => {
     displayName: item.displayName,
     avatar: item.avatar,
     index: '[3]通知',
-    unread: item.unreadMessageCount,
+    unread: item.unreadMessageCount || 0,
     lastSendTime: item.latestMessage.sentTime,
     lastContent: { type: 'text', content: item.latestMessage.content.content },
   };

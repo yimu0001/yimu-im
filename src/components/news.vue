@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-28 10:45:26
+ * @LastEditTime: 2022-03-28 14:49:16
 -->
 <template>
   <div>
@@ -1065,20 +1065,19 @@ export default {
     batchDeleteConnect(rongIds, backIds) {
       rongIds.forEach((id) => {
         if (!backIds.includes(id)) {
-          this.deleteConnect(3, String(id));
+          this.deleteConnect(3, String(id), true);
         }
       });
     },
     // 删除会话 this.deleteConnect(1, '27');
-    deleteConnect(conversationType, contactId) {
+    deleteConnect(conversationType, contactId, totally = false) {
       let targetId = CalcTargetId(contactId);
       RongIMLib.removeConversation({
         conversationType, // 1个人 3群聊
         targetId,
       }).then((res) => {
         if (res.code === 0) {
-          // console.log('删除会话', conversationType, targetId);
-
+          // 从currentOrgUsers删掉lastContent
           let index = null;
           this.currentOrgUsers.forEach((item, i) => {
             if (CalcTargetId(item.id) === targetId) {
@@ -1086,7 +1085,11 @@ export default {
             }
           });
           if (index >= 0) {
-            this.currentOrgUsers.splice(index, 1);
+            if (totally) {
+              this.currentOrgUsers.splice(index, 1);
+            } else {
+              this.$set(this.currentOrgUsers[index], 'lastContent', {});
+            }
             this.$refs.imMainDom && this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
             this.setFirstConversation();
           }
