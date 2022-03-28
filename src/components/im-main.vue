@@ -573,14 +573,19 @@ export default {
       let newMsgs = reverseArray(list);
 
       if (this.targetUser.isGroup) {
-        let msgIds = [];
+        let msgInfo = {};
         newMsgs.forEach((item, index) => {
           if (index < unreadCount) {
-            msgIds.push(item.id);
+            const { id, senderUserId, fromUser } = item;
+            let sender = senderUserId || fromUser.id;
+            if (!msgInfo[sender]) {
+              msgInfo[sender] = [];
+            }
+            msgInfo[sender].push(id);
           }
         });
-        if (msgIds && msgIds.length > 0) {
-          this.$emit('notice-group-sender', this.targetUser.id, msgIds);
+        if (msgInfo) {
+          this.$emit('notice-group-sender', this.targetUser.id, msgInfo);
         }
         this.noticeCount = 0;
       } else {

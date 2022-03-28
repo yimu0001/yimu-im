@@ -22,7 +22,7 @@ export default {
     return {
       readNum: 0,
       userId: null,
-      lastReadTime: null,
+      lastReadTime: 0,
       isGroup: false,
       expansionObj: {},
       showRead: false,
@@ -107,7 +107,7 @@ export default {
               {!isNoticeMsg && fromUser.id === this.userId && (
                 <div class='left-tool-abs'>
                   <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
-                  {this.isGroup && (
+                  {this.showRead && this.isGroup && (
                     <div
                       class='read-num read-pointer little-grey-text'
                       onClick={this.handleReadingInfo}
@@ -115,9 +115,9 @@ export default {
                       {this.readList ? this.readList.length : '0'}人已读
                     </div>
                   )}
-                  {!this.isGroup && (
+                  {this.showRead && !this.isGroup && (
                     <div class='read-num little-grey-text'>
-                      {parseInt(this.lastReadTime) > parseInt(sendTime) ? '已读' : '未读'}
+                      {parseInt(this.lastReadTime) >= parseInt(sendTime) ? '已读' : '未读'}
                     </div>
                   )}
                 </div>

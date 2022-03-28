@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-25 15:30:12
+ * @LastEditTime: 2022-03-28 10:45:26
 -->
 <template>
   <div>
@@ -651,12 +651,12 @@ export default {
     handleChangeMenu(menuName) {
       this.$emit('change-menu', menuName);
     },
-    handleNoticeGroupSender(targetId, msgIds) {
+    handleNoticeGroupSender(targetId, msgInfo) {
       // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
       this.contactId = CalcTargetId(targetId);
       this.clearUnread(true, this.contactId);
       this.currentUser.id &&
-        RongIMLib.sendReadReceiptResponseV2(this.contactId, { [this.currentUser.id]: msgIds })
+        RongIMLib.sendReadReceiptResponseV2(this.contactId, msgInfo)
           .then((res) => {
             if (res.code === 0) {
               console.log('群聊-发送响应回执请求成功', res.code, res.data);
