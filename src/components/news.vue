@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-28 14:49:16
+ * @LastEditTime: 2022-03-28 16:36:05
 -->
 <template>
   <div>
@@ -490,9 +490,13 @@ export default {
           canIncludeExpansion: item.canIncludeExpansion || false,
           expansion: item.expansion || {},
         };
+        if (item.messageType === 'RC:ReferenceMsg') {
+          item.messageType = 'RC:TxtMsg';
+        }
+
         switch (item.messageType) {
           case 'RC:TxtMsg':
-            const { content, objName, referMsg, referMsgUserId } = item.content;
+            let { content, objName, referMsg, referMsgUserId } = item.content;
             messageData = {
               ...messageData,
               type: 'text',

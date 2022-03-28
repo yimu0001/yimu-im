@@ -546,14 +546,20 @@ export default {
       this.closeRightDrawer();
 
       // 已读相关：防止每次调取过多的消息已读情况 每次重新获取融云接口
-      this.$refs.IMUI.clearMessages(this.targetUser.id);
+      if (this.targetUser.id !== contact.id) {
+        this.$refs.IMUI.clearMessages(this.targetUser.id);
+      }
       console.log('Event:change-contact', contact);
       // contact.unread: 3   id: "group_12"
       // this.mailKeyword && this.changeIMContact(contact);
       this.targetUser = contact;
+
       instance.updateContact({
         id: contact.id,
         unread: 0,
+        // lastContent: `<span style="color:red;">[草稿]</span><span>${this.$refs.IMUI.lastContentRender(
+        //   { type: "text", content: editorValue },
+        // )}</span>`,
       });
       instance.closeDrawer();
 
@@ -756,7 +762,7 @@ export default {
         status: 'succeed',
         type: 'text',
         conversationType: item.isGroup ? 3 : 1,
-        sendTime: new Date().getTime(),
+        sendTime: data.sentTime || new Date().getTime(), //  sendTime: data.sentTime,  new Date().getTime()
         content: '',
         toContactId: item.target_id,
         fromUser: this.user,
