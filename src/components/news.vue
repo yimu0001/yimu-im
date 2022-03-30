@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-28 18:02:21
+ * @LastEditTime: 2022-03-30 15:12:23
 -->
 <template>
   <div>
@@ -163,6 +163,7 @@ export default {
       sizeOptions: ['large', 'middle', 'small'],
       noticeAllowPop: false,
       firstOpen: true, // 绑定监听拖拽的事件
+      curContactMsgs: [], // 接收融云推送 并且是当前会话框的内容 存下来用来更新已读情况
     };
   },
   props: {
@@ -430,6 +431,13 @@ export default {
       this.saveMessageList = [];
       this.hasUnread = false;
 
+      let noticeCount = this.curContactMsgs.length;
+      if (noticeCount > 0 && this.showList) {
+        // 消息体已读回执
+        this.$refs.imMainDom?.calcReadNotice(this.curContactMsgs, noticeCount);
+        this.curContactMsgs = [];
+      }
+
       // 只有第一次初始化的时候才绑定
       if (this.firstOpen) {
         OnInitDrag();
@@ -470,8 +478,7 @@ export default {
         return;
       }
 
-      console.log('接收到的融云推送', messages);
-      let curContactMsgs = [];
+      // console.log('接收到的融云推送', messages);
       messages.forEach((item) => {
         // targetId: "12" conversationType: 3
         let userinfo = item.content.user || {};
@@ -567,14 +574,15 @@ export default {
 
         // 如果是当前聊天框的已读通知 立即回执响应
         if (this.contactId && this.contactId === item.targetId) {
-          curContactMsgs.push(messageData);
+          this.curContactMsgs.push(messageData);
         }
       });
 
-      let noticeCount = curContactMsgs.length;
-      if (noticeCount > 0) {
+      let noticeCount = this.curContactMsgs.length;
+      if (noticeCount > 0 && this.showList) {
         // 消息体已读回执
-        this.$refs.imMainDom?.calcReadNotice(curContactMsgs, noticeCount);
+        this.$refs.imMainDom?.calcReadNotice(this.curContactMsgs, noticeCount);
+        this.curContactMsgs = [];
       }
 
       // 入口新消息提示
