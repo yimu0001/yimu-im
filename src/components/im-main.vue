@@ -542,7 +542,57 @@ export default {
         this.$refs.IMUI.initContacts(filterUsers);
       }
     },
+    clearDraft(contact, instance) {
+      if (this.targetUser.id && this.targetUser.id !== contact.id) {
+        let lastOne = {};
+        for (var i = 0; i < this.currentOrgUsers.length; i++) {
+          if (this.currentOrgUsers[i].id === this.targetUser.id) {
+            lastOne = this.currentOrgUsers[i];
+            break; // 终止循环
+          }
+        }
+
+        if (
+          lastOne.lastContent ===
+          '<span style="color:red;">[草稿]</span><span>[object Object]</span>'
+        ) {
+          let history = instance.getMessages(this.targetUser.id);
+          history = reverseArray(history);
+          console.log('聊天记录', history[0]);
+          lastOne.lastContent = this.getLastContent(history[0]);
+          instance.updateContact({
+            id: this.targetUser.id,
+            lastContent: lastOne.lastContent,
+          });
+        }
+      }
+    },
+    resetLastContent() {
+      let history = this.$refs.IMUI.getMessages(this.targetUser.id);
+      history = reverseArray(history);
+      this.$refs.IMUI.updateContact({
+        id: this.targetUser.id,
+        lastContent: this.getLastContent(history[0]),
+      });
+    },
+    getLastContent(message) {
+      if (message.type === 'text') {
+        return <span>{message.content}</span>;
+      }
+      if (message.type === 'image') {
+        return <span>[图片]</span>;
+      }
+      if (message.type === 'event') {
+        return <span>[通知]</span>;
+      }
+      if (message.type === 'file') {
+        return <span>[文件]</span>;
+      }
+
+      return <span></span>;
+    },
     handleChangeContact(contact, instance) {
+      this.clearDraft(contact, instance);
       this.closeRightDrawer();
 
       // 已读相关：防止每次调取过多的消息已读情况 每次重新获取融云接口
@@ -557,9 +607,6 @@ export default {
       instance.updateContact({
         id: contact.id,
         unread: 0,
-        // lastContent: `<span style="color:red;">[草稿]</span><span>${this.$refs.IMUI.lastContentRender(
-        //   { type: "text", content: editorValue },
-        // )}</span>`,
       });
       instance.closeDrawer();
 
@@ -888,6 +935,7 @@ export default {
           // jpg png
           if (!this.checkFileAccept(file.name)) {
             this.$refs.IMUI.removeMessage(message.id);
+            this.resetLastContent();
             return;
           }
 
@@ -916,6 +964,7 @@ export default {
           let { name, size, type } = file;
           if (!this.checkFileAccept(name)) {
             this.$refs.IMUI.removeMessage(message.id);
+            this.resetLastContent();
             return;
           }
 

@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-28 16:36:05
+ * @LastEditTime: 2022-03-28 18:02:21
 -->
 <template>
   <div>
@@ -330,7 +330,7 @@ export default {
               let id = conversationType === 3 ? `group_${targetId}` : targetId;
               item.targetId = id;
             });
-
+            console.log('获取会话列表', conversationList);
             // 万一当前聊天不在群组中 firstConversationId往下顺延
             this.rongConversationIds = conversationList.map(({ targetId }) => targetId);
             this.msgTypeList = this.classifyConnectList(conversationList);
