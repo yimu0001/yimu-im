@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-30 15:12:23
+ * @LastEditTime: 2022-03-30 16:10:40
 -->
 <template>
   <div>
@@ -1089,6 +1089,7 @@ export default {
         targetId,
       }).then((res) => {
         if (res.code === 0) {
+          console.log('删除会话', contactId);
           // 从currentOrgUsers删掉lastContent
           let index = null;
           this.currentOrgUsers.forEach((item, i) => {

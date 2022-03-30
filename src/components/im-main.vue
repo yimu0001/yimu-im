@@ -789,8 +789,8 @@ export default {
         messages = allContacts[target_id] || [];
       }
 
-      let message = messages.length > 0 ? messages.filter(({ id }) => id === messageUId)[0] : null;
-      let oldExpand = JSON.parse(JSON.stringify(message.expansion));
+      let message = messages.length > 0 ? messages.filter(({ id }) => id === messageUId)[0] : {};
+      let oldExpand = JSON.parse(JSON.stringify(message.expansion || {}));
       // 如果接收到的不是当前会话 就没有message 无法修改扩展
       if (expandNew && message) {
         const updateMsg = {
