@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-22 16:42:03
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-31 10:57:43
+ * @LastEditTime: 2022-03-31 15:44:41
  */
 
 let IMUrl = '';
@@ -14,17 +14,20 @@ if (window.location.origin.includes('.iqilu.com')) {
   // 正式环境
   IMUrl = 'https://shandianyun-im.iqilu.com';
   CSUrl = 'https://shandianyun-customer.iqilu.com';
+  appKey = 'pgyu6atqp512u';
 } else if (window.location.origin.includes('.shandian8.com')) {
   // 测试环境
   IMUrl = 'https://im.shandian8.com';
   CSUrl = 'https://cs.shandian8.com';
+  appKey = 'cpj2xarlctfmn';
 } else {
   // 本地开发环境
-  // IMUrl = 'https://im.shandian8.com';
-  // CSUrl = 'https://cs.shandian8.com';
-  IMUrl = 'https://shandianyun-im.iqilu.com';
-  CSUrl = 'https://shandianyun-customer.iqilu.com';
-  appKey = 'pgyu6atqp512u';
+  IMUrl = 'https://im.shandian8.com';
+  CSUrl = 'https://cs.shandian8.com';
+  appKey = 'cpj2xarlctfmn';
+  // IMUrl = 'https://shandianyun-im.iqilu.com';
+  // CSUrl = 'https://shandianyun-customer.iqilu.com';
+  // appKey = 'pgyu6atqp512u';
 }
 
 export const BaseUrl = IMUrl;
