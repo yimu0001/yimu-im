@@ -401,19 +401,18 @@ export default {
       const { IMUI } = this.$refs;
       // IMUI.initEmoji(EmojiData);
       IMUI.setLastContentRender('text', (message) => {
-        // if (message.content.includes('<') || message.content.includes('&lt;')) {
-        //   console.log('特殊字符-handleRender', message.content);
-        // }
         // 特殊字符 替换
         let content = message.content
-          .replace(/<(style|script|iframe)[^>]*?>[\s\S]+?<\/\1\s*>/gi, '')
-          .replace(/<[^>]*>/g, '')
-          .replace(/&lt;[^&gt;]*&gt;/g, '')
-          .replace(/<[^>]+?>/g, '')
-          .replace(/\s+/g, ' ')
-          .replace(/ /g, ' ')
-          .replace(/</g, ' ')
-          .replace(/>/g, ' ');
+          ? message.content
+              .replace(/<(style|script|iframe)[^>]*?>[\s\S]+?<\/\1\s*>/gi, '')
+              .replace(/<[^>]*>/g, '')
+              .replace(/&lt;[^&gt;]*&gt;/g, '')
+              .replace(/<[^>]+?>/g, '')
+              .replace(/\s+/g, ' ')
+              .replace(/ /g, ' ')
+              .replace(/</g, ' ')
+              .replace(/>/g, ' ')
+          : '';
         return <span>{content}</span>;
         // return <span>{JSON.stringify(message.content)}</span>;
       });
@@ -591,19 +590,18 @@ export default {
     },
     getLastContent(message) {
       if (message.type === 'text') {
-        // if (message.content.includes('<') || message.content.includes('&lt;')) {
-        //   console.log('特殊字符-getLastContent', message.content);
-        // }
         // 特殊字符 替换
         let content = message.content
-          .replace(/<(style|script|iframe)[^>]*?>[\s\S]+?<\/\1\s*>/gi, '')
-          .replace(/<[^>]*>/g, '')
-          .replace(/&lt;[^&gt;]*&gt;/g, '')
-          .replace(/<[^>]+?>/g, '')
-          .replace(/\s+/g, ' ')
-          .replace(/ /g, ' ')
-          .replace(/</g, ' ')
-          .replace(/>/g, ' ');
+          ? message.content
+              .replace(/<(style|script|iframe)[^>]*?>[\s\S]+?<\/\1\s*>/gi, '')
+              .replace(/<[^>]*>/g, '')
+              .replace(/&lt;[^&gt;]*&gt;/g, '')
+              .replace(/<[^>]+?>/g, '')
+              .replace(/\s+/g, ' ')
+              .replace(/ /g, ' ')
+              .replace(/</g, ' ')
+              .replace(/>/g, ' ')
+          : '';
         return <span>{content}</span>;
         // return <span>{message.content}</span>;
       }
@@ -1043,10 +1041,11 @@ export default {
     // 设置当前机构通讯录及会话列表
     setCurrentOrgUsers() {
       let IMUI = this.$refs.IMUI;
-      let currentOrgUsers = this.currentOrgUsers;
+      let currentOrgUsers = this.currentOrgUsers || [];
 
       currentOrgUsers.forEach((item) => {
         if (item.lastContent && item.lastSendTime) {
+          item.lastContent.content = item.lastContent.content || '';
           item.lastContent = IMUI.lastContentRender(item.lastContent);
         }
       });

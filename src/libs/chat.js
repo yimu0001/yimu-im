@@ -4,7 +4,7 @@
  * @作者: 赵婷婷
  * @Date: 2021-12-23 10:37:04
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-28 14:47:12
+ * @LastEditTime: 2022-03-31 10:44:57
  */
 const Type_Key_Obj = {
   'RC:ReferenceMsg': { type: 'text', key: 'content' },
@@ -37,8 +37,8 @@ export const CalcLastCentent = (messageType, content) => {
 export const getFormatChatInfo = (item, isGroup = false) => {
   let defaultName = isGroup ? '选题群组' : '未知用户';
   let defaultAvatar = isGroup
-    ? 'https://im.shandian8.com/public/qunliao.png'
-    : 'https://im.shandian8.com/public/danliao.png';
+    ? 'https://shandianyun-im.iqilu.com/public/qunliao.png'
+    : 'https://shandianyun-im.iqilu.com/public/danliao.png';
 
   let userItem = {
     id: item.targetId,
@@ -63,13 +63,13 @@ export const getFormatNoticeInfo = (item) => {
   // 通知
   if (item.targetId === '-1') {
     item.displayName = '系统审核';
-    item.avatar = 'https://im.shandian8.com/public/shenhe2.png';
+    item.avatar = 'https://shandianyun-im.iqilu.com/public/shenhe2.png';
   } else if (item.targetId === '-2') {
     item.displayName = '通知提醒';
-    item.avatar = 'https://im.shandian8.com/public/tongzhi.png';
+    item.avatar = 'https://shandianyun-im.iqilu.com/public/tongzhi.png';
   } else if (item.targetId === '-3') {
     item.displayName = '内容监控';
-    item.avatar = 'https://im.shandian8.com/public/shenhe2.png';
+    item.avatar = 'https://shandianyun-im.iqilu.com/public/shenhe2.png';
   }
   let userItem = {
     id: item.targetId,

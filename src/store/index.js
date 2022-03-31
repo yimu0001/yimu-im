@@ -5,7 +5,7 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
-    axiosBaseUrl: 'https://im.shandian8.com', // 暂时没用到
+    axiosBaseUrl: 'https://shandianyun-im.iqilu.com', // 暂时没用到
     contacti: {},
     currentOrgUsers: [],
   },

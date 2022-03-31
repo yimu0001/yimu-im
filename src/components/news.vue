@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-30 17:55:44
+ * @LastEditTime: 2022-03-31 14:52:23
 -->
 <template>
   <div>
@@ -86,6 +86,7 @@ import {
   checkSingleReadStatus,
   getSettingOptions,
 } from '@/api/chat.js';
+import { RongyunAppKey } from '@/api/constant';
 import bus from '@/libs/bus';
 import { CalcTargetId, SetIMTheme } from '@/libs/tools';
 import { CalcLastCentent, getFormatChatInfo, getFormatNoticeInfo } from '@/libs/chat';
@@ -101,7 +102,6 @@ setTimeout(() => {
   Vue.component(LemonMessageText.name, LemonMessageText);
   Vue.component(LemonMessageFile.name, LemonMessageFile);
 }, 0);
-// TODO 审核等图标先用测试域名 之后替换正式域名https://im.shandian8.com/public/xxx
 
 export default {
   name: 'yimuIm',
@@ -232,7 +232,8 @@ export default {
 
     this.loadStep = 0;
     this.getCurrentChatUser();
-    this.im = RongIMLib.init({ appkey: 'cpj2xarlctfmn', connectType: 'comet' });
+
+    this.im = RongIMLib.init({ appkey: RongyunAppKey, connectType: 'comet' });
     this.imWatcher();
     this.connectRongyun();
 
@@ -534,7 +535,7 @@ export default {
               fromUser: {
                 id: userinfo.id || -1,
                 displayName: userinfo.name || '系统通知',
-                avatar: userinfo.portrait || 'https://im.shandian8.com/public/tongzhi.png',
+                avatar: userinfo.portrait || 'https://shandianyun-im.iqilu.com/public/tongzhi.png',
               },
             };
 
@@ -665,7 +666,6 @@ export default {
       this.$emit('change-menu', menuName);
     },
     handleNoticeGroupSender(targetId, msgInfo) {
-      // msgIds ['BS4S-U34I-T4G6-9GPP', 'BS4S-T49L-M8Y6-9GPP']
       this.contactId = CalcTargetId(targetId);
       this.clearUnread(true, this.contactId);
       this.currentUser.id &&
