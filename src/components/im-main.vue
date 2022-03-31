@@ -401,7 +401,21 @@ export default {
       const { IMUI } = this.$refs;
       // IMUI.initEmoji(EmojiData);
       IMUI.setLastContentRender('text', (message) => {
-        return <span>{message.content}</span>;
+        // if (message.content.includes('<') || message.content.includes('&lt;')) {
+        //   console.log('特殊字符-handleRender', message.content);
+        // }
+        // 特殊字符 替换
+        let content = message.content
+          .replace(/<(style|script|iframe)[^>]*?>[\s\S]+?<\/\1\s*>/gi, '')
+          .replace(/<[^>]*>/g, '')
+          .replace(/&lt;[^&gt;]*&gt;/g, '')
+          .replace(/<[^>]+?>/g, '')
+          .replace(/\s+/g, ' ')
+          .replace(/ /g, ' ')
+          .replace(/</g, ' ')
+          .replace(/>/g, ' ');
+        return <span>{content}</span>;
+        // return <span>{JSON.stringify(message.content)}</span>;
       });
       IMUI.setLastContentRender('image', (message) => {
         return <span>[图片]</span>;
@@ -577,7 +591,21 @@ export default {
     },
     getLastContent(message) {
       if (message.type === 'text') {
-        return <span>{message.content}</span>;
+        // if (message.content.includes('<') || message.content.includes('&lt;')) {
+        //   console.log('特殊字符-getLastContent', message.content);
+        // }
+        // 特殊字符 替换
+        let content = message.content
+          .replace(/<(style|script|iframe)[^>]*?>[\s\S]+?<\/\1\s*>/gi, '')
+          .replace(/<[^>]*>/g, '')
+          .replace(/&lt;[^&gt;]*&gt;/g, '')
+          .replace(/<[^>]+?>/g, '')
+          .replace(/\s+/g, ' ')
+          .replace(/ /g, ' ')
+          .replace(/</g, ' ')
+          .replace(/>/g, ' ');
+        return <span>{content}</span>;
+        // return <span>{message.content}</span>;
       }
       if (message.type === 'image') {
         return <span>[图片]</span>;

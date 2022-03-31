@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-30 16:10:40
+ * @LastEditTime: 2022-03-30 17:55:44
 -->
 <template>
   <div>
@@ -630,8 +630,9 @@ export default {
       }
     },
     setRongExpansion(expansion, message, operate, cb) {
-      expansion.target_id = message.toContactId;
-      let RongMsg = message;
+      expansion.target_id = CalcTargetId(message.toContactId);
+      let RongMsg = { ...message };
+      RongMsg.toContactId = CalcTargetId(message.toContactId);
       if (!RongMsg || !RongMsg.canIncludeExpansion) {
         this.$Message.warning('当前消息不支持该操作');
         return;
