@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-03-31 14:52:23
+ * @LastEditTime: 2022-04-01 09:24:40
 -->
 <template>
   <div>
@@ -287,7 +287,10 @@ export default {
     onMessageReceiptResponse({ conversation, receivedUserId, messageUIdList }) {
       console.log('群聊已读监听', conversation, receivedUserId, messageUIdList);
       // {conversationType: 3, targetId: '45', channelId: ''} 4575 ['BVCT-OET5-K84C-01K1']
-      if (CalcTargetId(this.contactId) === conversation.targetId) {
+      if (
+        CalcTargetId(this.contactId) === conversation.targetId &&
+        receivedUserId !== this.currentUser.id
+      ) {
         bus.$emit('updateReadNum', 'group', { messageUIdList, receivedUserId });
       }
       // 如果非当前对话 后端自己存起来 更新已读的参数

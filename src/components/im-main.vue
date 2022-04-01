@@ -412,9 +412,13 @@ export default {
               .replace(/ /g, ' ')
               .replace(/</g, ' ')
               .replace(/>/g, ' ')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
           : '';
+        // if (message.content.includes('&lt;') || message.content.includes('<')) {
+        //   console.log('特殊字符-1', message.content, content);
+        // }
         return <span>{content}</span>;
-        // return <span>{JSON.stringify(message.content)}</span>;
       });
       IMUI.setLastContentRender('image', (message) => {
         return <span>[图片]</span>;
@@ -601,9 +605,13 @@ export default {
               .replace(/ /g, ' ')
               .replace(/</g, ' ')
               .replace(/>/g, ' ')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
           : '';
+        // if (message.content.includes('&lt;') || message.content.includes('<')) {
+        //   console.log('特殊字符-2', message.content, content);
+        // }
         return <span>{content}</span>;
-        // return <span>{message.content}</span>;
       }
       if (message.type === 'image') {
         return <span>[图片]</span>;
