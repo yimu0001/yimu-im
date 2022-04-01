@@ -5,7 +5,7 @@
  * @作者: 赵婷婷
  * @Date: 2022-02-24 15:29:01
  * @LastEditors: 赵婷婷
- * @LastEditTime: 2022-04-01 11:25:43
+ * @LastEditTime: 2022-04-01 11:37:34
 -->
 <template>
   <div>
@@ -233,9 +233,9 @@ export default {
     this.loadStep = 0;
     this.getCurrentChatUser();
 
-    let appkey = RongyunAppKey;
+    let appKey = RongyunAppKey;
     console.log('RongyunAppKey==>', RongyunAppKey);
-    if (window.location.origin.includes('.iqilu.com') && appkey === 'cpj2xarlctfmn') {
+    if (window.location.origin.includes('.iqilu.com') && appKey === 'cpj2xarlctfmn') {
       appKey = 'pgyu6atqp512u';
       console.log('appKey==>', appKey);
     }
