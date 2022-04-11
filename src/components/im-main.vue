@@ -57,7 +57,7 @@
       <template #message-title="contact">
         <p class="cur-user">{{ contact.displayName }}</p>
         <small
-          v-if="contact.id != 'admin'"
+          v-if="!(Number(contact.id) < 0)"
           class="more-setting"
           @click="openRightTool(contact, $refs.IMUI)"
         >
@@ -765,7 +765,7 @@ export default {
       next(messages, !hasMore);
     },
     handleMessageClick(e, key, message, instance) {
-      console.log('点击了消息', message);
+      // console.log('点击了消息', message);
       if (key == 'status') {
         instance.updateMessage({
           id: message.id,

@@ -107,7 +107,7 @@ export default {
             const replyObj = this.$attrs.message.referMsg;
             this.expansionObj = this.$attrs.message.expansion;
             const { fromUser, sendTime } = this.$attrs.message;
-            const isNoticeMsg = Number(fromUser.id) < 0;
+            const isNoticeMsg = Number(fromUser.id) < 0 || Number(props.toContactId) < 0;
 
             let markNames = '';
             let thumbList = [];

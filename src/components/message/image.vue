@@ -75,9 +75,9 @@ export default {
     },
   },
   render() {
-    const { fromUser, sendTime } = this.$attrs.message;
+    const { toContactId, fromUser, sendTime } = this.$attrs.message;
     this.expansionObj = this.$attrs.message.expansion;
-    const isNoticeMsg = Number(fromUser.id) < 0;
+    const isNoticeMsg = Number(fromUser.id) < 0 || Number(toContactId) < 0;
 
     let emojiObj = Emoji_Type_Obj;
     let markNames = '';
