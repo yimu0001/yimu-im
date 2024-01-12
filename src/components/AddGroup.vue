@@ -1,184 +1,192 @@
 <template>
   <div>
-    <div class="domTitle">
-      创建群组
-      <div class="domButton">
-        <el-button type="primary" size="small" @click="createGroup">确认</el-button>
-      </div>
+    <div class="group-info">
+      <Input v-model="groupName" placeholder="请输入群组标题" style="width: 400px" clearable />
+      <el-button
+        class="con-btn"
+        type="primary"
+        size="small"
+        :loading="createLoading"
+        @click="confirmCreate"
+        >确认创建</el-button
+      >
     </div>
-    
-    <div class="groupName">
-      <el-input v-model="groupName" placeholder="请输入群组标题" style="width: 400px"></el-input>
-    </div>
-    <el-row :gutter="30" class="peopleSelectDom">
-      <el-col :span='8' :offset="1" class="orgList">
-        <div v-for="item of orgList" :key="`orgItem${item.id}`" class="orgItem" :class="activeOrgId == item.id? 'activeOrg' : ''" @click="chooseOrg(item.id)">
-          {{item.name}}
+    <Row :gutter="30" class="peopleSelectDom">
+      <Col :span="8" :offset="1" class="orgList">
+        <div
+          v-for="item of orgList"
+          :key="`orgItem${item.id}`"
+          class="orgItem"
+          :class="activeOrgId == item.id ? 'activeOrg' : ''"
+          @click="chooseOrg(item.id)"
+        >
+          {{ item.name }}
         </div>
-      </el-col>
-      <el-col :span='8' class="orgList">
+      </Col>
+      <Col :span="8" class="orgList">
         <div v-for="item of currentOrgUsers" :key="`currentOrgUser${item.id}`" class="userItem">
-          <el-checkbox :label="item.id" border @change='handleChangeUser($event, item)' v-model="item.checked"> {{item.name}}-{{item.dpt_name}}</el-checkbox>
+          <el-checkbox
+            :label="item.id"
+            border
+            @change="handleChangeUser($event, item)"
+            v-model="item.checked"
+          >
+            {{ item.name }}-{{ item.dpt_name }}</el-checkbox
+          >
         </div>
-      </el-col>
-      <el-col :span='6' class="orgList">
+      </Col>
+      <Col :span="6" class="orgList">
         <div>
           已选人员：
         </div>
-        <div v-for="(item, index) of selecedUser" :key="`currentOrgUser${item.id}`" class="userItem">
+        <div
+          v-for="(item, index) of selecedUser"
+          :key="`currentOrgUser${item.id}`"
+          class="userItem tagItem"
+        >
           <!-- <el-checkbox :label="item.id" border @change='handleChangeUser($event, item)'> {{item.name}}-{{item.dpt_name}}</el-checkbox> -->
-          <el-tag closable @close='handleDelSelectUser(item.id, index)'>
-          {{item.name}}-{{item.dpt_name}}
-          </el-tag>
+          <Tag color="blue" closable @on-close="handleDelSelectUser(item.id, index)"
+            >{{ item.name }}-{{ item.dpt_name }}</Tag
+          >
         </div>
-      </el-col>
-    </el-row>
+      </Col>
+    </Row>
   </div>
 </template>
 
 <script>
-import { Button, Input, Row, Col, Message, CheckboxGroup, Checkbox, Tag} from 'element-ui';
-import { getOrgList, getUserByOrgid, createGroup } from '../api/data'
+import { Button, CheckboxGroup, Checkbox } from 'element-ui';
+import { getOrgList, getUserByOrgid, createGroup } from '../api/data';
 import Bus from '../libs/bus';
-  export default {
-    name: 'addGroup',
-    components: {
-      elButton: Button,
-      elInput: Input,
-      elRow: Row,
-      elCol: Col,
-      Message,
-      elCheckboxGroup: CheckboxGroup,
-      elCheckbox: Checkbox,
-      elTag: Tag
-    },
-    props: {
-      baseUrl: {
-        type: String,
-        default: 'https://im.shandian8.com'
-      },
-    },
-    watch: {
-      baseUrl(newValue, oldValue) {
-        this.my_baseUrl = newValue
-      }
-    },
-    data() {
-      return {
-        groupName: '',
-        orgList: [],
-        activeOrgId: '', //选中的机构
-        currentOrgUsers: [],
-        checkUser: [],
-        selecedUser: [],
-        my_baseUrl: this.baseUrl
-      }
-    },
-    mounted () {
-      this.getOrgList();
-    },
-    methods: {
-      getOrgList() {
-        getOrgList(this.my_baseUrl).then(res => {
-          console.log(res)
-          if(res.status === 200) {
-            this.orgList = res.data.data
+export default {
+  name: 'addGroup',
+  components: {
+    elButton: Button,
+    elCheckboxGroup: CheckboxGroup,
+    elCheckbox: Checkbox,
+  },
+  data() {
+    return {
+      groupName: '',
+      orgList: [],
+      activeOrgId: '', //选中的机构
+      currentOrgUsers: [],
+      checkUser: [],
+      selecedUser: [],
+      createLoading: false,
+    };
+  },
+  mounted() {
+    this.getOrgList();
+  },
+  methods: {
+    getOrgList() {
+      getOrgList()
+        .then((res) => {
+          console.log(res);
+          if (res.status === 200) {
+            this.orgList = res.data.data;
           } else {
-            Message.error(res.data.msg)
+            this.$Message.error(res.data.msg);
           }
-        }).catch(err => {
-          console.log(err)
         })
-      },
-      chooseOrg(id) {
-        this.activeOrgId = id
-        this.getUserByOrgid()
-      },
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    chooseOrg(id) {
+      this.activeOrgId = id;
+      this.getUserByOrgid();
+    },
 
-      //获取机构下人员
-      getUserByOrgid() {
-        getUserByOrgid(this.my_baseUrl, this.activeOrgId).then(res => {
-          console.log(res)
-          if(res.status === 200) {
-            let selectUserIds = this.selecedUser.map(item => {
-              return item.id
-            })
-            this.currentOrgUsers = res.data.data.map(item => {
-              item.checked = false
-              if(selectUserIds.includes(item.id)){
-                item.checked = true
+    //获取机构下人员
+    getUserByOrgid() {
+      getUserByOrgid(this.activeOrgId)
+        .then((res) => {
+          console.log(res);
+          if (res.status === 200) {
+            let selectUserIds = this.selecedUser.map((item) => {
+              return item.id;
+            });
+            this.currentOrgUsers = res.data.data.map((item) => {
+              item.checked = false;
+              if (selectUserIds.includes(item.id)) {
+                item.checked = true;
               }
-              return item
-            })
+              return item;
+            });
           } else {
-            Message.error(res.data.msg)
-          }
-        }).catch(err => {
-          console.log(err)
-        })
-      },
-      handleChangeUser(e, item){
-        if(e){
-          this.selecedUser.push(item)
-        } else {
-          this.selecedUser = this.selecedUser.filter(user => {
-            return user.id != item.id
-          })
-        }
-      },
-
-      //删除所选人员
-      handleDelSelectUser(id, index) {
-        this.selecedUser.splice(index,1)
-        this.currentOrgUsers.forEach(item => {
-          if(item.id == id){
-            item.checked = false
+            this.$Message.error(res.data.msg);
           }
         })
-      },
-      createGroup() {
-        let userIds = this.selecedUser.map(user => {
-          return Number(user.id)
-        })
-        createGroup(this.my_baseUrl, this.groupName, userIds).then(res => {
-          if(res.status === 200) {
-            Message.success('创建成功！')
-            Bus.$emit('createGroupOk', res.data.data.id);
-          } else {
-            Message.error(res.data.msg)
-          }
-        }).catch(err => {
-          console.log(err)
-        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    handleChangeUser(e, item) {
+      if (e) {
+        this.selecedUser.push(item);
+      } else {
+        this.selecedUser = this.selecedUser.filter((user) => {
+          return user.id != item.id;
+        });
       }
     },
-  }
+
+    //删除所选人员
+    handleDelSelectUser(id, index) {
+      this.selecedUser.splice(index, 1);
+      this.currentOrgUsers.forEach((item) => {
+        if (item.id == id) {
+          item.checked = false;
+        }
+      });
+    },
+    confirmCreate() {
+      this.createLoading = true;
+      let userIds = this.selecedUser.map((user) => {
+        return Number(user.id);
+      });
+      let timeDelay = 1500;
+      createGroup(this.groupName, userIds)
+        .then((res) => {
+          if (res.status === 200) {
+            setTimeout(() => {
+              this.$Message.success('创建成功！');
+              Bus.$emit('createGroupOk', res.data.data.id);
+            }, timeDelay);
+          } else {
+            this.$Message.error(res.data.msg);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+        .finally(() => {
+          setTimeout(() => {
+            this.createLoading = false;
+          }, timeDelay);
+        });
+    },
+  },
+};
 </script>
 
 <style lang="less" scoped>
-.domTitle{
-  font-size: 16px;
-  font-weight: bold;
-  padding: 10px;
-  margin-bottom: 30px;
-  position: relative;
-  .domButton{
-    position: absolute;
-    right: 10px;
-    top: 10px
+.group-info {
+  // text-align: center;
+  margin-bottom: 22px;
+  .con-btn {
+    margin-left: 20px;
   }
 }
-.groupName{
-  text-align: center;
-  margin-bottom: 22px;
-}
-.peopleSelectDom{
-  .orgList{
+.peopleSelectDom {
+  .orgList {
     // background: #d3dce6;
     border-radius: 4px;
     height: 406px;
     overflow-y: scroll;
-    .orgItem{
+    .orgItem {
       background-color: #eee;
       margin-top: 10px;
       height: 38px;
@@ -187,17 +195,38 @@ import Bus from '../libs/bus';
       border-radius: 5px;
       cursor: pointer;
     }
-    .activeOrg{
-      background-color: #409EFF;
+    .activeOrg {
+      background-color: #409eff;
       color: #fff;
     }
-    .userItem{
+    .userItem {
       // background-color: #eee;
       margin-top: 10px;
       height: 38px;
       line-height: 38px;
       border-radius: 5px;
       cursor: pointer;
+    }
+    .tagItem {
+      margin-top: 2px;
+
+      ::v-deep .ivu-tag {
+        height: 28px;
+        line-height: 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        .ivu-tag-text {
+          height: 28px;
+          line-height: 28px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+      ::v-deep .ivu-icon-ios-close:before {
+        color: #1890ff;
+      }
     }
   }
 }

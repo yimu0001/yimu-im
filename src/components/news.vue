@@ -1,580 +1,1154 @@
+<!--
+ * @文件描述: 主文件
+ * @待优化: 弹窗拖拽 已读未读
+ * @公司: 广电信通
+ * @作者: 赵婷婷
+ * @Date: 2022-02-24 15:29:01
+ * @LastEditors: 赵婷婷
+ * @LastEditTime: 2022-04-12 10:57:33
+-->
 <template>
   <div>
-    <div class="tipDom" v-if="!showList && showComponent" @click="showList = !showList">
-      <Avatar :size="38" fit='cover' src="https://i.loli.net/2017/08/21/599a521472424.jpg"></Avatar> &nbsp;&nbsp;
-      <span>我的IM</span>
+    <div
+      :class="[
+        'tipDom',
+        theme === 'deep' ? 'deep-color' : 'light-color',
+        hasUnread ? 'notice-border animImage' : '',
+      ]"
+      v-if="!showList && showComponent"
+      @click="openChatDialog"
+    >
+      <div class="avatar-box">
+        <div v-if="hasUnread" class="red-dot"></div>
+        <Avatar
+          v-if="hasUnread"
+          :size="38"
+          fit="cover"
+          :src="require('../assets/light-avatar.png')"
+        ></Avatar>
+        <Avatar v-else :size="38" fit="cover" :src="require('../assets/deep-avatar.png')"></Avatar>
+      </div>
+      <div class="nickname-box over_hide_1" :titlr="currentUser.nickname">
+        {{ currentUser.nickname || '通讯' }}
+      </div>
     </div>
     <el-dialog
+      id="mainDialog"
       class="imDialog"
+      style="z-index: 2000"
+      width="951px"
       :visible.sync="showList"
-      :show-close='false'
-      @opened='handleOpenedDialog'
-      center>
-      <im-main ref="imMainDom" :messageList = "messageList" :baseUrl='my_baseUrl' :currentUser = 'currentUser' @handleSendMessage="handleSendMessage" 
-      @handlePullMessages='handlePullMessages'
-      :firstConversationId='firstConversationId'
-      :currentOrgUsers = currentOrgUsers
-      @changeMenuMessage='getConnetList'></im-main>
-      <span slot="footer" class="dialog-footer">
-      </span>
+      :show-close="false"
+      :modal="false"
+      :close-on-click-modal="false"
+      center
+      @opened="onOpenedDialog"
+    >
+      <div class="close-line" @click="handleClose" ref="closeIcon">
+        <i class="iconfont icon-guanbi1" title="关闭"></i>
+      </div>
+      <im-main
+        ref="imMainDom"
+        :menuList="menuList"
+        :currentUser="currentUser"
+        :firstConversationId="firstConversationId"
+        :currentOrgUsers="currentOrgUsers"
+        :orgUserList="orgUserList"
+        @handleSendMessage="handleSendMessage"
+        @handlePullMessages="handlePullMessages"
+        @change-menu="handleChangeMenu"
+        @notice-group-sender="handleNoticeGroupSender"
+        @notice-single-sender="handleNoticeSingleSender"
+        @delete-contact="deleteConnect"
+      ></im-main>
+      <span slot="footer" class="dialog-footer"> </span>
     </el-dialog>
-    <!-- <div v-if="showList" style="width: 40%">
-      <im-main ref="imMainDom" :messageList = "messageList" :baseUrl='my_baseUrl' :currentUser = 'currentUser' @handleSendMessage="handleSendMessage" 
-      @handlePullMessages='handlePullMessages'
-      :firstConversationId='firstConversationId'
-      @changeMenuMessage='getConnetList'></im-main>
-    </div> -->
   </div>
 </template>
 
 <script>
-import 'element-ui/lib/theme-chalk/index.css';
-import imMain from './im-main'
-import { Avatar, Dialog, Message} from 'element-ui';
-import * as RongIMLib from '@rongcloud/imlib-v4'
-import { registerUser, getCurrentUser, getTargetInfoById, groupInfos, getUserByOrgid } from '../api/data.js'
-import Bus from '../libs/bus';
-  export default {
-    name: 'yimuIm',
-    props: {
-      baseUrl: {
-        type: String,
-        default: 'https://im.shandian8.com'
-      },
-    },
-    components: {
-      Avatar, imMain,
-      elDialog: Dialog,
-      Message
-    },
-    mounted () {
-      this.getCurrentUser()
-      this.im = RongIMLib.init({ appkey: 'cpj2xarlctfmn' ,connectType: 'comet'})
-      this.imWatcher()
-      
-      this.connectRongyun()
+import * as RongIMLib from '@rongcloud/imlib-next';
+import imMain from './im-main';
+import testComponent from '../components/testComponent.vue';
+import Settings from './manus/settings';
+import { Avatar, Dialog } from 'element-ui';
 
-      Bus.$on('createGroupOk', (id) => {
-        setTimeout(() => {
-          this.im.Conversation.getList({
-            count: 10,
-            startTime: 0,
-            order: 0
-          }).then(conversationList => {
-            console.log('获取会话列表成功', conversationList);
-            conversationList.forEach(item => {
-              if(item.targetId == id){
-                // this.getConnetList()
-                groupInfos(this.my_baseUrl, id).then(res =>{
-                  if(res.status === 200 ){
-                      newConversation.displayName = res.data.data[id].content
-                      newConversation.avatar = res.data.data[id].avatar
-                      let userItem = {
-                        id: id,
-                        displayName: newConversation.displayName,
-                        avatar: newConversation.avatar,
-                        index: '[2]群组',
-                        unread: newConversation.unreadMessageCount,
-                        lastSendTime: newConversation.latestMessage.sentTime,
-                        lastContent: {},
-                        isGroup: true
-                      }
-                      if(newConversation.latestMessage.messageType == 'RC:ImgMsg'){
-                        userItem.lastContent = {type: 'image', content: item.latestMessage.content.imageUri}
-                      } else if(newConversation.latestMessage.messageType == 'RC:TxtMsg') {
-                        userItem.lastContent = {type: 'text', content: item.latestMessage.content.content}
-                      } else if(newConversation.latestMessage.messageType == '"RC:VcMsg"') {
-                        userItem.lastContent = {type: 'text', content: '视频通话'}
-                      } else {
-                        console.log(newConversation.latestMessage.messageType)
-                        userItem.lastContent = {type: 'text', content: '未知消息'}
-                      }
-                      console.log(userItem)
-                      this.$refs.imMain.addNewContact(userItem)
-                    }
-                })
-              }
+import {
+  registerUser,
+  getCurrentUser,
+  groupInfos,
+  getUserByOrgid,
+  getMyGroupList,
+} from '@/api/data.js';
+import {
+  setBackExpansion,
+  checkGroupReadStatus,
+  checkSingleReadStatus,
+  getSettingOptions,
+} from '@/api/chat.js';
+import { RongyunAppKey } from '@/api/constant';
+import bus from '@/libs/bus';
+import { CalcTargetId, SetIMTheme } from '@/libs/tools';
+import { CalcLastCentent, getFormatChatInfo, getFormatNoticeInfo } from '@/libs/chat';
+import { OnInitDrag } from '@/libs/drag';
+import { SizeTextObj, ErrorCodeTextObj, NotInGroupCode } from '@/libs/constant';
+
+import Vue from 'vue';
+import LemonMessageImage from '@/components/message/image.vue';
+import LemonMessageText from '@/components/message/text.vue';
+import LemonMessageFile from '@/components/message/file.vue';
+setTimeout(() => {
+  Vue.component(LemonMessageImage.name, LemonMessageImage);
+  Vue.component(LemonMessageText.name, LemonMessageText);
+  Vue.component(LemonMessageFile.name, LemonMessageFile);
+}, 0);
+
+export default {
+  name: 'yimuIm',
+  data() {
+    return {
+      historyDate: +new Date(),
+      lastHistoryId: null, // 获取历史记录时用到的contactId
+      historyList: [], // 设置扩展必须要用到融云返回的历史记录格式
+      contactId: null,
+      showList: false,
+      im: undefined,
+      user_token: '',
+      user_id: '',
+      currentUser: {},
+      //用来储存
+      saveMessageList: [],
+      rongConversationIds: [], // 融云返回的有聊天记录的会话列表id数组
+      // 会话第一个联系人id
+      firstConversationId: undefined,
+      currentOrgUsers: [], //本机构联系人
+      showComponent: false, //展示组件与否
+      baseMenuList: [
+        { name: 'messages', isBottom: false },
+        { name: 'contacts', isBottom: false },
+        {
+          name: 'manage',
+          isBottom: true,
+          title: '设置',
+          unread: 0,
+          key: 'manage',
+          iconClass: 'iconfont icon-shezhi',
+          component: Settings,
+        },
+      ],
+      menuList: [
+        { name: 'messages', isBottom: false },
+        { name: 'contacts', isBottom: false },
+        {
+          name: 'manage',
+          isBottom: true,
+          title: '设置',
+          unread: 0,
+          key: 'manage',
+          iconClass: 'iconfont icon-shezhi',
+          component: Settings,
+        },
+      ],
+      loadStep: 0,
+      orgUserList: [], // 创建待办 负责人下拉列表
+      waitingOpen: false,
+      hasUnread: false,
+      isSharing: false, // 来了新消息 边框颜色闪烁
+      msgTypeList: { groupList: [], singleList: [], noticeList: [] },
+      allGroupsList: [],
+      allGroupIds: [],
+      allFriendsList: [],
+      readStatusObj: {},
+      readStatusTime: '',
+      sizeOptions: ['large', 'middle', 'small'],
+      noticeAllowPop: false,
+      firstOpen: true, // 绑定监听拖拽的事件
+      curContactMsgs: [], // 接收融云推送 并且是当前会话框的内容 存下来用来更新已读情况
+    };
+  },
+  props: {
+    customMenu: {
+      type: Array,
+      default: [],
+    },
+    fromSystem: {
+      type: String,
+      required: false,
+      default: '',
+    },
+    theme: {
+      type: String,
+      required: false,
+      default: 'light',
+    },
+  },
+  components: {
+    Avatar,
+    imMain,
+    elDialog: Dialog,
+  },
+  watch: {
+    customMenu: {
+      handler(arr) {
+        if (arr && arr.length > 0) {
+          // 过滤外部参数 防止外部组件传入不规范的数据
+          let list = arr.map(
+            ({ name, isBottom, title, unread, key, iconClass, component }, index) => ({
+              name: name || `component_${index}`,
+              isBottom: isBottom || false,
+              title: title || '自定义',
+              unread: unread || 0,
+              key: key || `component_${index}`,
+              iconClass: iconClass || 'el-icon-menu',
+              component: component || testComponent,
             })
-          });
-        }, 500)
-        
-        
+          );
+
+          this.menuList = this.baseMenuList.concat(list);
+        }
+      },
+      immediate: true,
+    },
+    loadStep(step) {
+      if (step === 3) {
+        // 好友列表+群组列表+会话列表 全部加载完毕
+        // <会话列表>中的群组必须是后端返回的<群组列表>中的数据 否则删除
+        this.handleConnectList();
+        this.cleanRemovedConnect();
+      }
+    },
+    showComponent(bool) {
+      if (bool && this.waitingOpen) {
+        this.openChatDialog();
+      }
+    },
+    allGroupIds() {
+      // console.log('群聊变化');
+    },
+  },
+  mounted() {
+    this.firstOpen = true;
+    this.getSettingItems();
+
+    this.loadStep = 0;
+    this.getCurrentChatUser();
+
+    let appKey = RongyunAppKey;
+    console.log('RongyunAppKey==>', RongyunAppKey);
+    if (window.location.origin.includes('.iqilu.com') && appKey === 'cpj2xarlctfmn') {
+      appKey = 'pgyu6atqp512u';
+      console.log('appKey==>', appKey);
+    }
+    this.im = RongIMLib.init({ appkey: appKey, connectType: 'comet' });
+    this.imWatcher();
+    this.connectRongyun();
+
+    bus.$on('createGroupOk', (id) => {
+      // 因为会收到融云建群通知 所以这里不需要再获取新群信息
+      this.$refs.imMainDom.createPop = false;
+    });
+    bus.$on('setExpansion', this.setRongExpansion);
+    bus.$on('afterQuitGroup', this.deleteConnect);
+    bus.$on('noticePermissionChange', (allowPop) => {
+      this.noticeAllowPop = allowPop;
+    });
+  },
+  beforeDestroy() {
+    bus.$off('createGroupOk');
+    bus.$off('setExpansion');
+    bus.$off('afterQuitGroup');
+    bus.$off('noticePermissionChange');
+
+    this.removeImWatcher();
+  },
+  methods: {
+    getSettingItems() {
+      getSettingOptions().then((res) => {
+        if (res.status === 200) {
+          // is_notify	1接收消息 0不接受消息;  font_size 0小 1中 2大
+          const { is_notify, font_size } = res.data.data;
+          let allowPop = is_notify === 1;
+          let sizeType = SizeTextObj[font_size] || 'middle';
+
+          this.noticeAllowPop = allowPop;
+          this.setThemeInit(sizeType);
+        }
       });
     },
-    watch: {
-      baseUrl(newValue, oldValue) {
-        this.my_baseUrl = newValue
-        // this.$store.commit('setAxiosBaseUrl', newValue)
-      }
-    },
-    data() {
-      return {
-        value: true,
-        showList: false,
-        im: undefined,
-        my_baseUrl: this.baseUrl,
-        user_token: '',
-        user_id: '',
-        messageList: [],
-        currentUser: {},
-        //用来储存
-        saveMessageList: [],
-        // 会话第一个联系人id
-        firstConversationId: undefined,
-        currentOrgUsers: [], //本机构联系人
-        showComponent: false, //展示组件与否 
-      }
-    },
-    methods: {
-      imWatcher() {
-        let im = this.im
-        let _this = this
-        _this.im.watch({
-          // 监听会话列表变更事件
-          conversation (event) {
-            // 假定存在 getExistedConversationList 方法，以获取当前已存在的会话列表数据
-            console.log(event)
-            // _this.getConnetList()
-            // 发生变更的会话列表
-            // const updatedConversationList = event.updatedConversationList;
-            // 通过 im.Conversation.merge 计算最新的会话列表
-            // const latestConversationList = this.im.Conversation.merge({ conversationList, updatedConversationList })
-          },
-          // 监听消息通知
-          message (event) {
-            // 新接收到的消息内容
-            const message = event.message;
-            let messageData = {}
-            switch(message.messageType){
-              case 'RC:TxtMsg':
-                messageData = {
-                  id: message.messageUId,
-                  status: 'succeed',
-                  type: 'text',
-                  sendTime: message.sentTime,
-                  content: message.content.content,
-                  toContactId: message.targetId,
-                  fromUser: {
-                    id: message.content.user.id,
-                    displayName: message.content.user.name,
-                    avatar: message.content.user.portrait
-                  }
-                }
-                break;
-              case 'RC:ImgMsg':
-                messageData = {
-                  id: message.messageUId,
-                  status: 'succeed',
-                  type: 'image',
-                  sendTime: message.sentTime,
-                  content: message.content.imageUri,
-                  toContactId: message.targetId,
-                  fromUser: {
-                    id: message.content.user.id,
-                    displayName: message.content.user.name,
-                    avatar: message.content.user.portrait
-                  }
-                }
-                break
-              case 'RC:InfoNtf':
-                messageData = {
-                  id: message.messageUId,
-                  status: 'succeed',
-                  type: 'event',
-                  sendTime: message.sentTime,
-                  content: message.content.msg,
-                  toContactId: message.targetId,
-                  fromUser: {
-                    id: message.content.user.id || -1,
-                    displayName: message.content.user.name || '系统通知',
-                    avatar: message.content.user.portrait || 'https://im.shandian8.com/public/notify.png'
-                  }
-                }
-            }
-            !_this.showList && (Message({ message: '`${message.content.user.name}给您发了条消息`', center: true, offset: 1000 }))
-            if(_this.$refs.imMainDom){
-              _this.$refs.imMainDom.appendMessage(messageData)
-            } else {
-              messageData.id && _this.saveMessageList.push(messageData)
-            }
+    setThemeInit(size) {
+      if (this.sizeOptions.includes(size)) {
+        // 设置字号大小是根据接口返回值来的
+        SetIMTheme(size);
+        this.$emit('set-font', size);
 
-            // IMUI.appendMessage(data);
-          },
-          // 监听 IM 连接状态变化
-          status (event) {
-            console.log('connection status:', event.status);
-          },
-          // 监听聊天室 KV 数据变更
-          chatroom (event) {
-            /**
-             * 聊天室 KV 存储数据更新
-             * @example
-             * [
-             *  {
-             *    "key": "name",
-             *    "value": "我是小融融",
-             *    "timestamp": 1597591258338, 
-             *    "chatroomId": "z002", 
-             *    "type": 1 // 1: 更新（ 含:修改和新增 ）、2: 删除
-             *  },
-             * ]
-             */
-            const updatedEntries = event.updatedEntries
-          },
-          expansion (event) {
-            /**
-             * 更新的消息拓展数据
-             * @example {
-             *    expansion: { key: 'value' },      // 设置或更新的扩展值
-             *    messageUId: 'URIT-URIT-ODMF-DURR' // 设置或更新扩展的消息 uid
-             * }
-             */
-            const updatedExpansion = event.updatedExpansion;
-            /**
-             * 删除的消息拓展数据
-             * @example {
-             *    deletedKeys: ['key1', 'key2'],    // 设置或更新的扩展值
-             *    messageUId: 'URIT-URIT-ODMF-DURR' // 设置或更新扩展的消息 uid
-             * }
-             */
-            const deletedExpansion = event.deletedExpansion;
-          }
-        });
-      },
-      connectRongyun() {
-        registerUser(this.my_baseUrl).then(res => {
-          if(res.status === 200){
-            this.user_token = res.data.data.token
-            this.user_id = res.data.data.userId
-            this.im.connect({ token: this.user_token }).then(user => {
-              console.log('链接成功, 链接用户 id 为: ', user.id);
-              this.getConnetList()
-            }).catch(error => {
-              console.log('链接失败: ', error.code, error.msg);
-            });
-          } else{
-            Message.error(res.data.msg)
-          }
-        }).catch(err => {
-          console.log(err)
-        })
-      },
-      getConnetList() {
-        this.im.Conversation.getList().then(conversationList => {
-          console.log('获取会话列表成功', conversationList);
-          this.firstConversationId = conversationList[0]? conversationList[0].targetId: undefined
-          // type类型注解 1系统
-          // target => id
-          let exit_message_list = []
-          for(let item of conversationList){
-            if(item.type == 3){
-              // const conversation = this.im.Conversation.get({
-              //   targetId: item.targetId,
-              //   type: RongIMLib.CONVERSATION_TYPE.PRIVATE
-              // });
-              // conversation.destory().then(() => console.log('删除会话成功', item.targetId));
-              groupInfos(this.my_baseUrl, item.targetId).then(res => {
-                if(res.status === 200 ){
-                  item.displayName = res.data.data[item.targetId].content
-                  item.avatar = res.data.data[item.targetId].avatar
-                  let userItem = {
-                    id: item.targetId,
-                    displayName: item.displayName,
-                    avatar: item.avatar,
-                    index: '[2]群组',
-                    unread: item.unreadMessageCount,
-                    lastSendTime: item.latestMessage.sentTime,
-                    lastContent: {},
-                    isGroup: true
-                  }
-                  if(item.latestMessage.messageType == 'RC:ImgMsg'){
-                    userItem.lastContent = {type: 'image', content: item.latestMessage.content.imageUri}
-                  } else if(item.latestMessage.messageType == 'RC:TxtMsg') {
-                    userItem.lastContent = {type: 'text', content: item.latestMessage.content.content}
-                  } else if(item.latestMessage.messageType == "RC:VcMsg") {
-                    userItem.lastContent = {type: 'text', content: '视频通话'}
-                  } else if(item.latestMessage.messageType == "RC:InfoNtf"){
-                    userItem.lastContent = {type: 'event', content: item.latestMessage.content.message}
-                  } else if(item.latestMessage.messageType == "RC:FileMsg"){
-                    userItem.lastContent = {type: 'file', content: item.latestMessage.content.namne}
-                  } else {
-                    userItem.lastContent = {type: 'text', content: '未知消息'}
-                  }
-                  exit_message_list.push(userItem) 
-                } else {
-                  Message.error(res.data.msg)
-                }
-              })
-            } else {
-              if(Number(item.targetId) > 0){
-                getTargetInfoById(this.my_baseUrl, item.targetId).then(res => {
-                  if(res.status === 200  && res.data.data.length){
-                    item.displayName = res.data.data[0].nickname
-                    item.avatar = res.data.data[0].avatar
-                    let userItem = {
-                      id: item.targetId,
-                      displayName: item.displayName,
-                      avatar: item.avatar,
-                      index: '[1]群组',
-                      unread: item.unreadMessageCount,
-                      lastSendTime: item.latestMessage.sentTime,
-                      lastContent: {},
-                    }
-                    if(item.latestMessage.messageType == 'RC:ImgMsg'){
-                      userItem.lastContent = {type: 'image', content: item.latestMessage.content.imageUri}
-                    } else if(item.latestMessage.messageType == 'RC:TxtMsg') {
-                      userItem.lastContent = {type: 'text', content: item.latestMessage.content.content}
-                    } else if(item.latestMessage.messageType == '"RC:VcMsg"') {
-                      userItem.lastContent = {type: 'text', content: '视频通话'}
-                    } else if(item.latestMessage.messageType == "RC:InfoNtf"){
-                      userItem.lastContent = {type: 'event', content: item.latestMessage.content.message}
-                    }  else if(item.latestMessage.messageType == "RC:FileMsg"){
-                      userItem.lastContent = {type: 'file', content: item.latestMessage.content.namne}
-                    } else {
-                      userItem.lastContent = {type: 'text', content: '未知消息'}
-                    }
-                    exit_message_list.push(userItem) 
-                  } else if(res.status === 200  && !res.data.data.length) {
-                    let userItem = {
-                      id: item.targetId,
-                      displayName: '未知用户',
-                      avatar: 'https://im.shandian8.com/public/shenhe.png',
-                      index: '[1]群组',
-                      unread: item.unreadMessageCount,
-                      lastSendTime: item.latestMessage.sentTime,
-                      lastContent: {},
-                    }
-                    if(item.latestMessage.messageType == 'RC:ImgMsg'){
-                      userItem.lastContent = {type: 'image', content: item.latestMessage.content.imageUri}
-                    } else if(item.latestMessage.messageType == 'RC:TxtMsg') {
-                      userItem.lastContent = {type: 'text', content: item.latestMessage.content.content}
-                    } else if(item.latestMessage.messageType == '"RC:VcMsg"') {
-                      userItem.lastContent = {type: 'text', content: '视频通话'}
-                    } else if(item.latestMessage.messageType == "RC:InfoNtf"){
-                      userItem.lastContent = {type: 'event', content: item.latestMessage.content.message}
-                    } else if(item.latestMessage.messageType == "RC:FileMsg"){
-                      userItem.lastContent = {type: 'file', content: item.latestMessage.content.namne}
-                    } else {
-                      userItem.lastContent = {type: 'text', content: '未知消息'}
-                    }
-                    exit_message_list.push(userItem) 
-                  }
-                }).catch(err => {
-                  console.log(err)
-                })
+        // session中存在 说明是刷新界面的 需要重新自动打开聊天窗口
+        let isReload = sessionStorage.getItem('themeSize');
+        if (isReload) {
+          sessionStorage.setItem('themeSize', '');
+          this.openChatDialog();
+        }
+      }
+    },
+    // 群聊已读消息回执响应监听 receivedUserId 为消息接收者
+    onMessageReceiptResponse({ conversation, receivedUserId, messageUIdList }) {
+      console.log('群聊已读监听', conversation, receivedUserId, messageUIdList);
+      // {conversationType: 3, targetId: '45', channelId: ''} 4575 ['BVCT-OET5-K84C-01K1']
+      if (
+        CalcTargetId(this.contactId) === conversation.targetId &&
+        receivedUserId !== this.currentUser.id
+      ) {
+        bus.$emit('updateReadNum', 'group', { messageUIdList, receivedUserId });
+      }
+      // 如果非当前对话 后端自己存起来 更新已读的参数
+    },
+    // 单聊已读消息回执响应监听
+    onReadReceiptReceived({ conversation, messageUId, sentTime }) {
+      console.log('单聊已读监听', conversation, messageUId, sentTime);
+      // {conversationType: 1, targetId: '1000053', channelId: ''}  undefined 1641350108871
+      if (this.contactId === conversation.targetId) {
+        bus.$emit('updateReadNum', 'single', { targetId: conversation.targetId, sentTime });
+      }
+    },
+    connectRongyun() {
+      registerUser()
+        .then((res) => {
+          if (res.status === 200) {
+            this.user_token = res.data.data.token;
+            this.user_id = res.data.data.userId;
+
+            RongIMLib.connect(this.user_token).then((res) => {
+              if (res.code === RongIMLib.ErrorCode.SUCCESS) {
+                console.log('链接成功, 链接用户 id 为: ', res.data.userId);
+                this.getConnetList();
               } else {
-                if(item.targetId === '-1') {
-                  item.displayName = '系统审核'
-                  item.avatar = 'https://im.shandian8.com/public/shenhe.png'
-                } else if(item.targetId === '-2'){
-                  item.displayName = '通知提醒'
-                  item.avatar = 'https://im.shandian8.com/public/notify.png'
-                } else if(item.targetId === '-3'){
-                  item.displayName = '内容监控'
-                  item.avatar = 'https://im.shandian8.com/public/shenhe.png'
-                }
-                let userItem = {
-                    id: item.targetId,
-                    displayName: item.displayName,
-                    avatar: item.avatar,
-                    index: '[1]群组',
-                    unread: item.unreadMessageCount,
-                    lastSendTime: item.latestMessage.sentTime,
-                    lastContent: {type: 'text', content: item.latestMessage.content.content},
-                  }
-                  // if(item.latestMessage.content.messageType == 'RC:ImgMsg'){
-                  //   userItem.lastContent = '[图片]'
-                  // }
-                  exit_message_list.push(userItem)
-              } 
-              // const conversation = this.im.Conversation.get({
-              //   targetId: item.targetId,
-              //   type: RongIMLib.CONVERSATION_TYPE.GROUP
-              // });
-              // conversation.destory().then(() => console.log('删除会话成功'+item.targetId));
-            }
-            
+                console.warn('链接失败, code:', res.code);
+              }
+            });
+          } else {
+            this.$Message.error(res.data.msg);
           }
-          // if(this.messageList.length){
-          //   setTimeout(() => {
-          //     console.log('sjkdkljasdjklsadkjlsadfjklfjklsda', exit_message_list)
-          //     this.messageList = exit_message_list
-          //   }, 1500)
-          // } else {
-          this.messageList = exit_message_list
-          // }
-          this.getCurrentOrgUsers()
-          
-        }).catch(error => {
-          console.log('获取会话列表失败: ', error, error.code, error.msg);
+        })
+        .catch((err) => {
+          console.log(err);
         });
-      },
-      getCurrentUser() {
-        getCurrentUser(this.my_baseUrl).then(res => {
-          if(res.status === 200) {
-            this.currentUser = res.data.data
+    },
+    getConnetList() {
+      RongIMLib.getConversationList()
+        .then(({ code, data: conversationList = [] }) => {
+          if (code === 0) {
+            conversationList.forEach((item) => {
+              let { targetId, conversationType } = item;
+              let id = conversationType === 3 ? `group_${targetId}` : targetId;
+              item.targetId = id;
+            });
+            console.log('获取会话列表', conversationList);
+            // 万一当前聊天不在群组中 firstConversationId往下顺延
+            this.rongConversationIds = conversationList.map(({ targetId }) => targetId);
+            this.msgTypeList = this.classifyConnectList(conversationList);
+            this.$nextTick(() => {
+              this.loadStep += 1;
+            });
+          } else {
+            console.log('获取会话列表失败: ', error.code, error.msg);
           }
-        }).catch(err => {
-          console.log(err)
         })
-      },
-      handleSendMessage(item) {
-        let {target_id, conversation_type, content, fun, isGroup, imageUri} = item
-        const conversation = this.im.Conversation.get({
-          targetId: target_id,
-          type: isGroup? RongIMLib.CONVERSATION_TYPE.GROUP: RongIMLib.CONVERSATION_TYPE.PRIVATE
+        .catch((err) => {
+          console.log('获取会话列表失败err', err);
         });
-        // 向会话内发消息
-        conversation.send({
-          // 消息类型，其中 RongIMLib.MESSAGE_TYPE 为 IMLib 内部的内置消息类型常量定义
-          messageType: conversation_type, // 'RC:TxtMsg'
-          // 消息内容
-          content: content
-        }).then(function(message){
-          console.log(fun)
-          fun()
-        }).catch(error => {
-          console.log('发送文字消息失败', error.code, error.msg);
-          fun({status:'failed'})
-        });
-      },
-      handleOpenedDialog() {
-        console.log(this.saveMessageList)
-        this.saveMessageList.forEach(res => {
-          this.$refs.imMainDom.appendMessage(res)
-        })
-        this.saveMessageList = []
-      },
-      handlePullMessages(args) {
-        const conversation = this.im.Conversation.get({
-          targetId: args.contact.id,
-          type: args.contact.isGroup? RongIMLib.CONVERSATION_TYPE.GROUP: RongIMLib.CONVERSATION_TYPE.PRIVATE
-        });
-        const otheruser = {
-          id: args.contact.id,
-          displayName: args.contact.displayName,
-          avatar: args.contact.avatar,
-        };
-        const option = {
-          // 获取历史消息的时间戳，默认为 0，表示从当前时间获取
-          timestamp: +new Date(),
-          // 获取条数，有效值 1-20，默认为 20
-          count: 20,
-        };
-        conversation.getMessages(option).then(result => {
-          const list = result.list;       // 获取到的消息列表
-          const hasMore = result.hasMore; // 是否还有历史消息可获取
-          console.log('获取历史消息成功', list, hasMore);
-          this.$refs.imMainDom.pullHistore(list, hasMore, args.next, otheruser)
-        }).catch(error => {
-          console.log('发送文字消息失败', error.code, error.msg);
-        });
-      },
+    },
+    classifyConnectList(conversationList) {
+      let groupList = [];
+      let singleList = [];
+      let noticeList = [];
 
-      //唤起会话
-      changeContact(contact) {
-        this.showList = true
-        setTimeout(() => {
-          this.$refs.imMainDom.changeContact(contact)
-        }, 500)
-      },
-      //获取当前机构用户
-      getCurrentOrgUsers() {
-        getUserByOrgid(this.my_baseUrl, this.currentUser.orgid).then(res => {
-          if(res.status === 200){
-            let userList = res.data.data
-            let currentorgUsers = userList.map(item => {
-              let userItem = {
-                id: item.id,
-                displayName: item.name,
-                avatar: item.avatar,
-                index: '[1]群组',
-                unread: 0,
-                lastSendTime: '',
-                lastContent: ''
-              } 
-              this.messageList.forEach((messageUserItem, messageUserIndex) => {
-                if(messageUserItem.id == userItem.id){
-                  if(messageUserItem.lastContent == ''){
-                    messageUserItem.lastContent = '未知消息'
-                  }
-                  userItem.unread = this.messageList[messageUserIndex].unread
-                  userItem.lastSendTime = this.messageList[messageUserIndex].lastSendTime
-                  userItem.lastContent = this.messageList[messageUserIndex].lastContent
-                  // messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
+      conversationList.forEach((item) => {
+        if (item.conversationType === 3) {
+          groupList.push(item);
+        }
+        if (item.conversationType === 1) {
+          if (Number(item.targetId) > 0) {
+            singleList.push(item);
+          } else {
+            noticeList.push(item);
+          }
+        }
+      });
+
+      return { groupList, singleList, noticeList };
+    },
+    // api获取消息已读人数
+    handleChangeConcat(id, msg_uids) {
+      if (this.contactId !== CalcTargetId(id)) {
+        this.readStatusObj = {};
+        this.readStatusTime = '';
+      }
+
+      this.contactId = CalcTargetId(id);
+      if (Number(this.contactId) <= 0) {
+        // console.log('系统消息-没有已读数量');
+        return;
+      }
+
+      if (!msg_uids) {
+        this.getSingleRead();
+      } else {
+        this.getGroupRead(msg_uids);
+      }
+    },
+    getSingleRead() {
+      checkSingleReadStatus(this.contactId).then((res) => {
+        if (res.status === 200) {
+          const { last_message_send_time } = res.data.data;
+          this.readStatusTime = last_message_send_time;
+          bus.$emit('setSingleReadStatus', this.readStatusTime);
+        }
+      });
+    },
+    getGroupRead(msgIds) {
+      if (msgIds.length > 0) {
+        checkGroupReadStatus(this.contactId, msgIds).then((res) => {
+          if (res.status === 200) {
+            const list = res.data.data;
+            // {msg_uid: 'BUR1-1Q5F-C14C-01J0', user_ids: Array(6)}
+            list.forEach(({ msg_uid, user_ids }) => {
+              this.readStatusObj[msg_uid] = user_ids;
+            });
+
+            this.$nextTick(() => {
+              bus.$emit('setGroupReadStatus', this.readStatusObj);
+            });
+          }
+        });
+      } else {
+        // console.log('群聊里面暂时没消息');
+      }
+    },
+    openChatDialog() {
+      if (this.showComponent) {
+        this.showList = true;
+        this.closeAllNotice();
+        this.hasUnread = false;
+        this.waitingOpen = false;
+      } else {
+        this.waitingOpen = true;
+      }
+    },
+    // 监听打开弹窗 处理一些额外参数
+    onOpenedDialog() {
+      this.saveMessageList.forEach((res) => {
+        this.$refs.imMainDom.appendMessage(res);
+      });
+      this.saveMessageList = [];
+      this.hasUnread = false;
+
+      let noticeCount = this.curContactMsgs.length;
+      if (noticeCount > 0 && this.showList) {
+        // 消息体已读回执
+        this.$refs.imMainDom?.calcReadNotice(this.curContactMsgs, noticeCount);
+        this.curContactMsgs = [];
+      }
+
+      // 只有第一次初始化的时候才绑定
+      if (this.firstOpen) {
+        OnInitDrag();
+        this.firstOpen = false;
+      }
+    },
+    // 从聊天界面点击关闭会话
+    handleClose() {
+      this.showList = false;
+    },
+    // 添加事件监听
+    imWatcher() {
+      const Events = RongIMLib.Events;
+      RongIMLib.addEventListener(Events.CONNECTING, function () {
+        console.log('正在链接服务器');
+      });
+      RongIMLib.addEventListener(Events.CONNECTED, function () {
+        console.log('已经链接到服务器');
+      });
+      RongIMLib.addEventListener(Events.MESSAGES, this.handleReceiveMessage);
+      // 监听消息扩展通知
+      RongIMLib.addEventListener(Events.EXPANSION, this.handleExpansion);
+      // 监听已读响应
+      RongIMLib.addEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
+      RongIMLib.addEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
+    },
+    // 移除事件监听
+    removeImWatcher() {
+      const Events = RongIMLib.Events;
+      RongIMLib.removeEventListener(Events.MESSAGES, this.handleReceiveMessage);
+      RongIMLib.removeEventListener(Events.EXPANSION, this.handleExpansion);
+      RongIMLib.removeEventListener(Events.MESSAGE_RECEIPT_RESPONSE, this.onMessageReceiptResponse);
+      RongIMLib.removeEventListener(Events.READ_RECEIPT_RECEIVED, this.onReadReceiptReceived);
+    },
+    // 融云消息类型 处理成lemon-ui的格式 并插入
+    handleReceiveMessage({ messages }) {
+      if (!messages || messages.length === 0) {
+        return;
+      }
+
+      // console.log('接收到的融云推送', messages);
+      messages.forEach((item) => {
+        // targetId: "12" conversationType: 3
+        let userinfo = item.content.user || {};
+        let messageData = {
+          id: item.messageUId,
+          conversationType: item.conversationType,
+          status: 'succeed',
+          sendTime: item.sentTime,
+          // 注意：toContactId必须包含group 否则lemon-ui无法区分是单聊还是群聊
+          toContactId: item.conversationType === 3 ? `group_${item.targetId}` : item.targetId,
+          fromUser: {
+            id: userinfo.id,
+            displayName: userinfo.name,
+            avatar: userinfo.portrait,
+          },
+          canIncludeExpansion: item.canIncludeExpansion || false,
+          expansion: item.expansion || {},
+        };
+        if (item.messageType === 'RC:ReferenceMsg') {
+          item.messageType = 'RC:TxtMsg';
+        }
+
+        switch (item.messageType) {
+          case 'RC:TxtMsg':
+            let { content, objName, referMsg, referMsgUserId } = item.content;
+            messageData = {
+              ...messageData,
+              type: 'text',
+              content,
+              objName,
+              referMsg,
+              referMsgUserId,
+            };
+            break;
+          case 'RC:ImgMsg':
+            messageData = { ...messageData, type: 'image', content: item.content.imageUri };
+            break;
+          case 'RC:FileMsg':
+            const { fileUrl, size, name } = item.content;
+            messageData = {
+              ...messageData,
+              type: 'file',
+              content: fileUrl,
+              fileSize: size,
+              fileName: name,
+            };
+            break;
+          case 'RC:InfoNtf':
+            messageData = {
+              ...messageData,
+              type: 'event',
+              content: item.content.message,
+              fromUser: {
+                id: userinfo.id || -1,
+                displayName: userinfo.name || '系统通知',
+                avatar: userinfo.portrait || 'https://shandianyun-im.iqilu.com/public/tongzhi.png',
+              },
+            };
+
+            let newGroupNotice =
+              item.conversationType === 3 &&
+              (item.content.message.includes('创建了') ||
+                item.content.message.includes('邀请了 ' + this.currentUser.nickname));
+            let isNewGroup = !this.allGroupIds.includes(item.targetId);
+            if (newGroupNotice && isNewGroup) {
+              this.loadStep === 3 && this.getNewConnectList(item.targetId);
+            }
+        }
+
+        // 收到系统通知消息
+        if (!this.showList && Number(item.senderUserId) < 0) {
+          this.closeAllNotice();
+          this.noticeMsgPop(messageData.content);
+        }
+
+        // 切换会话框到最新消息
+        if (!this.showList) {
+          let cid = messageData.toContactId;
+          this.firstConversationId = cid;
+
+          this.rongConversationIds = this.rongConversationIds.filter((id) => id !== cid);
+          this.rongConversationIds.unshift(cid);
+
+          // this.$refs.imMainDom &&
+          //   this.$refs.imMainDom.changeLastestConnect(this.firstConversationId);
+        }
+
+        if (this.$refs.imMainDom) {
+          this.$refs.imMainDom.appendMessage(messageData, true); // Message, scrollToBottom
+        } else if (messageData.id) {
+          this.saveMessageList.push(messageData);
+        }
+
+        // 如果是当前聊天框的已读通知 立即回执响应
+        if (this.contactId && this.contactId === item.targetId) {
+          this.curContactMsgs.push(messageData);
+        }
+      });
+
+      let noticeCount = this.curContactMsgs.length;
+      if (noticeCount > 0 && this.showList) {
+        // 消息体已读回执
+        this.$refs.imMainDom?.calcReadNotice(this.curContactMsgs, noticeCount);
+        this.curContactMsgs = [];
+      }
+
+      // 入口新消息提示
+      this.hasUnread = true;
+    },
+    // 弹出通知
+    noticeMsgPop(content) {
+      if (!this.noticeAllowPop) return;
+
+      this.$Notice.info({
+        title: '通知消息',
+        desc: '',
+        name: 'noticeMsg',
+        duration: 5,
+        render: (h) => {
+          return h(
+            'span',
+            {
+              style: {
+                color: '#2d8cf0',
+                cursor: 'pointer',
+              },
+              on: {
+                click: () => {
+                  this.showList = true;
+                  this.closeAllNotice();
+                },
+              },
+            },
+            content || '通知消息，点击查看'
+          );
+        },
+      });
+    },
+    // 监听消息扩展通知
+    handleExpansion(evt) {
+      if (evt && evt.updatedExpansion) {
+        const { expansion, messageUId } = evt.updatedExpansion;
+
+        // 有用户收藏不需要其他用户更新消息
+        if (!expansion.thumbedInfo && !expansion.markedObj && expansion.collectedIds) return;
+
+        // 其他用户操作了标记或者点赞 更新消息体
+        this.$refs.imMainDom && this.$refs.imMainDom.updateExpansion(expansion, messageUId);
+      }
+    },
+    setRongExpansion(expansion, message, operate, cb) {
+      expansion.target_id = CalcTargetId(message.toContactId);
+      let RongMsg = { ...message };
+      RongMsg.toContactId = CalcTargetId(message.toContactId);
+      if (!RongMsg || !RongMsg.canIncludeExpansion) {
+        this.$Message.warning('当前消息不支持该操作');
+        return;
+      }
+      // bug: Cannot read properties of null (reading 'expansion')
+      RongIMLib.updateMessageExpansion(expansion, RongMsg).then((res) => {
+        cb && cb(res);
+        if (res.code === 0 && this.$refs.imMainDom) {
+          this.$refs.imMainDom.updateExpansion(expansion, message.id);
+
+          // 为了统计数据 调接口通知IM后端 所设置扩展的情况
+          if (this.fromSystem === 'cs' && operate) {
+            console.log('通知IM后端扩展的情况', this.fromSystem, message.id, expansion, operate);
+            setBackExpansion(this.fromSystem, message.id, expansion, operate)
+              .then((res) => {
+                if (res.status === 200) {
+                  console.log('通知扩展OK', res);
                 }
               })
-              return userItem
-            })
-            // this.currentOrgUsers = currentorgUsers
-            // this.$store.commit('setCurrentOrgUsers', currentorgUsers)
-
-            this.messageList.forEach((messageUserItem, messageUserIndex) => {
-              if(messageUserItem.id < 0) {
-                let message = messageUserItem.lastContent
-                if(!messageUserItem.lastContent){
-                  message = '未知消息'
-                }
-                // messageUserItem.lastContent = IMUI.lastContentRender(message)
-                currentorgUsers.push(messageUserItem)
-              }
-              if(messageUserItem.isGroup) {
-                if(!messageUserItem.lastContent){
-                  messageUserItem.lastContent = '未知消息'
-                }
-                // messageUserItem.lastContent = IMUI.lastContentRender(messageUserItem.lastContent)
-                currentorgUsers.push(messageUserItem)
-              } 
-            })
-            this.showComponent = true
-            this.currentOrgUsers = currentorgUsers
-          } else {
-            Message.error(res.data.msg)
+              .catch((err) => {
+                console.log(err);
+              });
           }
-        }).catch(err => {
-          console.log(err)
-        })
-      },
+        } else {
+          console.log(res.code, res.msg, '设置扩展-更新失败');
+        }
+      });
     },
-    
-  }
+    handleChangeMenu(menuName) {
+      this.$emit('change-menu', menuName);
+    },
+    handleNoticeGroupSender(targetId, msgInfo) {
+      this.contactId = CalcTargetId(targetId);
+      this.clearUnread(true, this.contactId);
+      this.currentUser.id &&
+        RongIMLib.sendReadReceiptResponseV2(this.contactId, msgInfo)
+          .then((res) => {
+            if (res.code === 0) {
+              console.log('群聊-发送响应回执请求成功', res.code, res.data);
+            } else {
+              console.log('群聊-发送响应回执请求失败', res.code, res.msg);
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+    },
+    handleNoticeSingleSender(targetId, msgId, sendTime) {
+      this.contactId = targetId;
+      this.clearUnread(false, this.contactId);
+      RongIMLib.sendReadReceiptMessage(this.contactId, msgId, sendTime)
+        .then((res) => {
+          if (res.code === 0) {
+            console.log('单聊-发送响应回执成功', res.code, res.data);
+          } else {
+            console.log('单聊-发送响应回执成功', res.code, res.msg);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    // 清空新消息通知框
+    closeAllNotice() {
+      if (this.$Notice) {
+        try {
+          this.$Notice.close('noticeMsg');
+        } catch (err) {
+          console.log('清空新消息通知框-出错', err);
+        }
+      }
+    },
+    clearUnread(isGroup, targetId) {
+      const conversationType = isGroup
+        ? RongIMLib.ConversationType.GROUP
+        : RongIMLib.ConversationType.PRIVATE;
+
+      RongIMLib.clearMessagesUnreadStatus({ conversationType, targetId }).then((res) => {
+        if (res.code !== 0) {
+          console.log('清空未读err', res.code, res.msg);
+        }
+      });
+    },
+    // 把融云记录里面有 但是后端接口没有的群组 删除会话
+    cleanRemovedConnect() {
+      const { groupList } = this.msgTypeList;
+      let rongIds = groupList.map(({ targetId }) => Number(CalcTargetId(targetId)));
+      let backGroupIds = this.allGroupIds.map((id) => Number(id));
+
+      this.batchDeleteConnect(rongIds, backGroupIds);
+    },
+    // 用户列表 群组列表 合并成通讯录 ==> 入口展示
+    handleConnectList() {
+      this.currentOrgUsers = [];
+      const { groupList, singleList, noticeList } = this.msgTypeList;
+
+      // 会话列表-群组
+      this.allGroupsList.forEach((item) => {
+        item.targetId = `group_${item.id}`;
+        let curMsg = groupList.filter(({ targetId }) => CalcTargetId(targetId) == item.id)[0];
+        if (curMsg) {
+          const { targetId, unreadMessageCount = 0, latestMessage } = curMsg;
+          item = { ...item, targetId, unreadMessageCount, latestMessage };
+        }
+        this.currentOrgUsers.push(getFormatChatInfo(item, true));
+      });
+
+      // 会话列表-个人
+      this.allFriendsList.forEach((userItem) => {
+        userItem.targetId = userItem.id;
+        let curMsg = singleList.filter(({ targetId }) => targetId == userItem.id)[0];
+        if (curMsg) {
+          const { unreadMessageCount = 0, latestMessage } = curMsg;
+          userItem = { ...userItem, unreadMessageCount, latestMessage };
+        }
+        this.currentOrgUsers.push(getFormatChatInfo(userItem, false));
+      });
+
+      // 通知消息
+      noticeList.forEach((item) => {
+        this.currentOrgUsers.push(getFormatNoticeInfo(item));
+      });
+
+      this.setFirstConversation();
+      this.showComponent = true;
+    },
+    setFirstConversation() {
+      let allIds = this.currentOrgUsers.map(({ id }) => id);
+      for (var i = 0; i < this.rongConversationIds.length; i++) {
+        if (allIds.includes(this.rongConversationIds[i])) {
+          this.firstConversationId = this.rongConversationIds[i];
+          break; // 终止循环
+        }
+      }
+    },
+    // 创建群组之后 获取会话列表
+    getNewConnectList(id) {
+      let existGroup = this.allGroupIds.includes(id);
+      if (existGroup) {
+        console.log('这个群已经存在了', existGroup);
+        return;
+      }
+
+      this.allGroupIds.push(String(id));
+
+      RongIMLib.getConversationList().then(({ code, data: conversationList }) => {
+        if (code === 0) {
+          let curConverse = conversationList.filter((item) => item.targetId == id)[0] || {};
+          let targetId = `group_${id}`;
+          if (curConverse) {
+            this.firstConversationId = targetId;
+          }
+
+          groupInfos(id).then((res) => {
+            if (res.status === 200) {
+              const { content: displayName, avatar } = res.data.data[id];
+
+              let defaultMessage = {
+                content: { message: this.currentUser.nickname + ' 创建了群聊' },
+                messageType: 'RC:InfoNtf',
+                sentTime: new Date().getTime(),
+              };
+              let { messageType, content, sentTime } = curConverse.latestMessage || defaultMessage;
+              let lastInfo = CalcLastCentent(messageType, content);
+
+              let userItem = {
+                id: targetId,
+                displayName,
+                avatar,
+                index: '[1]群聊',
+                unread: curConverse.unreadMessageCount || 0,
+                lastSendTime: sentTime,
+                lastContent: { ...lastInfo },
+                isGroup: true,
+                isNew: true, // for render lastContent
+              };
+
+              // 现在通讯录里的群
+              let nowGroups = this.currentOrgUsers.filter(({ isGroup }) => isGroup);
+              let existItem = nowGroups.filter(({ id }) => id === targetId)[0];
+              if (!existItem) {
+                // 往通讯录里加新群
+                this.currentOrgUsers.push(userItem);
+                this.$refs.imMainDom && this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
+              }
+            }
+          });
+        } else {
+          console.log('获取会话列表失败: ', error.code, error.msg);
+        }
+      });
+    },
+    // 仅当发送消息时指定 canIncludeExpansion 值为 true，才可对消息进行拓展
+    handleSendMessage(item) {
+      // 如果当前用户已被移除群聊 消息发不出去
+      let {
+        target_id,
+        conversation_type,
+        content, //  object
+        isGroup,
+        referMsgUserId,
+        referMsg,
+      } = item;
+
+      // 指定消息发送的目标会话
+      const conversation = {
+        targetId: CalcTargetId(target_id),
+        conversationType: isGroup
+          ? RongIMLib.ConversationType.GROUP
+          : RongIMLib.ConversationType.PRIVATE,
+      };
+
+      // 类型 conversation_type 'RC:ReferenceMsg' 'RC:TxtMsg' 'RC:ImgMsg' 'RC:FileMsg' 'RC:InfoNtf'
+      let message = null;
+      if (conversation_type === 'RC:ReferenceMsg') {
+        message = new RongIMLib.ReferenceMessage({
+          referMsgUserId,
+          referMsg,
+          content: content.content,
+          user: content.user || {}, // 加上的
+          objName: RongIMLib.MessageType.TEXT,
+        });
+      } else if (conversation_type === 'RC:TxtMsg') {
+        message = new RongIMLib.TextMessage(content);
+      } else if (conversation_type === 'RC:ImgMsg') {
+        // Base64改为线上链接url
+        message = new RongIMLib.ImageMessage({
+          content: content.content || '', // 图片缩略图，应为 Base64 字符串，且不可超过 80KB
+          imageUri: content.imageUri || '', // 图片的远程访问地址
+          user: content.user || {}, // 加上的
+        });
+      } else if (conversation_type === 'RC:FileMsg') {
+        message = new RongIMLib.FileMessage(content);
+      } else if (conversation_type === 'RC:InfoNtf') {
+        // web端不会主动发送这种类型消息
+      }
+
+      const options = {
+        canIncludeExpansion: true,
+        expansion: {
+          thumbedInfo: {}, // {id: {name, type}}
+          markedObj: {}, // {id: name}
+          collectedIds: [],
+          target_id: null, // 为了收到扩展通知的时候能够找到属于哪个会话
+        },
+      };
+
+      this.sendMessageToRongyun(conversation, message, options, item);
+    },
+    // 发送消息
+    sendMessageToRongyun(conversation, message, options, item) {
+      const { fun, isGroup } = item;
+      RongIMLib.sendMessage(conversation, message, options).then(({ code, data }) => {
+        if (code === 0) {
+          console.log('消息发送成功回调：', data.messageUId, data);
+          fun(data, item);
+
+          isGroup &&
+            RongIMLib.sendReadReceiptRequest(conversation.targetId, data.messageUId)
+              .then((res) => {
+                if (res.code === 0) {
+                  console.log('群聊-发起已读回执请求成功', res.code, res.msg);
+                } else {
+                  console.log('群聊-发起已读回执请求失败', res.code, res.msg);
+                }
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+        } else {
+          let errorMsg = ErrorCodeTextObj[code] || '';
+          this.$Message.warning({
+            content: '发送失败：' + errorMsg,
+            duration: 4,
+          });
+
+          console.log('消息发送失败：', code);
+          fun({ status: 'failed' });
+
+          // 22406 被移除群聊
+          if (code === NotInGroupCode) {
+            // 将用户的该条群组记录移除 from会话列表&群组列表
+            this.deleteConnect(3, conversation.targetId);
+          }
+        }
+      });
+    },
+    handlePullMessages(args) {
+      let { id, isGroup, displayName, avatar } = args.contact;
+      let targetId = CalcTargetId(id); // 原本id 现在group_id
+
+      // 首次进入聊天
+      !this.lastHistoryId && (this.lastHistoryId = targetId);
+      // 聊天对象被切换了
+      if (this.lastHistoryId !== targetId) {
+        this.historyDate = +new Date();
+        this.lastHistoryId = targetId;
+      }
+
+      const conversation = {
+        targetId,
+        conversationType: isGroup
+          ? RongIMLib.ConversationType.GROUP
+          : RongIMLib.ConversationType.PRIVATE,
+      };
+      const option = {
+        // 获取历史消息的时间戳，默认为 0，表示从当前时间获取
+        timestamp: this.historyDate,
+        // 获取条数，有效值 1-20，默认为 20
+        count: 20,
+      };
+
+      // 有时候这里卡住
+      targetId &&
+        RongIMLib.getHistoryMessages(conversation, option)
+          .then(({ code, data }) => {
+            if (code === 0) {
+              const list = data.list; // 获取到的消息列表
+              const hasMore = data.hasMore; // 是否还有历史消息可获取
+              list[0] && (this.historyDate = list[0].sentTime);
+
+              let msg_uids = isGroup
+                ? data.list
+                    .filter(({ senderUserId }) => Number(senderUserId) > 0)
+                    .map(({ messageUId }) => messageUId)
+                : null;
+              this.handleChangeConcat(targetId, msg_uids);
+
+              let otheruser = { id: targetId, displayName, avatar }; // 给单聊用的
+              // console.log('融云历史记录', targetId, list);
+              this.$refs.imMainDom.pullHistory(list, hasMore, args.next, otheruser);
+            } else {
+              console.log('聊天记录失败', code, data);
+              args.next([], true);
+
+              let errorMsg = ErrorCodeTextObj[code] || '获取聊天记录失败，请刷新重试';
+              this.$Message.error({
+                content: errorMsg,
+                duration: 4,
+              });
+
+              // 22406 被移除群聊
+              if (code === NotInGroupCode) {
+                // 将用户的该条群组记录移除 from会话列表&群组列表
+                this.deleteConnect(3, conversation.targetId);
+              }
+            }
+          })
+          .catch((error) => {
+            console.log('获取聊天记录失败', error, error.msg);
+          });
+    },
+    //唤起会话
+    changeContact(contact) {
+      this.showList = true;
+      setTimeout(() => {
+        this.$refs.imMainDom.changeContact(contact);
+      }, 500);
+    },
+    // 当前用户信息
+    getCurrentChatUser() {
+      getCurrentUser()
+        .then((res) => {
+          if (res.status === 200) {
+            this.currentUser = res.data.data;
+            const { id, nickname, orgid, avatar } = res.data.data;
+            let user = {
+              id: String(id),
+              displayName: nickname,
+              orgid: orgid,
+              avatar: avatar,
+            };
+            sessionStorage.setItem('current_user', JSON.stringify(user));
+            sessionStorage.setItem('current_userId', id);
+            bus.$emit('setUserInfo', user);
+            this.getAdressList();
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    getAdressList() {
+      getMyGroupList()
+        .then((res) => {
+          if (res.status !== 200) {
+            this.$Message.error(res.data.msg);
+            return;
+          }
+
+          const { list } = res.data.data; // total, last_page
+          this.allGroupIds = list.map(({ id }) => String(id));
+          this.allGroupsList = list.map((item) => {
+            let userItem = {
+              id: item.id,
+              displayName: item.name,
+              avatar: item.avatar,
+              index: '[1]群聊',
+              unread: 0,
+              lastSendTime: '',
+              lastContent: '',
+              isGroup: true,
+            };
+
+            return userItem;
+          });
+          this.loadStep += 1;
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+
+      getUserByOrgid(this.currentUser.orgid)
+        .then((res) => {
+          if (res.status !== 200) {
+            this.$Message.error(res.data.msg);
+            return;
+          }
+
+          let userList = res.data.data;
+          this.orgUserList = userList.map(({ id, name }) => ({ id, name }));
+          this.allFriendsList = userList.map((item) => {
+            let userItem = {
+              id: item.id,
+              displayName: item.name,
+              avatar: item.avatar,
+              index: '[2]好友',
+              unread: 0,
+              lastSendTime: '',
+              lastContent: '',
+            };
+
+            return userItem;
+          });
+          this.loadStep += 1;
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    // 批量删除已退出的群聊 id number
+    batchDeleteConnect(rongIds, backIds) {
+      rongIds.forEach((id) => {
+        if (!backIds.includes(id)) {
+          this.deleteConnect(3, String(id), true);
+        }
+      });
+    },
+    // 删除会话 this.deleteConnect(1, '27');
+    deleteConnect(conversationType, contactId, totally = false) {
+      let targetId = CalcTargetId(contactId);
+      RongIMLib.removeConversation({
+        conversationType, // 1个人 3群聊
+        targetId,
+      }).then((res) => {
+        if (res.code === 0) {
+          console.log('删除会话', contactId);
+          // 从currentOrgUsers删掉lastContent
+          let index = null;
+          this.currentOrgUsers.forEach((item, i) => {
+            if (CalcTargetId(item.id) === targetId) {
+              index = i;
+            }
+          });
+          if (index >= 0) {
+            if (totally) {
+              this.currentOrgUsers.splice(index, 1);
+            } else {
+              this.$set(this.currentOrgUsers[index], 'lastContent', {});
+            }
+            this.$refs.imMainDom && this.$refs.imMainDom.refreshContact(this.currentOrgUsers);
+            this.setFirstConversation();
+          }
+        } else {
+          console.log(res.code, res.msg);
+        }
+      });
+    },
+    // 删除会话中某一条消息 this.deleteConnectMessage(1, '27', 'BUCQ-JP7L-SE84-01I5', 1642399765463);
+    deleteConnectMessage(conversationType, targetId, messageUId, sentTime) {
+      const conversation = {
+        conversationType,
+        targetId, // "<目标用户ID>"
+      };
+      RongIMLib.deleteMessages(conversation, [
+        {
+          messageUId,
+          sentTime,
+          messageDirection: RongIMLib.MessageDirection.SEND,
+        },
+      ])
+        .then((res) => {
+          if (res.code === 0) {
+            console.log('删除消息成功');
+          } else {
+            console.log(res.code, res.msg);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+  },
+};
 </script>
 
 <style lang="less" scoped>
-.tipDom{
-  position: fixed;
-  bottom: 0px;
-  right: 0px;
-  height: 55px;
-  width: 150px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, .5);
-  font-size: 14px;
-  cursor: pointer;
-  &:hover{
-    // animation: shake 800ms ease-in-out;
-    transform: scale(1.1);
-  }
-}
-@keyframes shake { /* 水平抖动，核心代码 */
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(+2px, 0, 0); }
-  30%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(+4px, 0, 0); }
-  50% { transform: translate3d(-4px, 0, 0); }
-}
-.imDialog{
-  /deep/.el-dialog__header{
-    padding: 0
-  }
-  /deep/.el-dialog__body{
-    padding: 0;
-  }
-  /deep/.el-dialog--center .el-dialog__footer{
-    padding: 0;
-  }
-}
+@import url('../assets/css/news-style.less');
 </style>

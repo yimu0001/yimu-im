@@ -1,0 +1,157 @@
+.tipDom {
+  position: fixed;
+  bottom: 50px;
+  right: -82px;
+  height: 46px;
+  width: 116px;
+  box-sizing: content-box;
+  transition: transform 0.5s;
+
+  padding: 0 7px;
+  display: flex;
+  align-items: center;
+  // box-shadow: 0 2px 4px rgba(#0c135f, 0.5);
+  border-radius: 55px;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 101;
+
+  &:hover {
+    // transform: scale(1.1);
+    transform: translateX(-66%);
+  }
+
+  .avatar-box {
+    width: 38px;
+    height: 38px;
+    position: relative;
+
+    .red-dot {
+      position: absolute;
+      top: 0px;
+      right: 0px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      overflow: hidden;
+      background-color: red;
+    }
+  }
+
+  .nickname-box {
+    padding-left: 6px;
+    width: 78px;
+    line-height: 30px;
+    height: 30px;
+    box-sizing: border-box;
+  }
+}
+
+.light-color {
+  background-color: #e2ecf7;
+  border: 3px solid #b2d2f3;
+  color: #333;
+
+  ::v-deep .el-avatar {
+    background: #e2ecf7;
+  }
+}
+
+.deep-color {
+  background-color: #2a339b;
+  // border: 3px solid #4050a3;
+  border: 3px solid #4b7af6;
+  color: #fff;
+
+  ::v-deep .el-avatar {
+    background: #2a339b;
+  }
+}
+
+// 消息闪烁效果
+.animImage {
+  animation-name: imageAnim;
+  animation-duration: 0.5s;
+  animation-iteration-count: 3;
+  animation-direction: alternate;
+  animation-timing-function: ease;
+  animation-play-state: running;
+  /* Safari 和 Chrome */
+  -webkit-animation-name: imageAnim;
+  -webkit-animation-duration: 0.5s;
+  -webkit-animation-iteration-count: 3;
+  -webkit-animation-direction: alternate;
+  -webkit-animation-timing-function: ease;
+  -webkit-animation-play-state: running;
+}
+
+@keyframes imageAnim {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@-webkit-keyframes imageAnim {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.notice-border {
+  border-color: #09a4f9;
+}
+
+.imDialog {
+  position: fixed;
+
+  .el-dialog {
+    width: 800px;
+  }
+
+  /deep/.el-dialog__header {
+    padding: 0;
+  }
+
+  /deep/.el-dialog__body {
+    padding: 0;
+  }
+
+  /deep/.el-dialog--center .el-dialog__footer {
+    padding: 0;
+  }
+}
+
+// .imModal /deep/ .ivu-modal-content-drag .ivu-modal-body {
+//   padding: 0;
+// }
+
+.close-line {
+  z-index: 11;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 0;
+  width: 30px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  cursor: pointer;
+  color: #999;
+
+  &:hover {
+    color: #fff;
+    background-color: rgb(250, 97, 97);
+  }
+
+  .icon-guanbi1 {
+    font-size: 12px;
+  }
+}
