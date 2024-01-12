@@ -1,0 +1,104 @@
+@import url('https://at.alicdn.com/t/font_2986001_hf4mpnt0p3d.css');
+/* @import url('https://file.iqilu.com/custom/zhuanti/2021/law/vote/images/im-icons/iconfont/iconfont.css'); */
+
+@import url('https://file.iqilu.com/custom/zhuanti/2021/law/vote/images/im-icons/fonts/element-icons.535877f5.woff');
+@import url('https://file.iqilu.com/custom/zhuanti/2021/law/vote/images/im-icons/fonts/element-icons.732389de.ttf');
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: inherit;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::v-deep .ivu-modal-wrap {
+  z-index: 2002;
+}
+
+.ivu-message {
+  z-index: 2003 !important;
+}
+
+.im-body .ivu-notice {
+  top: auto !important;
+  bottom: 56px;
+  margin-right: 10px !important;
+}
+
+.over_hide_1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noselect {
+  -moz-user-select: none;
+  /*火狐*/
+  -webkit-user-select: none;
+  /*webkit浏览器*/
+  -ms-user-select: none;
+  /*IE10*/
+  -khtml-user-select: none;
+  /*早期浏览器*/
+  user-select: none;
+}
+
+.reply-text-pre.el-popover--plain {
+  padding: 10px;
+}
+
+.reply-emoji-pop .emoji-list {
+  width: 145px;
+}
+
+.reply-emoji-pop .emoji-list .emoji-icon {
+  display: inline-block;
+  width: 34px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  font-style: normal;
+  font-size: 20px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: All 0.2s ease-in-out;
+  -webkit-transition: All 0.2s ease-in-out;
+  -moz-transition: All 0.2s ease-in-out;
+  -o-transition: All 0.2s ease-in-out;
+}
+
+.reply-emoji-pop .emoji-list .icon-img {
+  width: 28px;
+  height: 28px;
+}
+
+.reply-emoji-pop .emoji-list .emoji-icon:hover {
+  /* font-size: 24px; */
+  transform: scale(1.3);
+  -webkit-transform: scale(1.3);
+  -moz-transform: scale(1.3);
+  -o-transform: scale(1.3);
+  -ms-transform: scale(1.3);
+}
+
+.narrow-scroll-bar::-webkit-scrollbar {
+  /*滚动条整体样式*/
+  width: 5px;
+  /*高宽分别对应横竖滚动条的尺寸*/
+  height: 1px;
+}
+
+.narrow-scroll-bar::-webkit-scrollbar-thumb {
+  /*滚动条里面小方块*/
+  /* border-radius: 6px; */
+  /* box-shadow: inset 0 0 5px rgba(55, 153, 245, 0.2); */
+  background: #aaa;
+}
+
+.narrow-scroll-bar::-webkit-scrollbar-track {
+  /*滚动条里面轨道*/
+  /* box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2); */
+  /* border-radius: 6px; */
+  background: #f2f2f2;
+}

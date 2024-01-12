@@ -1,0 +1,209 @@
+<script>
+import Toolbar from './toolbar.vue';
+import bus from '@/libs/bus';
+export default {
+  name: 'lemonMessageImage',
+  data() {
+    return { readNum: 0, userId: null, lastReadTime: null, isGroup: false, expansionObj: {} };
+  },
+  inheritAttrs: false,
+  inject: ['IMUI'],
+  components: { Toolbar },
+  mounted() {
+    this.userId = sessionStorage.getItem('current_userId');
+    this.isGroup = this.$attrs.message.conversationType === 3;
+
+    bus.$on('updateReadNum', (readList, targetId) => {
+      if (this.$attrs.message.toContactId === targetId) {
+        this.readNum = readList ? Object.keys(readList).length : 0;
+      }
+    });
+    bus.$on('setSingleReadStatus', (lastTime) => {
+      this.lastReadTime = lastTime;
+    });
+    bus.$on('setComplexExpand', (msgId, expansion) => {
+      if (msgId === this.$attrs.message.id && expansion) {
+        this.expansionObj = expansion;
+      }
+    });
+  },
+  beforeDestroy() {
+    bus.$off('updateReadNum');
+    bus.$off('setSingleReadStatus');
+    bus.$off('setComplexExpand');
+  },
+  render() {
+    const { fromUser, sendTime } = this.$attrs.message;
+    this.expansionObj = this.$attrs.message.expansion;
+    const isNoticeMsg = Number(fromUser.id) < 0;
+
+    let markNames = '';
+    let thumbList = [];
+    if (this.expansionObj) {
+      let { markedObj = {}, thumbedInfo = {} } = this.expansionObj;
+      markNames = Object.values(markedObj).join('，');
+      thumbList = Object.values(thumbedInfo);
+    }
+
+    // <img class='content-show img-show' src={props.content} />
+    return (
+      <lemon-message-basic
+        class='lemon-message-image abc'
+        props={{ ...this.$attrs }}
+        scopedSlots={{
+          content: (props) => {
+            return (
+              <div class='tool-bar-wrapper'>
+                {fromUser.id !== this.userId && (
+                  <div class='only-content'>
+                    <img class='content-show img-show' src={props.content} />
+                    {!isNoticeMsg && <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>}
+                  </div>
+                )}
+                {fromUser.id === this.userId && (
+                  <div class='all-infos'>
+                    {!isNoticeMsg && (
+                      <div class='two-line'>
+                        <toolbar msgContent={{ ...this.$attrs.message }}></toolbar>
+                        {this.isGroup && <div class='read-num'>{this.readNum}人已读</div>}
+                        {!this.isGroup && this.lastReadTime > sendTime && (
+                          <div class='read-num'>已读</div>
+                        )}
+                      </div>
+                    )}
+                    <img class='content-show img-show' src={props.content} />
+                  </div>
+                )}
+                {markNames && (
+                  <div class='mark-text' style={fromUser.id === this.userId && 'text-align:right'}>
+                    <i class='iconfont icon-icon- marked-color'></i>
+                    {markNames}已标记了该消息，群内所有成员可见
+                  </div>
+                )}
+                <div class='thumb-text' style={fromUser.id === this.userId && 'text-align:right'}>
+                  {thumbList &&
+                    thumbList.map(({ name, type }) => (
+                      <div class='per-thumb'>
+                        {type === '1' && (
+                          <i class='thumb-icon' title='爱心'>
+                            ❤️
+                          </i>
+                        )}
+                        {type === '2' && (
+                          <i class='thumb-icon' title='OK'>
+                            👌
+                          </i>
+                        )}
+                        {type === '3' && (
+                          <i class='thumb-icon' title='赞'>
+                            👍
+                          </i>
+                        )}
+                        {type === '4' && (
+                          <i class='thumb-icon' title='鼓掌'>
+                            👏
+                          </i>
+                        )}
+                        <span class='thumb-name'>{name}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            );
+          },
+        }}
+      />
+    );
+  },
+};
+</script>
+
+<style lang="less">
+.lemon-message.lemon-message-image {
+  user-select: none;
+
+  .lemon-message__content {
+    border: 2px solid #000;
+    font-size: 12px;
+    cursor: pointer;
+    overflow: visible;
+    background: none;
+    border: none;
+
+    &::before {
+      display: none;
+    }
+  }
+  .tool-bar-wrapper {
+    .content-show {
+      border-radius: 2px;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.04);
+    }
+    .tool-bar {
+      visibility: hidden;
+      .iconfont {
+        margin: 0 5px;
+        font-size: 16px;
+        &:hover {
+          color: #0fd547;
+        }
+      }
+    }
+    &:hover .tool-bar {
+      visibility: visible;
+    }
+  }
+  .tool-bar-wrapper .img-show {
+    max-width: 200px;
+    height: auto;
+  }
+}
+.all-infos {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  .read-num {
+    margin: 0 5px;
+    min-width: 50px;
+    text-align: right;
+    color: #999;
+    font-size: 12px;
+  }
+}
+.only-content {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+.thumb-text {
+  max-width: 330px;
+}
+.mark-text {
+  margin: 3px 0;
+  max-width: 330px;
+  color: #999;
+  font-size: 12px;
+  line-height: 18px;
+  .marked-color {
+    margin: 0 2px;
+    font-size: 12px;
+    color: #999;
+  }
+}
+.per-thumb {
+  display: inline-block;
+  margin-right: 3px;
+  .thumb-icon {
+    line-height: 18px;
+    text-align: center;
+    font-style: normal;
+    font-size: 16px;
+  }
+  .thumb-name {
+    color: #999;
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+</style>

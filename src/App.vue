@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <router-view/>
+    <router-view />
   </div>
 </template>
 
@@ -24,5 +24,23 @@
       color: #42b983;
     }
   }
+}
+
+.selected-icon-color {
+  // color: #f5ae15;
+  color: #0fd547;
+}
+.normal-icon-color {
+  color: #999;
+}
+div,
+p {
+  padding: 0;
+  margin: 0;
+}
+*,
+:after,
+:before {
+  box-sizing: border-box;
 }
 </style>
